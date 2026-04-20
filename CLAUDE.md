@@ -51,9 +51,15 @@
 
 This working copy is a fork of `coleam00/Archon`. Remotes are set up fork-first, and `dev` is the personalized integration branch — upstream + your improvements — not a pristine mirror:
 
-- `origin` → `https://github.com/matzls/Archon.git` (your fork, push access)
-- `upstream` → `https://github.com/coleam00/Archon.git` (Cole's repo, read-only)
+- `origin` → `https://github.com/matzls/Archon.git` (your fork, push access; normal day-to-day pushes go here)
+- `upstream` → `https://github.com/coleam00/Archon` (Cole's repo; use it as the source of incoming changes and as the PR base for upstream contributions)
 - `dev` = your personalized trunk. Diverges from `upstream/dev` by design. Daily work happens here. Absorb upstream into it deliberately (merge, not fast-forward).
+
+**Remote model in practice:**
+
+- `git push origin dev` updates your fork's `dev`, not Cole's repo.
+- `git fetch upstream` + `git merge upstream/dev` brings new upstream changes into your personalized `dev`.
+- If you want to contribute something back upstream, start from `upstream/dev` on a clean feature branch so the PR does not include fork-only commits.
 
 **Where different customizations belong:**
 
