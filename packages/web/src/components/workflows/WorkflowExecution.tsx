@@ -15,6 +15,7 @@ import { useWorkflowStore } from '@/stores/workflow-store';
 import { getWorkflowRun, getWorkflowRunByWorker, getCodebase, getWorkflow } from '@/lib/api';
 import { ensureUtc, formatDurationMs } from '@/lib/format';
 import { selectInitialNode } from '@/lib/select-initial-node';
+import { approvalsEqual, parseWorkflowApproval } from '@/lib/workflow-utils';
 import {
   deriveCurrentlyExecutingNode,
   deriveDagNodesFromEvents,
@@ -123,6 +124,10 @@ export function WorkflowExecution({ runId }: WorkflowExecutionProps): React.Reac
           completedAt: data.run.completed_at
             ? new Date(ensureUtc(data.run.completed_at)).getTime()
             : undefined,
+          approval:
+            data.run.status === 'paused'
+              ? parseWorkflowApproval(data.run.metadata?.approval)
+              : undefined,
         },
         workerPlatformId: data.run.worker_platform_id ?? null,
         parentPlatformId: data.run.parent_platform_id ?? null,
@@ -256,7 +261,15 @@ export function WorkflowExecution({ runId }: WorkflowExecutionProps): React.Reac
   const workflow = ((): WorkflowState | null => {
     if (!liveWorkflow) return initialData;
     if (!initialData) return liveWorkflow;
-    if (isTerminal(initialData.status) && !isTerminal(liveWorkflow.status)) {
+    const authoritativeRestMismatch =
+      initialData.status !== liveWorkflow.status ||
+      !approvalsEqual(initialData.approval, liveWorkflow.approval);
+    if (
+      (isTerminal(initialData.status) && !isTerminal(liveWorkflow.status)) ||
+      (!isTerminal(initialData.status) &&
+        !isTerminal(liveWorkflow.status) &&
+        authoritativeRestMismatch)
+    ) {
       console.warn('[WorkflowExecution] REST overrides stale SSE status', {
         runId,
         restStatus: initialData.status,

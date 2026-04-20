@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { queryClient } from '@/lib/query-client';
 import { getWorkflowRun } from '@/lib/api';
-import { isTerminalStatus } from '@/lib/workflow-utils';
+import { approvalsEqual, isTerminalStatus } from '@/lib/workflow-utils';
 import type {
   WorkflowState,
   DagNodeState,
@@ -54,6 +54,31 @@ function deriveActiveId(workflows: Map<string, WorkflowState>): string | null {
     }
   }
   return (running ?? newest)?.runId ?? null;
+}
+
+function pruneStaleRunningNodes(nodes: DagNodeState[]): DagNodeState[] {
+  return nodes.filter(node => node.status !== 'running');
+}
+
+function mergeHydratedWorkflow(existing: WorkflowState, incoming: WorkflowState): WorkflowState {
+  const statusChanged = existing.status !== incoming.status;
+  const approvalChanged = !approvalsEqual(existing.approval, incoming.approval);
+  const shouldPruneEphemeralState = statusChanged || approvalChanged;
+
+  return {
+    ...existing,
+    ...incoming,
+    dagNodes:
+      incoming.dagNodes.length > 0
+        ? incoming.dagNodes
+        : shouldPruneEphemeralState
+          ? pruneStaleRunningNodes(existing.dagNodes)
+          : existing.dagNodes,
+    artifacts: incoming.artifacts.length > 0 ? incoming.artifacts : existing.artifacts,
+    approval: incoming.status === 'paused' ? incoming.approval : undefined,
+    currentTool:
+      incoming.currentTool ?? (shouldPruneEphemeralState ? null : (existing.currentTool ?? null)),
+  };
 }
 
 // --- Polling infrastructure ---
@@ -344,12 +369,20 @@ export const useWorkflowStore = create<WorkflowStoreState>()(
           state => {
             const existing = state.workflows.get(incoming.runId);
             if (existing) {
-              if (
-                !isTerminalStatus(incoming.status) ||
-                (existing.status !== 'running' && existing.status !== 'pending')
-              ) {
+              if (isTerminalStatus(existing.status) && !isTerminalStatus(incoming.status)) {
                 return state;
               }
+              const shouldRefreshActiveState =
+                isTerminalStatus(incoming.status) ||
+                incoming.status !== existing.status ||
+                (incoming.status === 'paused' &&
+                  !approvalsEqual(existing.approval, incoming.approval));
+
+              if (!shouldRefreshActiveState) return state;
+
+              const next = new Map(state.workflows);
+              next.set(incoming.runId, mergeHydratedWorkflow(existing, incoming));
+              return { workflows: next, activeWorkflowId: deriveActiveId(next) };
             }
             const next = new Map(state.workflows);
             next.set(incoming.runId, incoming);

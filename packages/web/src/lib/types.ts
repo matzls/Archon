@@ -79,6 +79,15 @@ export interface HeartbeatEvent extends BaseSSEEvent {
  *  the server never emits a status event for a run that hasn't started yet. */
 export type ActiveWorkflowRunStatus = Exclude<WorkflowRunStatus, 'pending'>;
 
+export interface WorkflowApproval {
+  nodeId: string;
+  message: string;
+  lastOutput?: string;
+  lastOutputTruncated?: boolean;
+  finalAssistantOutput?: string;
+  finalAssistantOutputTruncated?: boolean;
+}
+
 // Workflow run status
 export interface WorkflowStatusEvent extends BaseSSEEvent {
   type: 'workflow_status';
@@ -86,14 +95,7 @@ export interface WorkflowStatusEvent extends BaseSSEEvent {
   workflowName: string;
   status: ActiveWorkflowRunStatus;
   error?: string;
-  approval?: {
-    nodeId: string;
-    message: string;
-    lastOutput?: string;
-    lastOutputTruncated?: boolean;
-    finalAssistantOutput?: string;
-    finalAssistantOutputTruncated?: boolean;
-  };
+  approval?: WorkflowApproval;
 }
 
 // Loop iteration info (per-iteration state stored in DagNodeState)
@@ -278,14 +280,7 @@ export interface WorkflowState {
   completedAt?: number;
   error?: string;
   stale?: boolean;
-  approval?: {
-    nodeId: string;
-    message: string;
-    lastOutput?: string;
-    lastOutputTruncated?: boolean;
-    finalAssistantOutput?: string;
-    finalAssistantOutputTruncated?: boolean;
-  };
+  approval?: WorkflowApproval;
   currentTool?: {
     name: string;
     status: 'running' | 'completed';

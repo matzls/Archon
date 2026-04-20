@@ -263,13 +263,75 @@ describe('hydrateWorkflow', () => {
     expect(useWorkflowStore.getState().workflows.get('run-h1')).toBeDefined();
   });
 
-  test('does NOT override if existing is non-terminal and incoming is non-terminal', () => {
+  test('does NOT override matching non-terminal state', () => {
     useWorkflowStore.getState().handleWorkflowStatus(statusEvent({ runId: 'run-h2' }));
     useWorkflowStore
       .getState()
       .hydrateWorkflow(makeWorkflow({ runId: 'run-h2', status: 'running', startedAt: 500 }));
     const wf = useWorkflowStore.getState().workflows.get('run-h2');
     expect(wf!.startedAt).toBe(1000);
+  });
+
+  test('refreshes non-terminal state when REST disagrees with stale live status', () => {
+    useWorkflowStore.getState().handleWorkflowStatus(
+      statusEvent({
+        runId: 'run-h2b',
+        status: 'paused',
+        approval: { nodeId: 'explore', message: 'Need input' },
+      })
+    );
+    useWorkflowStore.getState().handleDagNode(
+      dagNodeEvent({
+        runId: 'run-h2b',
+        nodeId: 'explore',
+        name: 'explore',
+        status: 'running',
+      })
+    );
+
+    useWorkflowStore.getState().hydrateWorkflow(
+      makeWorkflow({
+        runId: 'run-h2b',
+        status: 'running',
+        startedAt: 500,
+      })
+    );
+
+    const wf = useWorkflowStore.getState().workflows.get('run-h2b');
+    expect(wf!.status).toBe('running');
+    expect(wf!.approval).toBeUndefined();
+    expect(wf!.dagNodes).toHaveLength(0);
+  });
+
+  test('refreshes paused approval when REST finds a newer checkpoint', () => {
+    useWorkflowStore.getState().handleWorkflowStatus(
+      statusEvent({
+        runId: 'run-h2c',
+        status: 'paused',
+        approval: { nodeId: 'explore', message: 'Need input' },
+      })
+    );
+    useWorkflowStore.getState().handleDagNode(
+      dagNodeEvent({
+        runId: 'run-h2c',
+        nodeId: 'explore',
+        name: 'explore',
+        status: 'running',
+      })
+    );
+
+    useWorkflowStore.getState().hydrateWorkflow(
+      makeWorkflow({
+        runId: 'run-h2c',
+        status: 'paused',
+        approval: { nodeId: 'refine-plan', message: 'Review plan' },
+      })
+    );
+
+    const wf = useWorkflowStore.getState().workflows.get('run-h2c');
+    expect(wf!.status).toBe('paused');
+    expect(wf!.approval).toEqual({ nodeId: 'refine-plan', message: 'Review plan' });
+    expect(wf!.dagNodes).toHaveLength(0);
   });
 
   test('DOES override stale running with terminal REST data', () => {

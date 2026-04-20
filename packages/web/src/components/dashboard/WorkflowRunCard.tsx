@@ -20,6 +20,7 @@ import {
 import type { DashboardRunResponse } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { formatDuration } from '@/lib/format';
+import { parseWorkflowApproval } from '@/lib/workflow-utils';
 import { useWorkflowStore } from '@/stores/workflow-store';
 import type { WorkflowState } from '@/lib/types';
 import { ConfirmRunActionDialog } from './ConfirmRunActionDialog';
@@ -50,17 +51,26 @@ function StepProgress({
   run: DashboardRunResponse;
   liveState: WorkflowState | undefined;
 }): React.ReactElement | null {
-  const dagNodes = liveState?.dagNodes ?? [];
+  const liveMatchesRunStatus = liveState == null || liveState.status === run.status;
+  const dagNodes = liveMatchesRunStatus ? (liveState?.dagNodes ?? []) : [];
+  const pausedApproval =
+    run.status === 'paused'
+      ? ((liveMatchesRunStatus ? liveState?.approval : undefined) ??
+        parseWorkflowApproval(run.metadata?.approval))
+      : undefined;
   const runningNode = dagNodes
     .slice()
     .reverse()
     .find(n => n.status === 'running');
   const completedCount = dagNodes.filter(n => n.status === 'completed').length;
   const totalNodes = dagNodes.length || run.total_steps || 0;
-  const stepName = runningNode?.name ?? run.current_step_name;
-  const currentTool = liveState?.currentTool ?? null;
+  const stepName =
+    run.status === 'paused'
+      ? (pausedApproval?.nodeId ?? run.current_step_name)
+      : (runningNode?.name ?? run.current_step_name);
+  const currentTool = liveMatchesRunStatus ? (liveState?.currentTool ?? null) : null;
 
-  const hasProgress = runningNode != null || totalNodes > 0;
+  const hasProgress = stepName != null || totalNodes > 0;
   if (!hasProgress && !currentTool) return null;
 
   return (

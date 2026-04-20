@@ -37,6 +37,7 @@ import {
 } from '@/lib/message-cache';
 import { useProject } from '@/contexts/ProjectContext';
 import { ensureUtc } from '@/lib/format';
+import { parseWorkflowApproval } from '@/lib/workflow-utils';
 
 /**
  * Human-readable reply hints for conversations whose input is disabled because
@@ -257,11 +258,12 @@ export function ChatInterface({ conversationId }: ChatInterfaceProps): React.Rea
           status: run.status,
           dagNodes: [],
           artifacts: [],
-
           startedAt: new Date(ensureUtc(run.started_at)).getTime(),
           completedAt: run.completed_at
             ? new Date(ensureUtc(run.completed_at)).getTime()
             : undefined,
+          approval:
+            run.status === 'paused' ? parseWorkflowApproval(run.metadata?.approval) : undefined,
         });
       })
       .catch((err: unknown) => {

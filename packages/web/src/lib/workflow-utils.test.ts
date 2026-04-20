@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test';
-import { isTerminalStatus } from './workflow-utils';
+import { approvalsEqual, isTerminalStatus, parseWorkflowApproval } from './workflow-utils';
 
 describe('isTerminalStatus', () => {
   test('completed is terminal', () => {
@@ -28,5 +28,66 @@ describe('isTerminalStatus', () => {
 
   test('empty string is not terminal', () => {
     expect(isTerminalStatus('')).toBe(false);
+  });
+});
+
+describe('parseWorkflowApproval', () => {
+  test('parses valid approval metadata', () => {
+    expect(
+      parseWorkflowApproval({
+        nodeId: 'refine-plan',
+        message: 'Review the plan',
+        lastOutput: 'Plan summary',
+        lastOutputTruncated: false,
+        finalAssistantOutput: 'Ready to approve',
+        finalAssistantOutputTruncated: true,
+      })
+    ).toEqual({
+      nodeId: 'refine-plan',
+      message: 'Review the plan',
+      lastOutput: 'Plan summary',
+      lastOutputTruncated: false,
+      finalAssistantOutput: 'Ready to approve',
+      finalAssistantOutputTruncated: true,
+    });
+  });
+
+  test('returns undefined for invalid approval metadata', () => {
+    expect(parseWorkflowApproval({ nodeId: 'refine-plan' })).toBeUndefined();
+    expect(parseWorkflowApproval('refine-plan')).toBeUndefined();
+  });
+});
+
+describe('approvalsEqual', () => {
+  test('returns true for matching approvals', () => {
+    expect(
+      approvalsEqual(
+        {
+          nodeId: 'refine-plan',
+          message: 'Review the plan',
+          lastOutput: 'Summary',
+          lastOutputTruncated: false,
+          finalAssistantOutput: 'Ready to approve',
+          finalAssistantOutputTruncated: false,
+        },
+        {
+          nodeId: 'refine-plan',
+          message: 'Review the plan',
+          lastOutput: 'Summary',
+          lastOutputTruncated: false,
+          finalAssistantOutput: 'Ready to approve',
+          finalAssistantOutputTruncated: false,
+        }
+      )
+    ).toBe(true);
+  });
+
+  test('returns false when approval state changes', () => {
+    expect(
+      approvalsEqual(
+        { nodeId: 'explore', message: 'Explore first' },
+        { nodeId: 'refine-plan', message: 'Review the plan' }
+      )
+    ).toBe(false);
   });
 });

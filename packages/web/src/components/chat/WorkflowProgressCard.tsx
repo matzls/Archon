@@ -6,54 +6,17 @@ import { cn } from '@/lib/utils';
 import { approveWorkflowRun, getWorkflowRunByWorker, rejectWorkflowRun } from '@/lib/api';
 import { useWorkflowStore } from '@/stores/workflow-store';
 import { StatusIcon } from '@/components/workflows/StatusIcon';
-import { formatDurationMs } from '@/lib/format';
-import { isTerminalStatus } from '@/lib/workflow-utils';
-import type { DagNodeState } from '@/lib/types';
+import { ensureUtc, formatDurationMs } from '@/lib/format';
+import { isTerminalStatus, parseWorkflowApproval } from '@/lib/workflow-utils';
+import type { DagNodeState, WorkflowApproval } from '@/lib/types';
 
 interface WorkflowProgressCardProps {
   workflowName: string;
   workerConversationId: string;
 }
 
-interface PausedApprovalDetails {
-  message: string;
-  lastOutput?: string;
-  lastOutputTruncated?: boolean;
-  finalAssistantOutput?: string;
-  finalAssistantOutputTruncated?: boolean;
-}
-
-function parsePausedApproval(value: unknown): PausedApprovalDetails | null {
-  if (!value || typeof value !== 'object') {
-    return null;
-  }
-
-  const candidate = value as Record<string, unknown>;
-  if (typeof candidate.message !== 'string') {
-    return null;
-  }
-
-  return {
-    message: candidate.message,
-    lastOutput: typeof candidate.lastOutput === 'string' ? candidate.lastOutput : undefined,
-    lastOutputTruncated:
-      typeof candidate.lastOutput === 'string' && typeof candidate.lastOutputTruncated === 'boolean'
-        ? candidate.lastOutputTruncated
-        : undefined,
-    finalAssistantOutput:
-      typeof candidate.finalAssistantOutput === 'string'
-        ? candidate.finalAssistantOutput
-        : undefined,
-    finalAssistantOutputTruncated:
-      typeof candidate.finalAssistantOutput === 'string' &&
-      typeof candidate.finalAssistantOutputTruncated === 'boolean'
-        ? candidate.finalAssistantOutputTruncated
-        : undefined,
-  };
-}
-
 function getPausedOutputPreview(
-  approval: PausedApprovalDetails | null
+  approval: WorkflowApproval | null
 ): { text: string; truncated: boolean } | null {
   if (!approval) {
     return null;
@@ -103,25 +66,51 @@ export function WorkflowProgressCard({
 
   const runId = runData?.run?.id;
   const restStatus = runData?.run?.status;
+  const restApproval =
+    restStatus === 'paused'
+      ? (parseWorkflowApproval(runData?.run?.metadata?.approval) ?? null)
+      : null;
+  const hydrateWorkflow = useWorkflowStore(state => state.hydrateWorkflow);
 
   // Live SSE state from Zustand store
   const liveState = useWorkflowStore(state => (runId ? state.workflows.get(runId) : undefined));
+  const liveStatusDisagrees =
+    liveState != null && restStatus != null && liveState.status !== restStatus;
 
-  // Merge: prefer live state when available
-  const status = liveState?.status ?? restStatus;
+  // Merge: prefer live state when it agrees with REST. If REST disagrees, treat
+  // the polled run as authoritative and wait for the store to catch up.
+  const status = liveStatusDisagrees ? restStatus : (liveState?.status ?? restStatus);
   const isPaused = status === 'paused';
-  const restApproval = parsePausedApproval(runData?.run?.metadata.approval);
-  const approval: PausedApprovalDetails | null = isPaused
-    ? (liveState?.approval ?? restApproval)
+  const dagNodes: DagNodeState[] = liveStatusDisagrees ? [] : (liveState?.dagNodes ?? []);
+  const currentTool = liveStatusDisagrees ? null : (liveState?.currentTool ?? null);
+  const approval: WorkflowApproval | null = isPaused
+    ? (restApproval ?? (liveStatusDisagrees ? null : (liveState?.approval ?? null)))
     : null;
-  const dagNodes: DagNodeState[] = liveState?.dagNodes ?? [];
-  const currentTool = liveState?.currentTool ?? null;
-  const error = liveState?.error;
-  const startedAt = liveState?.startedAt;
+  const error = liveStatusDisagrees ? undefined : liveState?.error;
+  const startedAt =
+    liveState?.startedAt ??
+    (runData?.run ? new Date(ensureUtc(runData.run.started_at)).getTime() : undefined);
   const pausedOutputPreview = getPausedOutputPreview(approval);
   const latestOutput = pausedOutputPreview?.text ?? '';
   const hasLatestOutput = latestOutput.length > 0;
   const isLatestOutputClipped = pausedOutputPreview?.truncated ?? false;
+
+  useEffect(() => {
+    const run = runData?.run;
+    if (!run) return;
+
+    hydrateWorkflow({
+      runId: run.id,
+      workflowName: run.workflow_name,
+      status: run.status,
+      dagNodes: [],
+      artifacts: [],
+      startedAt: new Date(ensureUtc(run.started_at)).getTime(),
+      completedAt: run.completed_at ? new Date(ensureUtc(run.completed_at)).getTime() : undefined,
+      approval: run.status === 'paused' ? parseWorkflowApproval(run.metadata?.approval) : undefined,
+      currentTool: null,
+    });
+  }, [hydrateWorkflow, runData]);
 
   const completedCount = dagNodes.filter(n => n.status === 'completed').length;
   const totalNodes = dagNodes.length;
@@ -164,7 +153,11 @@ export function WorkflowProgressCard({
   const mutationError = approveMutation.error ?? rejectMutation.error;
 
   // Completed duration from live state
-  const completedAt = liveState?.completedAt;
+  const completedAt =
+    liveState?.completedAt ??
+    (runData?.run?.completed_at
+      ? new Date(ensureUtc(runData.run.completed_at)).getTime()
+      : undefined);
   const finalDuration = completedAt && startedAt ? completedAt - startedAt : null;
 
   const handleHeaderClick = (): void => {

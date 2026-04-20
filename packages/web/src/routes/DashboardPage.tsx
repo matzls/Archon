@@ -17,6 +17,7 @@ import {
 } from '@/lib/api';
 import type { WorkflowRunStatus } from '@/lib/types';
 import { ensureUtc } from '@/lib/format';
+import { parseWorkflowApproval } from '@/lib/workflow-utils';
 import { StatusSummaryBar } from '@/components/dashboard/StatusSummaryBar';
 import { WorkflowRunGroup } from '@/components/dashboard/WorkflowRunGroup';
 import { WorkflowRunCard } from '@/components/dashboard/WorkflowRunCard';
@@ -199,6 +200,8 @@ export function DashboardPage(): React.ReactElement {
           dagNodes: [],
           artifacts: [],
           startedAt: new Date(ensureUtc(run.started_at)).getTime(),
+          approval:
+            run.status === 'paused' ? parseWorkflowApproval(run.metadata?.approval) : undefined,
           currentTool: null,
         });
       }
