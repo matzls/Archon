@@ -159,29 +159,47 @@ describe('handleWorkflowArtifact', () => {
 });
 
 describe('handleWorkflowStatus — approval field', () => {
-  test('stores approval on new paused entry', () => {
+  test('stores approval with additive paused snapshot fields on new paused entry', () => {
+    const approval = {
+      nodeId: 'gate',
+      message: 'Please review',
+      lastOutput: 'Latest workflow output',
+      lastOutputTruncated: false,
+      finalAssistantOutput: 'Final assistant summary',
+      finalAssistantOutputTruncated: true,
+    };
+
     useWorkflowStore.getState().handleWorkflowStatus(
       statusEvent({
         runId: 'run-ap1',
         status: 'paused',
-        approval: { nodeId: 'gate', message: 'Please review' },
+        approval,
       })
     );
     const wf = useWorkflowStore.getState().workflows.get('run-ap1');
-    expect(wf!.approval).toEqual({ nodeId: 'gate', message: 'Please review' });
+    expect(wf!.approval).toEqual(approval);
   });
 
-  test('sets approval when existing workflow transitions to paused', () => {
+  test('preserves additive approval fields when existing workflow transitions to paused', () => {
+    const approval = {
+      nodeId: 'gate',
+      message: 'Please review',
+      lastOutput: 'Latest workflow output',
+      lastOutputTruncated: true,
+      finalAssistantOutput: 'Final assistant summary',
+      finalAssistantOutputTruncated: false,
+    };
+
     useWorkflowStore.getState().handleWorkflowStatus(statusEvent({ runId: 'run-ap2' }));
     useWorkflowStore.getState().handleWorkflowStatus(
       statusEvent({
         runId: 'run-ap2',
         status: 'paused',
-        approval: { nodeId: 'gate', message: 'Please review' },
+        approval,
       })
     );
     const wf = useWorkflowStore.getState().workflows.get('run-ap2');
-    expect(wf!.approval).toEqual({ nodeId: 'gate', message: 'Please review' });
+    expect(wf!.approval).toEqual(approval);
   });
 
   test('clears approval when workflow transitions out of paused', () => {
@@ -189,7 +207,14 @@ describe('handleWorkflowStatus — approval field', () => {
       statusEvent({
         runId: 'run-ap3',
         status: 'paused',
-        approval: { nodeId: 'gate', message: 'Please review' },
+        approval: {
+          nodeId: 'gate',
+          message: 'Please review',
+          lastOutput: 'Latest workflow output',
+          lastOutputTruncated: false,
+          finalAssistantOutput: 'Final assistant summary',
+          finalAssistantOutputTruncated: false,
+        },
       })
     );
     useWorkflowStore

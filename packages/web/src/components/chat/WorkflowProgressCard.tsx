@@ -15,6 +15,71 @@ interface WorkflowProgressCardProps {
   workerConversationId: string;
 }
 
+interface PausedApprovalDetails {
+  message: string;
+  lastOutput?: string;
+  lastOutputTruncated?: boolean;
+  finalAssistantOutput?: string;
+  finalAssistantOutputTruncated?: boolean;
+}
+
+function parsePausedApproval(value: unknown): PausedApprovalDetails | null {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+
+  const candidate = value as Record<string, unknown>;
+  if (typeof candidate.message !== 'string') {
+    return null;
+  }
+
+  return {
+    message: candidate.message,
+    lastOutput: typeof candidate.lastOutput === 'string' ? candidate.lastOutput : undefined,
+    lastOutputTruncated:
+      typeof candidate.lastOutput === 'string' && typeof candidate.lastOutputTruncated === 'boolean'
+        ? candidate.lastOutputTruncated
+        : undefined,
+    finalAssistantOutput:
+      typeof candidate.finalAssistantOutput === 'string'
+        ? candidate.finalAssistantOutput
+        : undefined,
+    finalAssistantOutputTruncated:
+      typeof candidate.finalAssistantOutput === 'string' &&
+      typeof candidate.finalAssistantOutputTruncated === 'boolean'
+        ? candidate.finalAssistantOutputTruncated
+        : undefined,
+  };
+}
+
+function getPausedOutputPreview(
+  approval: PausedApprovalDetails | null
+): { text: string; truncated: boolean } | null {
+  if (!approval) {
+    return null;
+  }
+
+  const finalAssistantOutput = approval.finalAssistantOutput?.trim() ?? '';
+  if (finalAssistantOutput.length > 0) {
+    return {
+      text: finalAssistantOutput,
+      truncated:
+        approval.finalAssistantOutputTruncated ??
+        finalAssistantOutput.trimEnd().endsWith('[truncated]'),
+    };
+  }
+
+  const lastOutput = approval.lastOutput?.trim() ?? '';
+  if (lastOutput.length === 0) {
+    return null;
+  }
+
+  return {
+    text: lastOutput,
+    truncated: approval.lastOutputTruncated ?? lastOutput.trimEnd().endsWith('[truncated]'),
+  };
+}
+
 export function WorkflowProgressCard({
   workflowName,
   workerConversationId,
@@ -44,16 +109,23 @@ export function WorkflowProgressCard({
 
   // Merge: prefer live state when available
   const status = liveState?.status ?? restStatus;
+  const isPaused = status === 'paused';
+  const restApproval = parsePausedApproval(runData?.run?.metadata.approval);
+  const approval: PausedApprovalDetails | null = isPaused
+    ? (liveState?.approval ?? restApproval)
+    : null;
   const dagNodes: DagNodeState[] = liveState?.dagNodes ?? [];
   const currentTool = liveState?.currentTool ?? null;
-  const approval = liveState?.approval ?? null;
   const error = liveState?.error;
   const startedAt = liveState?.startedAt;
+  const pausedOutputPreview = getPausedOutputPreview(approval);
+  const latestOutput = pausedOutputPreview?.text ?? '';
+  const hasLatestOutput = latestOutput.length > 0;
+  const isLatestOutputClipped = pausedOutputPreview?.truncated ?? false;
 
   const completedCount = dagNodes.filter(n => n.status === 'completed').length;
   const totalNodes = dagNodes.length;
   const isRunning = status === 'running' || status === 'pending';
-  const isPaused = status === 'paused';
 
   // Expand/collapse state
   const [expanded, setExpanded] = useState(false);
@@ -209,6 +281,19 @@ export function WorkflowProgressCard({
                   {approval?.message ?? 'Waiting for approval'}
                 </p>
               </div>
+              {hasLatestOutput && (
+                <div className="space-y-1">
+                  <p className="text-[11px] font-medium text-text-secondary">Latest output</p>
+                  {isLatestOutputClipped && (
+                    <p className="text-[11px] text-warning">
+                      Output clipped; showing the latest available text.
+                    </p>
+                  )}
+                  <div className="max-h-40 overflow-y-auto rounded-md border border-border bg-surface-elevated px-3 py-2 text-xs text-text-secondary whitespace-pre-wrap break-words">
+                    {latestOutput}
+                  </div>
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
