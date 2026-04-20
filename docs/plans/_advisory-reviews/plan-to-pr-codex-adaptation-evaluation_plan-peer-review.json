@@ -1,0 +1,216 @@
+{
+  "schema_version": "peer-review-v1",
+  "review_id": "peer-review-18d6eb19706e",
+  "plan_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/plan-to-pr-codex-adaptation-evaluation_plan.md",
+  "plan_sha256": "7f32b549dabfe60b9f67f2f3b45d7423ea33d683651a566f195d7f67e4f03e47",
+  "mode": "advisory-challenge",
+  "sidecar_dir": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/_advisory-reviews",
+  "engine": "Claude",
+  "requested_engine": "opposite",
+  "origin_runtime": "codex",
+  "engine_policy": "opposite_preferred",
+  "resolved_primary_engine": "claude",
+  "preferred_engine": "claude",
+  "fallback_engine": null,
+  "final_engine": "claude",
+  "reviewer_match": "opposite",
+  "gate_quality": "preferred",
+  "artifact_role": "canonical",
+  "canonical_sidecar_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/_advisory-reviews/plan-to-pr-codex-adaptation-evaluation_plan-peer-review.json",
+  "fallback_used": false,
+  "fallback_reason": null,
+  "attempt_chain": [
+    {
+      "engine": "claude",
+      "phase": "primary",
+      "attempt": 1,
+      "timeout_seconds": 300,
+      "result": "completed",
+      "elapsed_seconds": 239.674,
+      "returncode": 0
+    }
+  ],
+  "model": "claude-opus-4-6",
+  "verdict": null,
+  "stance": "supportive",
+  "issues_count": 6,
+  "ran_at": "2026-04-20T09:20:00.802049+00:00",
+  "raw_review_excerpt": "The plan is well-grounded: the core diagnosis (implement-tasks line 45 forces Claude via model-name inference) is verified in code, the proposed fix (workflow-level `provider: codex` + `modelReasoningEffort: xhigh`) aligns with existing schema and the piv-loop-codex precedent, and the phase-gated rollout is responsible. Main gaps: incomplete command enumeration (6 of ~14 classified), no transfer-rules distinguishing interactive piv-loop patterns from autonomous plan-to-pr, and a few missing validation guards.\n\nIssues:\n- 1. [WARN] Incomplete command classification\n- 2. [WARN] Interactive-vs-autonomous pattern transfer not specified\n- 3. [WARN] Per-node model string can override workflow-level provider\n- 4. [NOTE] xhigh reasoning effort has no enforcement guard\n- 5. [NOTE] Bundle generator not named in Phase 4\n- 6. [NOTE] Plan/artifact path convention (.claude/) not addressed",
+  "error": null,
+  "closure_verification": "No prior rounds to verify.",
+  "prior_round_closure": [],
+  "rerun_recommendation": "stop",
+  "review": {
+    "mode": "advisory-challenge",
+    "summary": "The plan is well-grounded: the core diagnosis (implement-tasks line 45 forces Claude via model-name inference) is verified in code, the proposed fix (workflow-level `provider: codex` + `modelReasoningEffort: xhigh`) aligns with existing schema and the piv-loop-codex precedent, and the phase-gated rollout is responsible. Main gaps: incomplete command enumeration (6 of ~14 classified), no transfer-rules distinguishing interactive piv-loop patterns from autonomous plan-to-pr, and a few missing validation guards.",
+    "rubric_cards": [
+      {
+        "title": "Claim anchoring",
+        "anchor": "archon-plan-to-pr.yaml:45, model-validation.ts:15-24, dag-node.ts:167, workflow.ts:20-34, archon-piv-loop-codex.yaml:31-32",
+        "claim": "Core claims are grounded: Claude model leak exists, provider/modelReasoningEffort fields are valid at workflow level, piv-loop-codex precedent exists with matching pattern",
+        "evidence": "archon-plan-to-pr.yaml line 45 shows `model: claude-opus-4-6[1m]`; inferProviderFromModel iterates built-in registrations and returns matching provider; workflowBaseSchema accepts optional provider + modelReasoningEffort; archon-piv-loop-codex.yaml lines 31-32 set `provider: codex` and `modelReasoningEffort: xhigh`",
+        "disposition": "PRESENT \u2014 all load-bearing claims verified against repo sources"
+      },
+      {
+        "title": "Disposition matrix",
+        "anchor": "plan variant table vs baseline YAML node list",
+        "claim": "Plan classifies 6 commands as needing Codex variants; baseline workflow has ~14 distinct commands/nodes; remaining 8+ are unclassified",
+        "evidence": "Baseline nodes: plan-setup, confirm-plan, implement-tasks, validate, compose-finalize-pr, github-pr, review-scope, sync, code-review, error-handling, test-coverage, comment-quality, docs-impact, synthesize, implement-fixes, workflow-summary. Plan variant table covers: implement-tasks, pr-review-scope, code-review-agent, docs-impact-agent, implement-review-fixes, workflow-summary. Missing from classification: plan-setup, confirm-plan, validate, compose-finalize-pr, github-pr, sync, error-handling, test-coverage, comment-quality, synthesize.",
+        "disposition": "PARTIAL \u2014 variant table is incomplete; 'keep command set mostly unchanged where provider-neutral' is not enumerated"
+      },
+      {
+        "title": "Coverage scope",
+        "anchor": "plan document + 5 repo files inspected",
+        "claim": "Review covered the plan artifact, baseline workflow YAML, piv-loop-codex YAML, model-validation.ts, dag-node.ts schema, workflow.ts schema, bundled-defaults.test.ts, and archon-implement-tasks.md command. Did NOT inspect all ~14 baseline command prompt files for Claude-specific language.",
+        "evidence": "Only archon-implement-tasks.md was read among commands; remaining commands were not inspected for Claude-branded wording or TodoWrite references",
+        "disposition": "SLICE-ONLY \u2014 baseline command content not fully audited"
+      }
+    ],
+    "disposition_matrix": {
+      "rows": [
+        "artifact",
+        "conversation",
+        "campaign"
+      ],
+      "columns": [
+        "present",
+        "partial",
+        "missing"
+      ],
+      "cells": [
+        [
+          "core diagnosis, schema alignment, phase gates, evaluation isolation design",
+          "command enumeration (6/14), xhigh enforcement guard, bundle generator naming",
+          "interactive-vs-autonomous transfer rules, per-node provider-leak guard spec"
+        ],
+        [
+          "n/a",
+          "n/a",
+          "no conversation evidence used"
+        ],
+        [
+          "piv-loop-codex precedent verified, baseline workflow structure verified",
+          "only 1 of ~14 command prompts inspected",
+          "remaining command prompts not audited for Claude-specific language"
+        ]
+      ]
+    },
+    "conversation_evidence": {
+      "used": false,
+      "sources": [],
+      "summary": "No conversation or thread evidence was used. Review is based entirely on the plan artifact and directly inspected repo files.",
+      "gaps": [
+        "If prior conversation established command-by-command triage decisions, those are not reflected here"
+      ]
+    },
+    "campaign_coverage": {
+      "scope": "slice-only",
+      "covered": [
+        "Plan artifact text",
+        "archon-plan-to-pr.yaml (full baseline workflow)",
+        "archon-piv-loop-codex.yaml (full Codex precedent workflow)",
+        "model-validation.ts (provider inference logic)",
+        "dag-node.ts + workflow.ts (schema for provider/modelReasoningEffort fields)",
+        "bundled-defaults.test.ts (bundle completeness test)",
+        "archon-implement-tasks.md (one baseline command)"
+      ],
+      "missing": [
+        "~13 remaining baseline command prompt files (.archon/commands/defaults/)",
+        "Provider registry entries (isModelCompatible implementations)",
+        "Codex executor path (how provider: codex is dispatched at runtime)",
+        "Existing archon-piv-loop-codex command variants if any"
+      ],
+      "gaps": [
+        "Cannot confirm which of the unclassified commands contain Claude-specific language",
+        "Cannot confirm runtime behavior when workflow-level provider: codex conflicts with a node-level Claude model string"
+      ]
+    },
+    "issues": [
+      {
+        "title": "Incomplete command classification",
+        "details": "The variant table names 6 commands needing Codex adaptations, but the baseline workflow has ~14 distinct command/script nodes. The remaining nodes (plan-setup, confirm-plan, validate, compose-finalize-pr, github-pr, sync, error-handling, test-coverage, comment-quality, synthesize) are implicitly assumed provider-neutral without verification. Several of these (e.g., confirm-plan, synthesize, error-handling) likely contain Claude-flavored prompt language that could leak assumptions.",
+        "suggested_fix": "Add a full command classification table: every baseline node \u2192 provider-neutral | requires-codex-variant | script/removed. Verify each by grepping for Claude-specific language.",
+        "severity": "WARN"
+      },
+      {
+        "title": "Interactive-vs-autonomous pattern transfer not specified",
+        "details": "The plan uses archon-piv-loop-codex as a 'pattern library' but that workflow is interactive (loop nodes, gate_message, <promise> signal contracts). archon-plan-to-pr is autonomous. The plan never specifies which patterns transfer and which don't. Risk: signal contracts or interactive gate patterns copy-pasted into autonomous nodes where they have no effect.",
+        "suggested_fix": "Add a short section: 'Transfer from piv-loop-codex: prompt discipline, per-file staging, stop discipline. Do NOT transfer: signal contracts, gate_message, interactive loop structures.'",
+        "severity": "WARN"
+      },
+      {
+        "title": "Per-node model string can override workflow-level provider",
+        "details": "model-validation.ts:15-24 shows inferProviderFromModel iterates built-in registrations first. If any Codex workflow node accidentally retains a Claude model string (e.g., from copy-paste), the inference will route that node to Claude despite workflow-level provider: codex. The plan's Phase 2 grep check partially addresses this, but Phase 3 ('runtime guardrails') should include an explicit validation rule: no node in the Codex workflow may have a model string that infers to a non-Codex provider.",
+        "suggested_fix": "Add to Phase 2/3 verification: `rg 'model:' archon-plan-to-pr-codex.yaml | grep -v codex` plus a note that workflow validation should warn when node model inference contradicts workflow provider.",
+        "severity": "WARN"
+      },
+      {
+        "title": "xhigh reasoning effort has no enforcement guard",
+        "details": "Plan says 'keep reasoning effort at xhigh' but doesn't specify whether validation must assert no node silently downgrades it. Per-node modelReasoningEffort can override workflow-level default (dag-node.ts:167).",
+        "suggested_fix": "Add to Phase 2 verification: `rg 'modelReasoningEffort:' archon-plan-to-pr-codex.yaml` \u2014 only the workflow-level xhigh should appear; no per-node overrides unless explicitly justified.",
+        "severity": "NOTE"
+      },
+      {
+        "title": "Bundle generator not named in Phase 4",
+        "details": "Phase 4 says 'regenerate bundled defaults' but doesn't name the generator script (scripts/generate-bundled-defaults.ts) or the check command (bun run check:bundled). The bundled-defaults test will fail without regeneration.",
+        "suggested_fix": "Phase 4 should include: `bun run scripts/generate-bundled-defaults.ts` followed by `bun run check:bundled` before running the test.",
+        "severity": "NOTE"
+      },
+      {
+        "title": "Plan/artifact path convention (.claude/) not addressed",
+        "details": "archon-piv-loop-codex writes plans to .claude/archon/plans/ (Claude-branded path). The plan covers CLAUDE.md vs AGENTS.md compatibility but is silent on whether artifact paths should change for the Codex workflow. Likely non-blocking since plan-to-pr consumes an existing plan via $ARTIFACTS_DIR, but docs-impact and review artifacts may still reference .claude/ paths.",
+        "suggested_fix": "Add a note acknowledging .claude/ artifact paths are inherited repo convention, not Claude-provider-specific, and do not need renaming for the Codex workflow.",
+        "severity": "NOTE"
+      }
+    ],
+    "verification_gaps": [
+      "Runtime behavior when workflow-level `provider: codex` conflicts with a node-level model string that infers to Claude \u2014 need to trace the executor dispatch path",
+      "Content of ~13 uninspected baseline command prompts for Claude-specific language, TodoWrite references, or Claude-branded compliance wording",
+      "Whether Codex executor respects modelReasoningEffort: xhigh in practice (runtime verification, not schema)",
+      "Whether archon-piv-loop-codex has its own command variants already that could be reused"
+    ],
+    "recommended_fixes": [
+      "Add a full command classification table (all ~14 baseline nodes \u2192 provider-neutral / codex-variant / script)",
+      "Add transfer-rules section distinguishing interactive piv-loop patterns from autonomous plan-to-pr patterns",
+      "Add per-node model-string guard to Phase 2/3 verification (grep for non-Codex model strings in new workflow)",
+      "Name the bundle generator script explicitly in Phase 4",
+      "Add a note that .claude/ artifact paths are repo convention, not provider-specific"
+    ],
+    "evidence_sources": [
+      "archon-plan-to-pr.yaml (full file, lines 1-132)",
+      "archon-piv-loop-codex.yaml (full file, lines 1-1098+)",
+      "model-validation.ts (full file, lines 1-42)",
+      "dag-node.ts (lines 1-200, schema definitions)",
+      "workflow.ts (lines 1-51, workflow schema)",
+      "bundled-defaults.test.ts (lines 1-80)",
+      "archon-implement-tasks.md (lines 1-50)",
+      "CLAUDE.md (lines 1-100)"
+    ],
+    "error": null,
+    "stance": "supportive",
+    "best_case": "The core direction is solid and code-verified. If the enumeration gaps are filled (full command classification, transfer rules, model-string guard), this plan produces a clean Codex-native workflow with no Claude provider leaks, an honest relationship to CLAUDE.md, and a rigorous side-by-side evaluation design. The phase-gated approach means each step is independently verifiable before the comparative evaluation run, which is the right sequencing for a first Codex plan-to-PR lane.",
+    "strongest_objections": [
+      "The variant table covers only 6 of ~14 baseline nodes. Without classifying all commands, Phase 2 scope is unbounded and silent Claude assumptions could leak through unclassified commands like confirm-plan, validate, synthesize, error-handling, test-coverage, and comment-quality.",
+      "inferProviderFromModel (model-validation.ts:15-24) means a per-node Claude model string will override workflow-level provider: codex. The plan's static grep partially catches this, but there is no proposed runtime or validation-time guard against provider inference contradicting the workflow provider.",
+      "The piv-loop-codex 'pattern library' is an interactive workflow with signal contracts and gate messages; plan-to-pr is autonomous. Without explicit transfer rules, there is risk of copying interactive patterns into autonomous nodes where they are inert or confusing."
+    ],
+    "hidden_assumptions": [
+      "All unclassified baseline commands (plan-setup, confirm-plan, validate, compose-finalize-pr, sync, error-handling, test-coverage, comment-quality, synthesize) are assumed provider-neutral without verification",
+      "Workflow-level provider: codex is assumed to prevent all Claude routing, but model-validation.ts shows per-node model strings can override this via built-in provider inference",
+      "archon-piv-loop-codex patterns are assumed transferable to an autonomous workflow without acknowledging the interactive/autonomous structural difference",
+      ".claude/ artifact paths are inherited as repo convention but never explicitly acknowledged as provider-independent",
+      "The Codex executor is assumed to respect modelReasoningEffort: xhigh in practice (schema acceptance \u2260 runtime behavior)"
+    ],
+    "what_would_change_my_mind": "If inspecting the remaining ~13 baseline command prompts revealed that most contain deep Claude-specific language (TodoWrite, Claude model references, CLAUDE.md-as-compliance-surface framing), the scope of Phase 2 would be significantly larger than the plan implies, and the 6-command variant table would be materially misleading. That would move the incomplete-enumeration issue from WARN to BLOCK because Phase 2 effort would be unbounded. Conversely, if most commands are genuinely provider-neutral prompts, the current plan is close to ready as-is.",
+    "next_checks": [
+      "Grep all ~14 baseline command prompts for Claude-specific language: `rg -l 'TodoWrite|Claude|claude|CLAUDE.md|sonnet|opus|haiku' .archon/commands/defaults/`",
+      "Trace the executor dispatch path to confirm whether workflow-level provider: codex prevents per-node model inference from routing to Claude",
+      "Check whether archon-piv-loop-codex has its own command variants in .archon/commands/defaults/ that could be reused",
+      "Verify Codex runtime actually honors modelReasoningEffort: xhigh (may need a smoke test)",
+      "Inspect the provider registry to understand isModelCompatible behavior for edge cases"
+    ],
+    "prior_round_closure": [],
+    "closure_verification": "No prior rounds to verify.",
+    "rerun_recommendation": "stop"
+  }
+}

@@ -1,0 +1,198 @@
+{
+  "schema_version": "peer-review-v1",
+  "review_id": "peer-review-ec580845d4ab",
+  "plan_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/plan-to-pr-codex-adaptation_plan.md",
+  "plan_sha256": "bb15639f57315b5e3361617077faac6caa2319f93c7d254996dda46bae431423",
+  "mode": "advisory-challenge",
+  "sidecar_dir": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/_advisory-reviews",
+  "engine": "Claude",
+  "requested_engine": "opposite",
+  "origin_runtime": "codex",
+  "engine_policy": "opposite_preferred",
+  "resolved_primary_engine": "claude",
+  "preferred_engine": "claude",
+  "fallback_engine": null,
+  "final_engine": "claude",
+  "reviewer_match": "opposite",
+  "gate_quality": "preferred",
+  "artifact_role": "canonical",
+  "canonical_sidecar_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/_advisory-reviews/plan-to-pr-codex-adaptation_plan-peer-review.json",
+  "fallback_used": false,
+  "fallback_reason": null,
+  "attempt_chain": [
+    {
+      "engine": "claude",
+      "phase": "primary",
+      "attempt": 1,
+      "timeout_seconds": 300,
+      "result": "timeout",
+      "elapsed_seconds": 300.4
+    },
+    {
+      "engine": "claude",
+      "phase": "primary",
+      "attempt": 2,
+      "timeout_seconds": 600,
+      "result": "completed",
+      "elapsed_seconds": 291.654,
+      "returncode": 0
+    }
+  ],
+  "model": "claude-opus-4-6",
+  "verdict": null,
+  "stance": "supportive",
+  "issues_count": 3,
+  "ran_at": "2026-04-20T10:12:18.294794+00:00",
+  "raw_review_excerpt": "The plan is well-grounded and implementation-ready. All closure fixes from the prior round are verified against code: Phase 1 scaffolds command files before validation (validator.ts:289-304 would otherwise error), Phase 2 grep patterns are reproducible and provider-neutral, workflow-summary is correctly classified as provider-neutral (only mentions CLAUDE.md in example doc rows), and Phase 3 correctly targets validator.ts + validator.test.ts with error-level output. No blocker remains. Three low-severity items around spec completeness warrant attention but don't gate implementation.\n\nIssues:\n- 1. [NOTE] Phase 1 does not explicitly enumerate the 6 command files to scaffold\n- 2. [NOTE] Phase 3 validator rule does not specify explicit provider: <other> on a Codex workflow node\n- 3. [NOTE] model: inherit edge case is not called out",
+  "error": null,
+  "closure_verification": "No prior-round packet was provided. Closure items are inferred from the review focus description: (1) Phase 1 scaffolds command files before validation \u2014 verified, validator.ts:289-304 errors on missing commands; (2) Phase 2 grep is reproducible and provider-neutral \u2014 verified, patterns target specific strings; (3) workflow-summary disposition resolved \u2014 verified, archon-workflow-summary.md mentions CLAUDE.md only in example table rows; (4) Phase 3 validator error behavior \u2014 verified, makeWorkflowResult at validator.ts:69 uses level !== 'error' to determine validity.",
+  "prior_round_closure": [],
+  "rerun_recommendation": "stop",
+  "review": {
+    "mode": "advisory-challenge",
+    "summary": "The plan is well-grounded and implementation-ready. All closure fixes from the prior round are verified against code: Phase 1 scaffolds command files before validation (validator.ts:289-304 would otherwise error), Phase 2 grep patterns are reproducible and provider-neutral, workflow-summary is correctly classified as provider-neutral (only mentions CLAUDE.md in example doc rows), and Phase 3 correctly targets validator.ts + validator.test.ts with error-level output. No blocker remains. Three low-severity items around spec completeness warrant attention but don't gate implementation.",
+    "rubric_cards": [
+      {
+        "title": "Claim anchoring",
+        "anchor": "artifact + code files",
+        "claim": "Plan claims are grounded in verified code surfaces",
+        "evidence": "Hard blocker (model: claude-opus-4-6[1m]) confirmed at archon-plan-to-pr.yaml:45. inferProviderFromModel exists at model-validation.ts:15, used at dag-executor.ts:283. Provider inference logic at registry.ts:115-133 confirms Claude model names leak provider. Validator has no model/provider conflict check (validator.ts:249-488). workflow-summary.md mentions CLAUDE.md only in illustrative table rows (lines 137, 181, 209), not compliance wording.",
+        "disposition": "present \u2014 all load-bearing claims verified against primary sources"
+      },
+      {
+        "title": "Disposition matrix",
+        "anchor": "3x3 matrix",
+        "claim": "Evidence coverage across artifact, conversation, and campaign",
+        "evidence": "Artifact: fully inspected plan text. Conversation: re-review context (closure fixes) is the only thread context; no additional conversation evidence beyond the plan itself. Campaign: only this plan was inspected; broader Archon workflow campaign not assessed.",
+        "disposition": "see matrix below"
+      },
+      {
+        "title": "Coverage scope",
+        "anchor": "scope declaration",
+        "claim": "Review covered the artifact plus 5 directly relevant code files",
+        "evidence": "Files inspected: archon-plan-to-pr.yaml, archon-piv-loop-codex.yaml, validator.ts, validator.test.ts, model-validation.ts, registry.ts, dag-executor.ts, archon-implement-tasks.md, archon-workflow-summary.md. This covers the plan's primary code claims. Not inspected: the 6 individual command files that would become *-codex variants, bundled-defaults machinery, or archon-plan-setup.md through archon-synthesize-review.md for independent Claude-wording verification.",
+        "disposition": "partial \u2014 core claims grounded, command-level audit deferred to Phase 2 execution"
+      }
+    ],
+    "disposition_matrix": {
+      "rows": [
+        "artifact",
+        "conversation",
+        "campaign"
+      ],
+      "columns": [
+        "present",
+        "partial",
+        "missing"
+      ],
+      "cells": [
+        [
+          "provider leak, validator gap, Phase ordering",
+          "command-file classification (grep-based)",
+          "none"
+        ],
+        [
+          "closure context used",
+          "no prior-round packet to verify against",
+          "none"
+        ],
+        [
+          "this plan only",
+          "broader Archon workflow campaign",
+          "other plan-to-PR variants"
+        ]
+      ]
+    },
+    "conversation_evidence": {
+      "used": true,
+      "sources": [
+        "re-review framing: closure fixes for Phase 1 scaffolding, Phase 2 grep, workflow-summary, Phase 3 validator behavior"
+      ],
+      "summary": "The re-review framing establishes that three specific closure items were addressed. All three are verified: Phase 1 now creates command files before validation (matches validator.ts error behavior at line 289-304); Phase 2 grep is reproducible and provider-neutral; workflow-summary classification is correct (CLAUDE.md appears only in example rows).",
+      "gaps": [
+        "No prior-round packet was provided for formal closure verification \u2014 closure items are taken from the plan's own description of what changed"
+      ]
+    },
+    "campaign_coverage": {
+      "scope": "slice-only",
+      "covered": [
+        "plan-to-pr-codex-adaptation_plan.md artifact",
+        "archon-plan-to-pr.yaml baseline workflow",
+        "validator.ts and validator.test.ts validation surface",
+        "model-validation.ts inference logic",
+        "registry.ts provider compatibility definitions",
+        "dag-executor.ts runtime provider resolution"
+      ],
+      "missing": [
+        "Individual command file content for the 6 planned *-codex variants",
+        "archon-piv-loop-codex.yaml full PIV pattern comparison",
+        "Bundled defaults generation and test machinery"
+      ],
+      "gaps": [
+        "Command-level Claude-wording audit is deferred to Phase 2 execution, not verified here",
+        "No visibility into whether other Archon workflows have similar provider-escape risks"
+      ]
+    },
+    "issues": [
+      {
+        "title": "Phase 1 does not explicitly enumerate the 6 command files to scaffold",
+        "details": "The classification table identifies 6 nodes needing *-codex command variants (implement-tasks, pr-review-scope, code-review-agent, error-handling-agent, docs-impact-agent, implement-review-fixes), but Phase 1 only says 'create the required *-codex.md command files' without listing them. Derivable from the table, but the table and Phase 1 could drift independently.",
+        "suggested_fix": "Add an explicit file list to Phase 1 referencing the classification table rows, or add a cross-reference note.",
+        "severity": "NOTE"
+      },
+      {
+        "title": "Phase 3 validator rule does not specify explicit provider: <other> on a Codex workflow node",
+        "details": "Phase 3 specifies catching inference-based leaks (node model string infers non-Codex provider). It does not state whether a node with explicit provider: claude inside a provider: codex workflow should also be an error. This may be intentional (explicit cross-provider nodes could be valid), but the plan doesn't say.",
+        "suggested_fix": "Add one sentence clarifying whether explicit cross-provider node overrides are in-scope or intentionally excluded from this rule.",
+        "severity": "NOTE"
+      },
+      {
+        "title": "model: inherit edge case is not called out",
+        "details": "registry.ts:117 maps 'inherit' to Claude and registry.ts:129 excludes it from Codex. inferProviderFromModel('inherit', 'codex') returns 'claude', which the proposed validator rule would catch. But 'inherit' is a non-obvious model value that the plan doesn't mention. If a future command accidentally uses model: inherit, the validator would correctly reject it \u2014 but implementers should know this edge case exists.",
+        "suggested_fix": "Add 'inherit' to the Phase 3 test cases in validator.test.ts alongside claude-opus-4-6 as a documented edge case.",
+        "severity": "NOTE"
+      }
+    ],
+    "verification_gaps": [
+      "The 6 individual command files (archon-implement-tasks.md, archon-pr-review-scope.md, archon-code-review-agent.md, archon-error-handling-agent.md, archon-docs-impact-agent.md, archon-implement-review-fixes.md) were not read to independently verify Claude-wording classification \u2014 the plan's grep-based audit in Phase 2 is the verification point",
+      "Bundled defaults generation (bun run generate:bundled, check:bundled) was not tested \u2014 Phase 4 verification commands are taken on spec",
+      "No smoke run evidence exists yet \u2014 Phase 5 is future work by design"
+    ],
+    "recommended_fixes": [
+      "Add explicit file list to Phase 1 matching the 6 *-codex rows in the classification table",
+      "Clarify Phase 3 scope: does the validator rule apply only to inference-based leaks, or also to explicit cross-provider node overrides?",
+      "Add model: inherit as a documented edge case in Phase 3 test coverage"
+    ],
+    "evidence_sources": [
+      "archon-plan-to-pr.yaml:45 (model: claude-opus-4-6[1m])",
+      "model-validation.ts:15-24 (inferProviderFromModel)",
+      "dag-executor.ts:283 (runtime provider resolution)",
+      "registry.ts:115-133 (isModelCompatible for Claude and Codex)",
+      "validator.ts:249-488 (validateWorkflowResources \u2014 no model/provider conflict check)",
+      "validator.test.ts:1-280 (existing test structure)",
+      "archon-workflow-summary.md:137,181,209 (CLAUDE.md in example rows only)"
+    ],
+    "error": null,
+    "stance": "supportive",
+    "best_case": "The plan delivers a clean Codex-native workflow that statically validates, catches provider escape at validation time (not just runtime), and ships without touching the Claude baseline. The classification table is accurate, the phasing is correct, and the validator extension fills a real gap that protects all future Codex workflows \u2014 not just this one.",
+    "strongest_objections": [
+      "The plan relies on grep-based audits (Phase 2) as the primary evidence for provider-neutral classification, which is fragile against false negatives if Claude assumptions are expressed in natural language rather than keywords \u2014 but this is acknowledged by the 're-confirm every provider-neutral command' instruction",
+      "Phase 3 extends the validator for a specific scenario (model-inferred provider \u2260 workflow provider) without specifying whether the broader case (explicit cross-provider overrides) is intentionally in or out of scope",
+      "The plan creates 6 new command files as 'mechanical copies with obvious Claude-provider wording removed' which risks subtle prompt quality issues that only surface at runtime \u2014 but Phase 5 smoke run is designed to catch exactly this"
+    ],
+    "hidden_assumptions": [
+      "Claude's isModelCompatible iterates first in getRegisteredProviders() \u2014 if registration order changes, inferProviderFromModel could return different results",
+      "The plan assumes Codex provider capabilities won't gain MCP/hooks/skills support before implementation \u2014 if they do, some classification decisions change",
+      "'Mechanical copies with wording removed' assumes the command prompts are mostly provider-neutral already \u2014 if the prompt logic deeply depends on Claude-specific behavior (tool use patterns, output formatting), the copies may need more than wording changes"
+    ],
+    "what_would_change_my_mind": "If reading the actual command files for the 6 planned *-codex variants revealed that their prompts deeply depend on Claude-specific tool behaviors (TodoWrite, multi-turn tool chaining, specific output parsing) rather than just containing Claude-branded wording, the mechanical-copy approach in Phase 1 would be insufficient and the phasing would need restructuring. A single read of archon-implement-tasks.md (already done, lines 1-60) suggests the prompts are mostly procedural, which supports the plan's approach.",
+    "next_checks": [
+      "Read the remaining 5 command files (pr-review-scope, code-review-agent, error-handling-agent, docs-impact-agent, implement-review-fixes) to verify the classification table before implementation",
+      "Confirm that getRegisteredProviders() iteration order is deterministic (Map insertion order in JS) so inferProviderFromModel behaves predictably",
+      "Run the Phase 2 grep patterns against the current command files to establish the pre-implementation baseline"
+    ],
+    "prior_round_closure": [],
+    "closure_verification": "No prior-round packet was provided. Closure items are inferred from the review focus description: (1) Phase 1 scaffolds command files before validation \u2014 verified, validator.ts:289-304 errors on missing commands; (2) Phase 2 grep is reproducible and provider-neutral \u2014 verified, patterns target specific strings; (3) workflow-summary disposition resolved \u2014 verified, archon-workflow-summary.md mentions CLAUDE.md only in example table rows; (4) Phase 3 validator error behavior \u2014 verified, makeWorkflowResult at validator.ts:69 uses level !== 'error' to determine validity.",
+    "rerun_recommendation": "stop"
+  }
+}

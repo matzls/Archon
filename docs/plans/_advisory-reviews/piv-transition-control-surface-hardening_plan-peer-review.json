@@ -1,0 +1,42 @@
+{
+  "schema_version": "peer-review-v1",
+  "review_id": "peer-review-0a90b2cce6e5",
+  "plan_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/piv-transition-control-surface-hardening_plan.md",
+  "plan_sha256": "46f0149bf9b17512abe3acfe58032ef99e87e2e7c4750c5f9942017d8cfbe207",
+  "mode": "advisory-challenge",
+  "sidecar_dir": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/_advisory-reviews",
+  "engine": "GPT",
+  "requested_engine": "codex",
+  "origin_runtime": "codex",
+  "engine_policy": "explicit",
+  "resolved_primary_engine": "codex",
+  "preferred_engine": "codex",
+  "fallback_engine": null,
+  "final_engine": "codex",
+  "reviewer_match": "same_model_fallback",
+  "gate_quality": "preferred",
+  "artifact_role": "canonical",
+  "canonical_sidecar_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/_advisory-reviews/piv-transition-control-surface-hardening_plan-peer-review.json",
+  "fallback_used": false,
+  "fallback_reason": null,
+  "attempt_chain": [
+    {
+      "engine": "codex",
+      "phase": "primary",
+      "result": "process_failure",
+      "returncode": 1,
+      "error": "Reading additional input from stdin...\n2026-04-19T19:32:21.115648Z  WARN codex_features: unknown feature key in config: voice_transcription\n2026-04-19T19:32:21.120944Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path must not contain '..'\n2026-04-19T19:32:21.120950Z  WARN codex_core_skills::loader: ignoring interface.icon_large: icon path must not contain '..'\n2026-04-19T19:32:21.121236Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path must not contain '..'\n2026-04-19T19:32:21.121239Z  WARN codex_core_skills::loader: ignoring interface.icon_large: icon path must not contain '..'\n2026-04-19T19:32:21.121533Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path must not contain '..'\n2026-04-19T19:32:21.121538Z  WARN codex_\u2026"
+    }
+  ],
+  "model": "codex",
+  "verdict": "Failed-to-run",
+  "issues_count": 0,
+  "ran_at": "2026-04-19T19:32:30.073649+00:00",
+  "raw_review_excerpt": "Reading additional input from stdin...\n2026-04-19T19:32:21.115648Z  WARN codex_features: unknown feature key in config: voice_transcription\n2026-04-19T19:32:21.120944Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path must not contain '..'\n2026-04-19T19:32:21.120950Z  WARN codex_core_skills::loader: ignoring interface.icon_large: icon path must not contain '..'\n2026-04-19T19:32:21.121236Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path must not contain '..'\n2026-04-19T19:32:21.121239Z  WARN codex_core_skills::loader: ignoring interface.icon_large: icon path must not contain '..'\n2026-04-19T19:32:21.121533Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path must not contain '..'\n2026-04-19T19:32:21.121538Z  WARN codex_core_skills::loader: ignoring interface.icon_large: icon path must not contain '..'\n2026-04-19T19:32:21.121861Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path must not contain '..'\n2026-04-19T19:32:21.121863Z  WARN codex_core_skills::loader: ignoring interface.icon_large: icon path must not contain '..'\n2026-04-19T19:32:21.122186Z  WARN codex_core_skills::loader: ignorin\u2026",
+  "error": "Reading additional input from stdin...\n2026-04-19T19:32:21.115648Z  WARN codex_features: unknown feature key in config: voice_transcription\n2026-04-19T19:32:21.120944Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path must not contain '..'\n2026-04-19T19:32:21.120950Z  WARN codex_core_skills::loader: ignoring interface.icon_large: icon path must not contain '..'\n2026-04-19T19:32:21.121236Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path must not contain '..'\n2026-04-19T19:32:21.121239Z  WARN codex_core_skills::loader: ignoring interface.icon_large: icon path must not contain '..'\n2026-04-19T19:32:21.121533Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path must not contain '..'\n2026-04-19T19:32:21.121538Z  WARN codex_\u2026",
+  "failure_family": "process_failure",
+  "recovery_steps": [
+    "Peer review failed to run (Codex). Recovery: verify Codex auth/runtime health and retry with a narrower focus if needed."
+  ],
+  "next_action": "Peer review failed to run (Codex). Recovery: verify Codex auth/runtime health and retry with a narrower focus if needed."
+}
