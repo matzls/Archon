@@ -9,6 +9,7 @@ import {
   RESUMABLE_WORKFLOW_STATUSES,
   TERMINAL_WORKFLOW_STATUSES,
   getPausedApprovalContext,
+  getPausedOutputPreview,
   matchesInteractiveLoopCompletionInput,
 } from '@archon/workflows/schemas/workflow-run';
 import type { WorkflowRun } from '@archon/workflows/schemas/workflow-run';
@@ -156,12 +157,13 @@ export async function approveWorkflow(
     if (approval.type === 'interactive_loop') {
       const completesLoop = matchesInteractiveLoopCompletionInput(approval, approvalComment);
       if (completesLoop) {
+        const pausedOutputPreview = getPausedOutputPreview(approval);
         await workflowEventDb.createWorkflowEvent({
           workflow_run_id: runId,
           event_type: 'node_completed',
           step_name: approval.nodeId,
           data: {
-            node_output: approval.lastOutput ?? '',
+            node_output: pausedOutputPreview?.text ?? '',
             approval_decision: 'approved',
             loop_completion_input: approvalComment,
           },
