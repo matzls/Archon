@@ -7,77 +7,18 @@ import { approveWorkflowRun, getWorkflowRunByWorker, rejectWorkflowRun } from '@
 import { useWorkflowStore } from '@/stores/workflow-store';
 import { StatusIcon } from '@/components/workflows/StatusIcon';
 import { formatDurationMs } from '@/lib/format';
-import { isTerminalStatus } from '@/lib/workflow-utils';
+import {
+  buildWorkflowExecutionPath,
+  getPausedOutputPreview,
+  isTerminalStatus,
+  parseWorkflowApproval,
+  shouldShowFullPausedOutputAction,
+} from '@/lib/workflow-utils';
 import type { DagNodeState } from '@/lib/types';
 
 interface WorkflowProgressCardProps {
   workflowName: string;
   workerConversationId: string;
-}
-
-interface PausedApprovalDetails {
-  message: string;
-  lastOutput?: string;
-  lastOutputTruncated?: boolean;
-  finalAssistantOutput?: string;
-  finalAssistantOutputTruncated?: boolean;
-}
-
-function parsePausedApproval(value: unknown): PausedApprovalDetails | null {
-  if (!value || typeof value !== 'object') {
-    return null;
-  }
-
-  const candidate = value as Record<string, unknown>;
-  if (typeof candidate.message !== 'string') {
-    return null;
-  }
-
-  return {
-    message: candidate.message,
-    lastOutput: typeof candidate.lastOutput === 'string' ? candidate.lastOutput : undefined,
-    lastOutputTruncated:
-      typeof candidate.lastOutput === 'string' && typeof candidate.lastOutputTruncated === 'boolean'
-        ? candidate.lastOutputTruncated
-        : undefined,
-    finalAssistantOutput:
-      typeof candidate.finalAssistantOutput === 'string'
-        ? candidate.finalAssistantOutput
-        : undefined,
-    finalAssistantOutputTruncated:
-      typeof candidate.finalAssistantOutput === 'string' &&
-      typeof candidate.finalAssistantOutputTruncated === 'boolean'
-        ? candidate.finalAssistantOutputTruncated
-        : undefined,
-  };
-}
-
-function getPausedOutputPreview(
-  approval: PausedApprovalDetails | null
-): { text: string; truncated: boolean } | null {
-  if (!approval) {
-    return null;
-  }
-
-  const finalAssistantOutput = approval.finalAssistantOutput?.trim() ?? '';
-  if (finalAssistantOutput.length > 0) {
-    return {
-      text: finalAssistantOutput,
-      truncated:
-        approval.finalAssistantOutputTruncated ??
-        finalAssistantOutput.trimEnd().endsWith('[truncated]'),
-    };
-  }
-
-  const lastOutput = approval.lastOutput?.trim() ?? '';
-  if (lastOutput.length === 0) {
-    return null;
-  }
-
-  return {
-    text: lastOutput,
-    truncated: approval.lastOutputTruncated ?? lastOutput.trimEnd().endsWith('[truncated]'),
-  };
 }
 
 export function WorkflowProgressCard({
@@ -110,10 +51,8 @@ export function WorkflowProgressCard({
   // Merge: prefer live state when available
   const status = liveState?.status ?? restStatus;
   const isPaused = status === 'paused';
-  const restApproval = parsePausedApproval(runData?.run?.metadata.approval);
-  const approval: PausedApprovalDetails | null = isPaused
-    ? (liveState?.approval ?? restApproval)
-    : null;
+  const restApproval = parseWorkflowApproval(runData?.run?.metadata.approval);
+  const approval = isPaused ? (liveState?.approval ?? restApproval) : null;
   const dagNodes: DagNodeState[] = liveState?.dagNodes ?? [];
   const currentTool = liveState?.currentTool ?? null;
   const error = liveState?.error;
@@ -122,6 +61,7 @@ export function WorkflowProgressCard({
   const latestOutput = pausedOutputPreview?.text ?? '';
   const hasLatestOutput = latestOutput.length > 0;
   const isLatestOutputClipped = pausedOutputPreview?.truncated ?? false;
+  const showFullPausedOutputAction = shouldShowFullPausedOutputAction(status, runId, approval);
 
   const completedCount = dagNodes.filter(n => n.status === 'completed').length;
   const totalNodes = dagNodes.length;
@@ -174,10 +114,15 @@ export function WorkflowProgressCard({
 
   const handleViewFullScreen = (): void => {
     if (runId) {
-      navigate(`/workflows/runs/${runId}`);
+      navigate(buildWorkflowExecutionPath(runId));
     } else {
       navigate(`/chat/${encodeURIComponent(workerConversationId)}`);
     }
+  };
+
+  const handleViewFullPausedOutput = (): void => {
+    if (!runId) return;
+    navigate(buildWorkflowExecutionPath(runId, 'logs', true));
   };
 
   // Loading state: no run data yet
@@ -348,12 +293,22 @@ export function WorkflowProgressCard({
 
           {/* Footer: View Full Screen */}
           <div className="border-t border-border px-3 py-1.5">
-            <button
-              onClick={handleViewFullScreen}
-              className="text-[10px] text-primary hover:text-accent-bright transition-colors"
-            >
-              View Full Screen &rarr;
-            </button>
+            <div className="flex items-center gap-3">
+              {showFullPausedOutputAction && (
+                <button
+                  onClick={handleViewFullPausedOutput}
+                  className="text-[10px] text-primary hover:text-accent-bright transition-colors"
+                >
+                  View full paused output &rarr;
+                </button>
+              )}
+              <button
+                onClick={handleViewFullScreen}
+                className="text-[10px] text-primary hover:text-accent-bright transition-colors"
+              >
+                View Full Screen &rarr;
+              </button>
+            </div>
           </div>
         </div>
       )}

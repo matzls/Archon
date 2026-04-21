@@ -22,6 +22,12 @@ import { cn } from '@/lib/utils';
 import { formatDuration } from '@/lib/format';
 import { useWorkflowStore } from '@/stores/workflow-store';
 import type { WorkflowState } from '@/lib/types';
+import {
+  buildWorkflowExecutionPath,
+  getPausedOutputPreview,
+  parseWorkflowApproval,
+  shouldShowFullPausedOutputAction,
+} from '@/lib/workflow-utils';
 import { ConfirmRunActionDialog } from './ConfirmRunActionDialog';
 
 interface WorkflowRunCardProps {
@@ -134,71 +140,6 @@ function NodeCountsSummary({ counts }: { counts: NodeCounts }): React.ReactEleme
   );
 }
 
-interface PausedApprovalDetails {
-  message: string;
-  lastOutput?: string;
-  lastOutputTruncated?: boolean;
-  finalAssistantOutput?: string;
-  finalAssistantOutputTruncated?: boolean;
-}
-
-function parsePausedApproval(value: unknown): PausedApprovalDetails | null {
-  if (typeof value !== 'object' || value === null) {
-    return null;
-  }
-
-  const candidate = value as Record<string, unknown>;
-  if (typeof candidate.message !== 'string') {
-    return null;
-  }
-
-  return {
-    message: candidate.message,
-    lastOutput: typeof candidate.lastOutput === 'string' ? candidate.lastOutput : undefined,
-    lastOutputTruncated:
-      typeof candidate.lastOutput === 'string' && typeof candidate.lastOutputTruncated === 'boolean'
-        ? candidate.lastOutputTruncated
-        : undefined,
-    finalAssistantOutput:
-      typeof candidate.finalAssistantOutput === 'string'
-        ? candidate.finalAssistantOutput
-        : undefined,
-    finalAssistantOutputTruncated:
-      typeof candidate.finalAssistantOutput === 'string' &&
-      typeof candidate.finalAssistantOutputTruncated === 'boolean'
-        ? candidate.finalAssistantOutputTruncated
-        : undefined,
-  };
-}
-
-function getPausedOutputPreview(
-  approval: PausedApprovalDetails | null
-): { text: string; truncated: boolean } | null {
-  if (!approval) {
-    return null;
-  }
-
-  const finalAssistantOutput = approval.finalAssistantOutput?.trim() ?? '';
-  if (finalAssistantOutput.length > 0) {
-    return {
-      text: finalAssistantOutput,
-      truncated:
-        approval.finalAssistantOutputTruncated ??
-        finalAssistantOutput.trimEnd().endsWith('[truncated]'),
-    };
-  }
-
-  const lastOutput = approval.lastOutput?.trim() ?? '';
-  if (lastOutput.length === 0) {
-    return null;
-  }
-
-  return {
-    text: lastOutput,
-    truncated: approval.lastOutputTruncated ?? lastOutput.trimEnd().endsWith('[truncated]'),
-  };
-}
-
 export function WorkflowRunCard({
   run,
   isDocker,
@@ -233,11 +174,12 @@ export function WorkflowRunCard({
       ? run.user_message
       : run.user_message.slice(0, 80) + '…'
     : null;
-  const approval = run.status === 'paused' ? parsePausedApproval(run.metadata?.approval) : null;
+  const approval = run.status === 'paused' ? parseWorkflowApproval(run.metadata?.approval) : null;
   const pausedOutputPreview = getPausedOutputPreview(approval);
   const latestOutput = pausedOutputPreview?.text ?? '';
   const hasLatestOutput = latestOutput.length > 0;
   const isLatestOutputClipped = pausedOutputPreview?.truncated ?? false;
+  const showFullPausedOutputAction = shouldShowFullPausedOutputAction(run.status, run.id, approval);
 
   return (
     <div className="rounded-lg border border-border bg-surface p-4 space-y-3">
@@ -356,9 +298,20 @@ export function WorkflowRunCard({
 
       {/* Actions */}
       <div className="flex flex-wrap items-center gap-2 pt-1">
+        {showFullPausedOutputAction && (
+          <button
+            onClick={(): void => {
+              navigate(buildWorkflowExecutionPath(run.id, 'logs', true));
+            }}
+            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-text-secondary hover:bg-surface-elevated hover:text-text-primary transition-colors"
+          >
+            <FileText className="h-3.5 w-3.5" />
+            View full paused output
+          </button>
+        )}
         <button
           onClick={(): void => {
-            navigate(`/workflows/runs/${run.id}`);
+            navigate(buildWorkflowExecutionPath(run.id));
           }}
           className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-text-secondary hover:bg-surface-elevated hover:text-text-primary transition-colors"
         >
