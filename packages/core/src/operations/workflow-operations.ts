@@ -257,9 +257,12 @@ export async function rejectWorkflow(
     );
   }
   const approval = getPausedApprovalContext(run);
+  if (!approval?.nodeId) {
+    throw new Error('Workflow run is paused but missing approval context.');
+  }
   const rejectReason = reason ?? 'Rejected';
   const currentCount = (run.metadata.rejection_count as number | undefined) ?? 0;
-  const maxAttempts = approval?.onRejectMaxAttempts ?? 3;
+  const maxAttempts = approval.onRejectMaxAttempts ?? 3;
 
   try {
     await workflowEventDb.createWorkflowEvent({
@@ -269,7 +272,7 @@ export async function rejectWorkflow(
       data: { decision: 'rejected', reason: rejectReason },
     });
 
-    if (approval?.onRejectPrompt !== undefined) {
+    if (approval.onRejectPrompt !== undefined) {
       if (currentCount + 1 >= maxAttempts) {
         await workflowDb.resolveWorkflowRunApproval(runId, {
           status: 'cancelled',

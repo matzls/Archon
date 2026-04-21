@@ -260,7 +260,7 @@ describe('executeWorkflow', () => {
       expect(updateSpy).toHaveBeenCalledWith('self-run-789', { status: 'cancelled' });
     });
 
-    it('uses the actionable "in use" message format with workflow name, duration, and short id', async () => {
+    it('uses the actionable "in use" message format with workflow name, duration, and explicit abandon guidance', async () => {
       const otherRun = makeRun({
         id: 'abc12345-rest-of-uuid',
         workflow_name: 'archon-implement',
@@ -294,7 +294,7 @@ describe('executeWorkflow', () => {
       expect(sentMessage).toContain('2m 5s');
       // Concrete next actions — every line tells the user something to do.
       expect(sentMessage).toContain('/workflow status');
-      expect(sentMessage).toContain('/workflow cancel abc12345');
+      expect(sentMessage).toContain('/workflow abandon abc12345-rest-of-uuid');
       expect(sentMessage).toContain('--branch');
     });
 
@@ -1007,6 +1007,31 @@ describe('executeWorkflow', () => {
       const msg = (sendMessageSpy.mock.calls[0] as [string, string])[1];
       expect(msg).toContain('running 1m');
       expect(msg).toContain('Wait for it to finish');
+      expect(msg).toContain('/workflow abandon running-run');
+    });
+
+    it('uses stale-running copy when blocker has no recent activity', async () => {
+      const staleRunningRun = makeRun({
+        id: 'stale-run-123',
+        workflow_name: 'archon-implement',
+        status: 'running',
+        started_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+        last_activity_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+      });
+      const sendMessageSpy = mock(async () => {});
+      const platform = {
+        sendMessage: sendMessageSpy,
+        getPlatformType: mock(() => 'test' as const),
+      } as unknown as IWorkflowPlatform;
+      const store = makeStore({ getActiveWorkflowRunByPath: mock(async () => staleRunningRun) });
+      const deps = makeDeps(store);
+
+      await executeWorkflow(deps, platform, 'conv-1', '/tmp', makeWorkflow(), 'test', 'db-conv-1');
+
+      const msg = (sendMessageSpy.mock.calls[0] as [string, string])[1];
+      expect(msg).toContain('appears stale');
+      expect(msg).toContain('/workflow abandon stale-run-123');
+      expect(msg).not.toContain('Wait for it to finish');
     });
   });
 });

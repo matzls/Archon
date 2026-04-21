@@ -58,6 +58,7 @@ function logSendError(
 
 /** Threshold for consecutive UNKNOWN errors before aborting */
 const UNKNOWN_ERROR_THRESHOLD = 3;
+const STALE_RUNNING_ACTIVITY_MS = 3 * 24 * 60 * 60 * 1000;
 
 /** Mutable counter for tracking consecutive unknown errors across calls */
 interface UnknownErrorTracker {
@@ -505,6 +506,12 @@ export async function executeWorkflow(
       const elapsedMs = Date.now() - parseDbTimestamp(activeWorkflow.started_at);
       const duration = formatDuration(elapsedMs);
       const shortId = activeWorkflow.id.slice(0, 8);
+      const activeSince =
+        activeWorkflow.last_activity_at != null
+          ? parseDbTimestamp(activeWorkflow.last_activity_at)
+          : parseDbTimestamp(activeWorkflow.started_at);
+      const runningAppearsStale =
+        activeWorkflow.status === 'running' && Date.now() - activeSince > STALE_RUNNING_ACTIVITY_MS;
 
       // Status-aware copy. The lock query returns running, paused, and
       // fresh-pending rows — telling the user to "wait for it to finish"
@@ -514,16 +521,22 @@ export async function executeWorkflow(
       if (activeWorkflow.status === 'paused') {
         stateLine = `paused waiting for user input (${duration} since started, run \`${shortId}\`)`;
         actionLines =
-          `• Approve it: \`/workflow approve ${shortId}\`\n` +
-          `• Reject it: \`/workflow reject ${shortId}\`\n` +
-          `• Cancel it: \`/workflow cancel ${shortId}\`\n` +
+          `• Approve it: \`/workflow approve ${activeWorkflow.id}\`\n` +
+          `• Reject it: \`/workflow reject ${activeWorkflow.id}\`\n` +
+          `• Abandon it if this gate is stale: \`/workflow abandon ${activeWorkflow.id}\`\n` +
+          '• Use a different branch: `--branch <other>`';
+      } else if (runningAppearsStale) {
+        stateLine = `running but appears stale (${duration} since started, run \`${shortId}\`)`;
+        actionLines =
+          '• Recheck active work: `/workflow status`\n' +
+          `• If this run is orphaned, recover the path explicitly: \`/workflow abandon ${activeWorkflow.id}\`\n` +
           '• Use a different branch: `--branch <other>`';
       } else {
         const verb = activeWorkflow.status === 'pending' ? 'starting' : 'running';
         stateLine = `${verb} ${duration}, run \`${shortId}\``;
         actionLines =
           '• Wait for it to finish: `/workflow status`\n' +
-          `• Cancel it: \`/workflow cancel ${shortId}\`\n` +
+          `• If you know it is stuck, abandon it explicitly: \`/workflow abandon ${activeWorkflow.id}\`\n` +
           '• Use a different branch: `--branch <other>`';
       }
       await sendCriticalMessage(

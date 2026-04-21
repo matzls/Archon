@@ -295,6 +295,14 @@ describe('rejectWorkflow', () => {
       "Cannot reject run with status 'completed'"
     );
   });
+
+  test('throws on missing approval context before writing reject side effects', async () => {
+    mockGetWorkflowRun.mockResolvedValueOnce(makePausedRun({ metadata: {} }));
+
+    await expect(rejectWorkflow('run-1')).rejects.toThrow('missing approval context');
+    expect(mockCreateWorkflowEvent).not.toHaveBeenCalled();
+    expect(mockResolveWorkflowRunApproval).not.toHaveBeenCalled();
+  });
 });
 
 describe('getWorkflowStatus', () => {
