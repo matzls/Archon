@@ -10,6 +10,7 @@ import {
   approvalOnRejectSchema,
   dagNodeSchema,
 } from './schemas';
+import { getPausedOutputPreview } from './schemas/workflow-run';
 import type {
   WorkflowDefinition,
   DagNode,
@@ -224,6 +225,89 @@ describe('approvalOnRejectSchema', () => {
   test('rejects max_attempts: 11', () => {
     const result = approvalOnRejectSchema.safeParse({ prompt: 'Fix it', max_attempts: 11 });
     expect(result.success).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getPausedOutputPreview
+// ---------------------------------------------------------------------------
+
+describe('getPausedOutputPreview', () => {
+  test('prefers final assistant output when present', () => {
+    expect(
+      getPausedOutputPreview({
+        nodeId: 'review',
+        message: 'Paused',
+        lastOutput: 'older output',
+        finalAssistantOutput: 'newer output',
+      })
+    ).toEqual({
+      text: 'newer output',
+      truncated: false,
+    });
+  });
+
+  test('falls back to last output when semantic preview is absent', () => {
+    expect(
+      getPausedOutputPreview({
+        nodeId: 'review',
+        message: 'Paused',
+        lastOutput: 'compatibility preview',
+      })
+    ).toEqual({
+      text: 'compatibility preview',
+      truncated: false,
+    });
+  });
+
+  test('uses explicit truncation flag for final assistant output', () => {
+    expect(
+      getPausedOutputPreview({
+        nodeId: 'review',
+        message: 'Paused',
+        finalAssistantOutput: 'semantic preview',
+        finalAssistantOutputTruncated: true,
+      })
+    ).toEqual({
+      text: 'semantic preview',
+      truncated: true,
+    });
+  });
+
+  test('uses explicit truncation flag for compatibility output', () => {
+    expect(
+      getPausedOutputPreview({
+        nodeId: 'review',
+        message: 'Paused',
+        lastOutput: 'compatibility preview',
+        lastOutputTruncated: true,
+      })
+    ).toEqual({
+      text: 'compatibility preview',
+      truncated: true,
+    });
+  });
+
+  test('falls back to suffix-based truncation detection', () => {
+    expect(
+      getPausedOutputPreview({
+        nodeId: 'review',
+        message: 'Paused',
+        lastOutput: 'partial result [truncated]',
+      })
+    ).toEqual({
+      text: 'partial result [truncated]',
+      truncated: true,
+    });
+  });
+
+  test('returns null when no preview text is available', () => {
+    expect(
+      getPausedOutputPreview({
+        nodeId: 'review',
+        message: 'Paused',
+      })
+    ).toBeNull();
   });
 });
 

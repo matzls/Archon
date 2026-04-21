@@ -19,6 +19,10 @@ interface WorkflowLogsProps {
   scrollToNodeTimestamp?: number | null;
   /** Incremented on every user node click to trigger scroll. */
   nodeScrollTrigger?: number;
+  /** Incremented to trigger a one-shot scroll to the latest paused output. */
+  focusLatestTrigger?: number;
+  /** When true, convert message fetch failures into an explicit paused-output banner. */
+  showFullPausedOutputUnavailable?: boolean;
 }
 
 function hydrateMessages(
@@ -182,12 +186,15 @@ export function WorkflowLogs({
   toolEvents,
   scrollToNodeTimestamp,
   nodeScrollTrigger,
+  focusLatestTrigger,
+  showFullPausedOutputUnavailable,
 }: WorkflowLogsProps): React.ReactElement {
   const [sseMessages, setSseMessages] = useState<ChatMessage[]>([]);
   const queryClient = useQueryClient();
   const prevIsRunningRef = useRef(isRunning);
   const [gracePolling, setGracePolling] = useState(false);
   const [scrollTrigger, setScrollTrigger] = useState(0);
+  const handledFocusLatestRef = useRef(0);
 
   // Tick timer for live elapsed display on "currently executing" indicator
   const [, setExecTick] = useState(0);
@@ -203,7 +210,11 @@ export function WorkflowLogs({
 
   // Poll for messages from DB — 3s while running (or during grace period), disabled when terminal.
   // staleTime: 0 ensures post-completion navigation always fetches fresh data on mount.
-  const { data: queryMessages } = useQuery({
+  const {
+    data: queryMessages,
+    error: queryError,
+    isError: isQueryError,
+  } = useQuery({
     queryKey: ['workflowMessages', conversationId],
     queryFn: async (): Promise<ChatMessage[]> => {
       const rows = await getMessages(conversationId);
@@ -614,9 +625,24 @@ export function WorkflowLogs({
   }, [messages, isRunning]);
 
   const isStreaming = displayMessages.some(m => m.isStreaming);
+  const pausedOutputUnavailableMessage =
+    showFullPausedOutputUnavailable && isQueryError
+      ? `Full paused output is unavailable for this run${queryError instanceof Error ? `: ${queryError.message}` : '.'}`
+      : null;
+
+  useEffect(() => {
+    if (!focusLatestTrigger || focusLatestTrigger === handledFocusLatestRef.current) {
+      return;
+    }
+    if (displayMessages.length === 0) {
+      return;
+    }
+    handledFocusLatestRef.current = focusLatestTrigger;
+    setScrollTrigger(prev => prev + 1);
+  }, [displayMessages.length, focusLatestTrigger]);
 
   // Show loading indicator while waiting for first messages
-  if (displayMessages.length === 0 && (isRunning || queryMessages === undefined)) {
+  if (displayMessages.length === 0 && !isQueryError && (isRunning || queryMessages === undefined)) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <div className="flex flex-col items-center gap-3 text-text-tertiary">
@@ -629,6 +655,11 @@ export function WorkflowLogs({
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden min-h-0">
+      {pausedOutputUnavailableMessage && (
+        <div className="px-4 py-2 border-b border-warning/20 bg-warning/5 text-sm text-warning shrink-0">
+          {pausedOutputUnavailableMessage}
+        </div>
+      )}
       {isRunning && currentlyExecuting && (
         <div className="px-4 py-2 bg-surface-secondary border-b border-border flex items-center gap-2 text-sm shrink-0">
           <span className="inline-block w-2 h-2 rounded-full bg-accent animate-pulse" />

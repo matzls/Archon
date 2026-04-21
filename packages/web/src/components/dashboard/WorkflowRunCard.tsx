@@ -22,6 +22,12 @@ import { cn } from '@/lib/utils';
 import { formatDuration } from '@/lib/format';
 import { useWorkflowStore } from '@/stores/workflow-store';
 import type { WorkflowState } from '@/lib/types';
+import {
+  buildWorkflowExecutionPath,
+  getPausedOutputPreview,
+  parseWorkflowApproval,
+  shouldShowFullPausedOutputAction,
+} from '@/lib/workflow-utils';
 import { ConfirmRunActionDialog } from './ConfirmRunActionDialog';
 
 interface WorkflowRunCardProps {
@@ -168,6 +174,12 @@ export function WorkflowRunCard({
       ? run.user_message
       : run.user_message.slice(0, 80) + '…'
     : null;
+  const approval = run.status === 'paused' ? parseWorkflowApproval(run.metadata?.approval) : null;
+  const pausedOutputPreview = getPausedOutputPreview(approval);
+  const latestOutput = pausedOutputPreview?.text ?? '';
+  const hasLatestOutput = latestOutput.length > 0;
+  const isLatestOutputClipped = pausedOutputPreview?.truncated ?? false;
+  const showFullPausedOutputAction = shouldShowFullPausedOutputAction(run.status, run.id, approval);
 
   return (
     <div className="rounded-lg border border-border bg-surface p-4 space-y-3">
@@ -253,16 +265,27 @@ export function WorkflowRunCard({
       )}
 
       {/* Approval request message */}
-      {run.status === 'paused' && run.metadata?.approval != null && (
-        <div className="rounded-md bg-warning/5 border border-warning/20 px-3 py-2 flex items-start gap-2">
-          <Pause className="h-4 w-4 text-warning shrink-0 mt-0.5" />
-          <p className="text-xs text-text-secondary">
-            {(
-              run.metadata.approval as {
-                message?: string;
-              }
-            )?.message ?? 'Waiting for approval'}
-          </p>
+      {run.status === 'paused' && (
+        <div className="space-y-2">
+          <div className="rounded-md bg-warning/5 border border-warning/20 px-3 py-2 flex items-start gap-2">
+            <Pause className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+            <p className="text-xs text-text-secondary">
+              {approval?.message ?? 'Waiting for approval'}
+            </p>
+          </div>
+          {hasLatestOutput && (
+            <div className="space-y-1">
+              <p className="text-[11px] font-medium text-text-secondary">Latest output</p>
+              {isLatestOutputClipped && (
+                <p className="text-[11px] text-warning">
+                  Output clipped; showing the latest available text.
+                </p>
+              )}
+              <div className="max-h-40 overflow-y-auto rounded-md border border-border bg-surface-elevated px-3 py-2 text-xs text-text-secondary whitespace-pre-wrap break-words">
+                {latestOutput}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -275,9 +298,20 @@ export function WorkflowRunCard({
 
       {/* Actions */}
       <div className="flex flex-wrap items-center gap-2 pt-1">
+        {showFullPausedOutputAction && (
+          <button
+            onClick={(): void => {
+              navigate(buildWorkflowExecutionPath(run.id, 'logs', true));
+            }}
+            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-text-secondary hover:bg-surface-elevated hover:text-text-primary transition-colors"
+          >
+            <FileText className="h-3.5 w-3.5" />
+            View full paused output
+          </button>
+        )}
         <button
           onClick={(): void => {
-            navigate(`/workflows/runs/${run.id}`);
+            navigate(buildWorkflowExecutionPath(run.id));
           }}
           className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-text-secondary hover:bg-surface-elevated hover:text-text-primary transition-colors"
         >

@@ -26,10 +26,7 @@ export const TERMINAL_WORKFLOW_STATUSES: readonly WorkflowRunStatus[] = [
 ] as const;
 
 /** Statuses that allow a user to resume execution. */
-export const RESUMABLE_WORKFLOW_STATUSES: readonly WorkflowRunStatus[] = [
-  'failed',
-  'paused',
-] as const;
+export const RESUMABLE_WORKFLOW_STATUSES: readonly WorkflowRunStatus[] = ['failed'] as const;
 
 // ---------------------------------------------------------------------------
 // WorkflowStepStatus
@@ -111,20 +108,44 @@ export type WorkflowRun = z.infer<typeof workflowRunSchema>;
 export interface ApprovalContext {
   nodeId: string;
   message: string;
+  /** Full durable loop output used for resume semantics (not UI preview rendering). */
+  fullOutput?: string;
   /** Bounded copy of the latest assistant output shown immediately before pausing. */
   lastOutput?: string;
+  /** Whether the bounded compatibility `lastOutput` snapshot was clipped. */
+  lastOutputTruncated?: boolean;
+  /** Semantic paused summary from the last contiguous assistant segment. */
+  finalAssistantOutput?: string;
+  /** Whether the semantic paused summary snapshot was clipped. */
+  finalAssistantOutputTruncated?: boolean;
   /** Distinguishes approval-gate pauses from interactive-loop pauses. */
   type?: 'approval' | 'interactive_loop';
   /** Current loop iteration when paused (interactive loops only). */
   iteration?: number;
   /** Session ID to restore on resume (interactive loops only). */
   sessionId?: string;
+  /** Exact user replies that complete an interactive loop without another AI turn. */
+  completeOnUserInput?: string[];
   /** When true, the user's approval comment is stored as `$nodeId.output`. */
   captureResponse?: boolean;
   /** The on_reject prompt template (stored at pause time so reject handlers don't need the workflow def). */
   onRejectPrompt?: string;
   /** Max rejection attempts before cancellation (default 3). */
   onRejectMaxAttempts?: number;
+}
+
+/** Resolution metadata stored after a paused approval gate is handled. */
+export type ApprovalResolution = 'approved' | 'rejected' | 'feedback' | 'completed';
+
+/**
+ * Latest resolved approval context stored in workflow metadata after a gate is handled.
+ * This remains available for resume paths after live `metadata.approval` is cleared.
+ */
+export interface LastApprovalContext extends ApprovalContext {
+  resolution: ApprovalResolution;
+  resolvedAt: string;
+  decisionText?: string;
+  resumedAt?: string;
 }
 
 /**
@@ -139,6 +160,103 @@ export function isApprovalContext(val: unknown): val is ApprovalContext {
     val !== null &&
     typeof (val as Record<string, unknown>).nodeId === 'string' &&
     typeof (val as Record<string, unknown>).message === 'string'
+  );
+}
+
+/** Type guard for the archived latest-gate metadata used by resume paths. */
+export function isLastApprovalContext(val: unknown): val is LastApprovalContext {
+  if (!isApprovalContext(val)) {
+    return false;
+  }
+
+  const record = val as { resolution?: unknown; resolvedAt?: unknown };
+  return typeof record.resolution === 'string' && typeof record.resolvedAt === 'string';
+}
+
+type WorkflowRunApprovalMetadata = Pick<WorkflowRun, 'metadata' | 'status'>;
+
+/** Return the live approval context only while the workflow is paused. */
+export function getPausedApprovalContext(
+  workflowRun: WorkflowRunApprovalMetadata
+): ApprovalContext | undefined {
+  if (workflowRun.status !== 'paused') {
+    return undefined;
+  }
+
+  const approval = workflowRun.metadata.approval;
+  return isApprovalContext(approval) ? approval : undefined;
+}
+
+/**
+ * Return the approval context that should be used for resume logic.
+ * Failed runs prefer archived `lastApproval`, with a legacy fallback to stale `approval`.
+ */
+export function getResumeApprovalContext(
+  workflowRun: WorkflowRunApprovalMetadata
+): ApprovalContext | LastApprovalContext | undefined {
+  if (workflowRun.status !== 'failed') {
+    return undefined;
+  }
+
+  const lastApproval = workflowRun.metadata.lastApproval;
+  if (isLastApprovalContext(lastApproval)) {
+    return lastApproval;
+  }
+
+  const legacyApproval = workflowRun.metadata.approval;
+  return isApprovalContext(legacyApproval) ? legacyApproval : undefined;
+}
+
+type PausedOutputPreviewSource = Pick<
+  ApprovalContext,
+  'lastOutput' | 'lastOutputTruncated' | 'finalAssistantOutput' | 'finalAssistantOutputTruncated'
+>;
+
+/** Select the best paused-output preview using the shared non-Web/Web precedence rule. */
+export function getPausedOutputPreview(
+  approval: PausedOutputPreviewSource | null | undefined
+): { text: string; truncated: boolean } | null {
+  if (!approval) {
+    return null;
+  }
+
+  const finalAssistantOutput = approval.finalAssistantOutput?.trim() ?? '';
+  if (finalAssistantOutput.length > 0) {
+    return {
+      text: finalAssistantOutput,
+      truncated:
+        approval.finalAssistantOutputTruncated ??
+        finalAssistantOutput.trimEnd().endsWith('[truncated]'),
+    };
+  }
+
+  const lastOutput = approval.lastOutput?.trim() ?? '';
+  if (lastOutput.length === 0) {
+    return null;
+  }
+
+  return {
+    text: lastOutput,
+    truncated: approval.lastOutputTruncated ?? lastOutput.trimEnd().endsWith('[truncated]'),
+  };
+}
+
+/** Normalize human gate replies for exact alias comparison. */
+export function normalizeInteractiveLoopInput(input: string): string {
+  return input.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+/** Return true when a paused interactive loop should complete from the user's reply. */
+export function matchesInteractiveLoopCompletionInput(
+  approval: ApprovalContext,
+  input: string
+): boolean {
+  if (approval.type !== 'interactive_loop') return false;
+  if (!approval.completeOnUserInput?.length) return false;
+  const normalizedInput = normalizeInteractiveLoopInput(input);
+  if (!normalizedInput) return false;
+  return approval.completeOnUserInput.some(
+    alias => normalizeInteractiveLoopInput(alias) === normalizedInput
   );
 }
 

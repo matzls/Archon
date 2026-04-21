@@ -37,6 +37,7 @@ const mockGetWorkflowRun = mock(() => Promise.resolve(null));
 const mockResumeWorkflowRun = mock(() => Promise.resolve({ id: 'run-id', status: 'running' }));
 const mockFailWorkflowRun = mock(() => Promise.resolve());
 const mockUpdateWorkflowRun = mock(() => Promise.resolve());
+const mockResolveWorkflowRunApproval = mock(() => Promise.resolve());
 
 // Workflow events database mocks
 const mockCreateWorkflowEvent = mock(() => Promise.resolve());
@@ -88,6 +89,7 @@ mock.module('../db/workflows', () => ({
   resumeWorkflowRun: mockResumeWorkflowRun,
   failWorkflowRun: mockFailWorkflowRun,
   updateWorkflowRun: mockUpdateWorkflowRun,
+  resolveWorkflowRunApproval: mockResolveWorkflowRunApproval,
 }));
 
 mock.module('../db/workflow-events', () => ({
@@ -228,6 +230,7 @@ function clearAllMocks(): void {
   mockResumeWorkflowRun.mockClear();
   mockFailWorkflowRun.mockClear();
   mockUpdateWorkflowRun.mockClear();
+  mockResolveWorkflowRunApproval.mockClear();
   mockCreateWorkflowEvent.mockClear();
   // Isolation mocks
   mockIsolationCreate.mockClear();
@@ -1333,7 +1336,42 @@ describe('CommandHandler', () => {
         expect(result.message).toContain('(unknown)');
       });
 
-      test('should show latest paused output when present', async () => {
+      test('should show preferred paused preview when present', async () => {
+        const startedAt = new Date();
+        mockListWorkflowRuns.mockResolvedValueOnce([
+          {
+            id: 'run-paused',
+            workflow_name: 'archon-piv-loop-codex',
+            conversation_id: 'conv-1',
+            parent_conversation_id: null,
+            codebase_id: null,
+            status: 'paused',
+            user_message: 'help',
+            metadata: {
+              approval: {
+                nodeId: 'explore',
+                message: 'Answer the questions above.',
+                lastOutput: '## Questions\n1. Legacy?\n2. Legacy?',
+                finalAssistantOutput: '## Questions\n1. Scope?\n2. Validation?',
+              },
+            },
+            started_at: startedAt,
+            completed_at: null,
+            last_activity_at: null,
+            working_path: '/workspace/worktrees/paused-run',
+          },
+        ]);
+
+        const result = await handleCommand(baseConversation, '/workflow status');
+
+        expect(result.success).toBe(true);
+        expect(result.message).toContain('Paused preview');
+        expect(result.message).toContain('## Questions');
+        expect(result.message).toContain('1. Scope?');
+        expect(result.message).not.toContain('Legacy?');
+      });
+
+      test('should show fallback paused preview and clipped note', async () => {
         const startedAt = new Date();
         mockListWorkflowRuns.mockResolvedValueOnce([
           {
@@ -1349,6 +1387,7 @@ describe('CommandHandler', () => {
                 nodeId: 'explore',
                 message: 'Answer the questions above.',
                 lastOutput: '## Questions\n1. Scope?\n2. Validation?',
+                lastOutputTruncated: true,
               },
             },
             started_at: startedAt,
@@ -1361,9 +1400,9 @@ describe('CommandHandler', () => {
         const result = await handleCommand(baseConversation, '/workflow status');
 
         expect(result.success).toBe(true);
-        expect(result.message).toContain('Latest output');
-        expect(result.message).toContain('## Questions');
+        expect(result.message).toContain('Paused preview');
         expect(result.message).toContain('1. Scope?');
+        expect(result.message).toContain('Preview clipped on this surface.');
       });
     });
 
@@ -1835,9 +1874,11 @@ describe('CommandHandler', () => {
         expect(result.success).toBe(true);
         expect(result.message).toContain('loop input received');
         expect(result.message).toContain('my-loop-wf');
-        expect(mockUpdateWorkflowRun).toHaveBeenCalledWith('run-123', {
+        expect(mockResolveWorkflowRunApproval).toHaveBeenCalledWith('run-123', {
           status: 'failed',
+          resolution: 'feedback',
           metadata: { loop_user_input: 'Add error handling' },
+          decisionText: 'Add error handling',
         });
       });
 
@@ -2038,9 +2079,11 @@ describe('CommandHandler', () => {
 
         expect(result.success).toBe(true);
         expect(result.message).toContain('Reworking');
-        expect(mockUpdateWorkflowRun).toHaveBeenCalledWith('run-reject-1', {
+        expect(mockResolveWorkflowRunApproval).toHaveBeenCalledWith('run-reject-1', {
           status: 'failed',
+          resolution: 'rejected',
           metadata: { rejection_reason: 'needs work', rejection_count: 1 },
+          decisionText: 'needs work',
         });
       });
 
@@ -2073,7 +2116,12 @@ describe('CommandHandler', () => {
 
         expect(result.success).toBe(true);
         expect(result.message).toContain('max attempts reached');
-        expect(mockCancelWorkflowRun).toHaveBeenCalledWith('run-reject-max');
+        expect(mockResolveWorkflowRunApproval).toHaveBeenCalledWith('run-reject-max', {
+          status: 'cancelled',
+          resolution: 'rejected',
+          metadata: { rejection_reason: 'bad', rejection_count: 3 },
+          decisionText: 'bad',
+        });
       });
 
       test('cancels immediately without on_reject', async () => {
@@ -2104,7 +2152,11 @@ describe('CommandHandler', () => {
         );
 
         expect(result.success).toBe(true);
-        expect(mockCancelWorkflowRun).toHaveBeenCalledWith('run-reject-plain');
+        expect(mockResolveWorkflowRunApproval).toHaveBeenCalledWith('run-reject-plain', {
+          status: 'cancelled',
+          resolution: 'rejected',
+          decisionText: 'reason',
+        });
       });
     });
   });

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { MessageSquare } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -15,14 +15,18 @@ import { useWorkflowStore } from '@/stores/workflow-store';
 import { getWorkflowRun, getWorkflowRunByWorker, getCodebase, getWorkflow } from '@/lib/api';
 import { ensureUtc, formatDurationMs } from '@/lib/format';
 import { selectInitialNode } from '@/lib/select-initial-node';
-import type {
-  WorkflowState,
-  ArtifactType,
-  WorkflowRunStatus,
-  DagNodeState,
-  WorkflowStepStatus,
-  LoopIterationInfo,
-} from '@/lib/types';
+import {
+  deriveCurrentlyExecutingNode,
+  deriveDagNodesFromEvents,
+  deriveNodeStartTimes,
+} from '@/lib/workflow-event-derivations';
+import {
+  buildWorkflowExecutionPath,
+  isPausedOutputFocus,
+  normalizeWorkflowExecutionView,
+  type WorkflowExecutionView,
+} from '@/lib/workflow-utils';
+import type { WorkflowState, ArtifactType, WorkflowRunStatus } from '@/lib/types';
 
 import type { WorkflowEventResponse } from '@/lib/api';
 
@@ -75,15 +79,20 @@ function StatusBadge({ status }: { status: string }): React.ReactElement {
 
 export function WorkflowExecution({ runId }: WorkflowExecutionProps): React.ReactElement {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const liveWorkflow = useWorkflowStore(s => s.workflows.get(runId));
   const [selectedDagNode, setSelectedDagNode] = useState<string | null>(null);
   const [codebaseName, setCodebaseName] = useState<string | null>(null);
   const [codebaseCwd, setCodebaseCwd] = useState<string | null>(null);
   const [workerRunId, setWorkerRunId] = useState<string | null>(null);
-  const [activeView, setActiveView] = useState<'graph' | 'logs' | 'chat'>('graph');
+  const [activeView, setActiveView] = useState<WorkflowExecutionView>('graph');
   // Increments on every user-initiated node click to trigger scroll in WorkflowLogs
   const [nodeScrollTrigger, setNodeScrollTrigger] = useState(0);
+  // Increments when the page should jump to the latest worker-conversation content.
+  const [focusLatestTrigger, setFocusLatestTrigger] = useState(0);
+  // Tracks a consumed paused-output deeplink until the user changes tabs or node selection.
+  const [pausedOutputFocusRequested, setPausedOutputFocusRequested] = useState(false);
   // Track which codebaseId we've already fetched to avoid stale re-fetches during runId transitions
   const fetchedCodebaseIdRef = useRef<string | null>(null);
 
@@ -95,6 +104,8 @@ export function WorkflowExecution({ runId }: WorkflowExecutionProps): React.Reac
     setWorkerRunId(null);
     setActiveView('graph');
     setNodeScrollTrigger(0);
+    setFocusLatestTrigger(0);
+    setPausedOutputFocusRequested(false);
     fetchedCodebaseIdRef.current = null;
   }, [runId]);
 
@@ -108,77 +119,7 @@ export function WorkflowExecution({ runId }: WorkflowExecutionProps): React.Reac
           runId: data.run.id,
           workflowName: data.run.workflow_name,
           status: data.run.status,
-          dagNodes: ((): DagNodeState[] => {
-            const nodeMap = new Map<string, DagNodeState>();
-            for (const e of data.events.filter(ev => ev.event_type.startsWith('node_'))) {
-              const nodeId = e.step_name ?? (e.data.nodeId as string) ?? '';
-              if (!nodeId) continue;
-              const status =
-                e.event_type === 'node_started'
-                  ? 'running'
-                  : e.event_type === 'node_completed'
-                    ? 'completed'
-                    : e.event_type === 'node_failed'
-                      ? 'failed'
-                      : 'skipped';
-              const existing = nodeMap.get(nodeId);
-              // Keep the latest non-running status (completed/failed/skipped override running)
-              if (!existing || status !== 'running') {
-                nodeMap.set(nodeId, {
-                  nodeId,
-                  name: nodeId,
-                  status: status as WorkflowStepStatus,
-                  duration: e.data.duration_ms as number | undefined,
-                  error: e.data.error as string | undefined,
-                  reason: e.data.reason as 'when_condition' | 'trigger_rule' | undefined,
-                });
-              }
-            }
-
-            // Second pass: enrich loop nodes with iteration data
-            for (const e of data.events.filter(ev => ev.event_type.startsWith('loop_iteration_'))) {
-              const nodeId = e.step_name ?? '';
-              if (!nodeId) continue;
-              const existing = nodeMap.get(nodeId);
-              if (!existing) continue; // No node_started event yet — skip (events ordered in DB)
-
-              const iteration = e.data.iteration as number | undefined;
-              const maxIter = e.data.maxIterations as number | undefined;
-              if (iteration === undefined) continue;
-
-              let iterStatus: LoopIterationInfo['status'];
-              if (e.event_type === 'loop_iteration_started') {
-                iterStatus = 'running';
-              } else if (e.event_type === 'loop_iteration_completed') {
-                iterStatus = 'completed';
-              } else {
-                iterStatus = 'failed';
-              }
-
-              const existingIters: LoopIterationInfo[] = existing.iterations ?? [];
-              const iterIdx = existingIters.findIndex(it => it.iteration === iteration);
-              const iterState: LoopIterationInfo = {
-                iteration,
-                status: iterStatus,
-                duration: e.data.duration_ms as number | undefined,
-              };
-              const newIters = [...existingIters];
-              if (iterIdx >= 0) {
-                newIters[iterIdx] = iterState;
-              } else {
-                newIters.push(iterState);
-              }
-
-              nodeMap.set(nodeId, {
-                ...existing,
-                currentIteration: iteration,
-                maxIterations: maxIter ?? existing.maxIterations,
-                iterations: newIters,
-              });
-            }
-
-            return Array.from(nodeMap.values());
-          })(),
+          dagNodes: deriveDagNodesFromEvents(data.events),
           artifacts: data.events
             .filter(e => e.event_type === 'workflow_artifact')
             .map(e => {
@@ -220,6 +161,37 @@ export function WorkflowExecution({ runId }: WorkflowExecutionProps): React.Reac
       ? queryError.message
       : String(queryError)
     : null;
+  const requestedView = normalizeWorkflowExecutionView(
+    searchParams.get('view'),
+    parentPlatformId !== null
+  );
+  const pausedOutputFocus = isPausedOutputFocus(searchParams.get('focus'));
+
+  useEffect(() => {
+    if (!pausedOutputFocus) {
+      return;
+    }
+
+    setPausedOutputFocusRequested(true);
+    setActiveView('logs');
+    setFocusLatestTrigger(prev => prev + 1);
+    setSearchParams(
+      prev => {
+        const next = new URLSearchParams(prev);
+        next.set('view', 'logs');
+        next.delete('focus');
+        return next;
+      },
+      { replace: true }
+    );
+  }, [pausedOutputFocus, setSearchParams]);
+
+  useEffect(() => {
+    if (pausedOutputFocus) {
+      return;
+    }
+    setActiveView(prev => (prev === requestedView ? prev : requestedView));
+  }, [pausedOutputFocus, requestedView]);
 
   // Extract tool_called events from workflow events for WorkflowLogs,
   // matching each with its corresponding tool_completed to get duration.
@@ -374,43 +346,13 @@ export function WorkflowExecution({ runId }: WorkflowExecutionProps): React.Reac
   }, [workflow?.status]);
 
   // Derive the currently executing node/step from events data
-  const currentlyExecuting = useMemo((): { nodeName: string; startedAt: number } | null => {
-    if (!queryData?.events || workflow?.status !== 'running') return null;
-    const events = queryData.events;
-
-    // Find nodes that started but haven't completed/failed/skipped
-    const startedNodes = new Set<string>();
-    const completedNodes = new Set<string>();
-
-    for (const e of events) {
-      const nodeId = e.step_name ?? '';
-      if (e.event_type === 'node_started') startedNodes.add(nodeId);
-      if (
-        e.event_type === 'node_completed' ||
-        e.event_type === 'node_failed' ||
-        e.event_type === 'node_skipped'
-      ) {
-        completedNodes.add(nodeId);
-      }
-    }
-
-    // Find the first started-but-not-completed node
-    for (const nodeId of startedNodes) {
-      if (!completedNodes.has(nodeId)) {
-        const startEvent = events.find(
-          e => e.event_type === 'node_started' && e.step_name === nodeId
-        );
-        if (startEvent) {
-          return {
-            nodeName: nodeId,
-            startedAt: new Date(ensureUtc(startEvent.created_at)).getTime(),
-          };
-        }
-      }
-    }
-
-    return null;
-  }, [queryData?.events, workflow?.status]);
+  const currentlyExecuting = useMemo(
+    (): { nodeName: string; startedAt: number } | null =>
+      queryData && workflow
+        ? deriveCurrentlyExecutingNode(queryData.events, workflow.status)
+        : null,
+    [queryData, workflow]
+  );
 
   // Compute formatted log lines for the selected DAG node from DB events.
   const stepLogLines = useMemo((): string[] => {
@@ -455,23 +397,36 @@ export function WorkflowExecution({ runId }: WorkflowExecutionProps): React.Reac
 
   // Compute start timestamps for each DAG node from workflow events.
   // Used to scroll the logs panel to the right position when a node is selected.
-  const nodeStartTimes = useMemo((): Map<string, number> => {
-    const map = new Map<string, number>();
-    for (const e of queryData?.events ?? []) {
-      if (e.event_type === 'node_started' && e.step_name) {
-        map.set(e.step_name, new Date(ensureUtc(e.created_at)).getTime());
-      }
-    }
-    return map;
-  }, [queryData?.events]);
+  const nodeStartTimes = useMemo(
+    (): Map<string, number> => deriveNodeStartTimes(queryData?.events ?? []),
+    [queryData?.events]
+  );
 
   const scrollToNodeTimestamp = selectedDagNode
     ? (nodeStartTimes.get(selectedDagNode) ?? null)
     : null;
 
+  const handleViewChange = useCallback(
+    (view: WorkflowExecutionView): void => {
+      setPausedOutputFocusRequested(false);
+      setActiveView(view);
+      setSearchParams(
+        prev => {
+          const next = new URLSearchParams(prev);
+          next.set('view', view);
+          next.delete('focus');
+          return next;
+        },
+        { replace: true }
+      );
+    },
+    [setSearchParams]
+  );
+
   // Handler for user-initiated node clicks (graph or sidebar).
   // Increments scroll trigger so WorkflowLogs scrolls to the node's section.
   const handleNodeClick = useCallback((nodeId: string): void => {
+    setPausedOutputFocusRequested(false);
     setSelectedDagNode(nodeId);
     setNodeScrollTrigger(prev => prev + 1);
   }, []);
@@ -507,12 +462,18 @@ export function WorkflowExecution({ runId }: WorkflowExecutionProps): React.Reac
 
   // Pick the platform ID for logs: worker takes precedence over conversation.
   const logsPlatformId = workerPlatformId ?? conversationPlatformId;
+  const showFullPausedOutputUnavailable = pausedOutputFocusRequested && !logsPlatformId;
 
   // Logs panel — detect whether the selected node has any DB events so we can show an empty-state
   const logsPanel = (
     <div className="flex-1 flex flex-col overflow-hidden min-h-0 h-full">
+      {showFullPausedOutputUnavailable && (
+        <div className="px-4 py-2 border-b border-warning/20 bg-warning/5 text-sm text-warning shrink-0">
+          Full paused output is unavailable for this run.
+        </div>
+      )}
       <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-        {logsPlatformId && !selectedStepHasEvents && !isRunning ? (
+        {logsPlatformId && !pausedOutputFocusRequested && !selectedStepHasEvents && !isRunning ? (
           <div className="flex-1 flex items-center justify-center text-text-secondary text-sm">
             No output available for this step.
           </div>
@@ -525,6 +486,8 @@ export function WorkflowExecution({ runId }: WorkflowExecutionProps): React.Reac
             toolEvents={toolEvents}
             scrollToNodeTimestamp={scrollToNodeTimestamp}
             nodeScrollTrigger={nodeScrollTrigger}
+            focusLatestTrigger={focusLatestTrigger}
+            showFullPausedOutputUnavailable={pausedOutputFocusRequested}
           />
         ) : (
           <StepLogs runId={runId} lines={stepLogLines} />
@@ -614,7 +577,7 @@ export function WorkflowExecution({ runId }: WorkflowExecutionProps): React.Reac
           {workerRunId && (
             <button
               onClick={(): void => {
-                navigate(`/workflows/runs/${workerRunId}`);
+                navigate(buildWorkflowExecutionPath(workerRunId));
               }}
               className="flex items-center gap-1 text-xs text-primary hover:text-accent-bright transition-colors"
               title="View workflow run details"
@@ -632,7 +595,7 @@ export function WorkflowExecution({ runId }: WorkflowExecutionProps): React.Reac
           <Tabs
             value={activeView}
             onValueChange={(v): void => {
-              setActiveView(v as typeof activeView);
+              handleViewChange(v as WorkflowExecutionView);
             }}
           >
             <TabsList>

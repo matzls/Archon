@@ -3321,6 +3321,100 @@ describe('executeDagWorkflow -- resume with priorCompletedNodes', () => {
       });
     });
 
+    it('persists node_started before loop iteration events for loop nodes', async () => {
+      mockSendQueryDag.mockImplementation(function* () {
+        yield { type: 'assistant', content: 'Did the task. <promise>COMPLETE</promise>' };
+        yield { type: 'result', sessionId: 'loop-session-started' };
+      });
+
+      const store = createMockStore();
+      const mockDeps = createMockDeps(store);
+      const platform = createMockPlatform();
+      const workflowRun = makeWorkflowRun('loop-node-start-run');
+
+      await executeDagWorkflow(
+        mockDeps,
+        platform,
+        'conv-loop-node-start',
+        testDir,
+        {
+          name: 'loop-node-started',
+          nodes: [
+            {
+              id: 'my-loop',
+              loop: {
+                prompt: 'Do a task. When done, output <promise>COMPLETE</promise>.',
+                until: 'COMPLETE',
+                max_iterations: 5,
+              },
+            },
+          ],
+        },
+        workflowRun,
+        'claude',
+        undefined,
+        join(testDir, 'artifacts'),
+        join(testDir, 'logs'),
+        'main',
+        'docs/',
+        minimalConfig
+      );
+
+      const eventTypes = (store.createWorkflowEvent as Mock<() => Promise<void>>).mock.calls.map(
+        call => (call[0] as { event_type: string }).event_type
+      );
+      expect(eventTypes.indexOf('node_started')).toBeGreaterThanOrEqual(0);
+      expect(eventTypes.indexOf('node_started')).toBeLessThan(
+        eventTypes.indexOf('loop_iteration_started')
+      );
+    });
+
+    it('persists node_failed when a loop exhausts max iterations', async () => {
+      mockSendQueryDag.mockImplementation(function* () {
+        yield { type: 'assistant', content: 'Still working.' };
+        yield { type: 'result', sessionId: 'loop-session-failed' };
+      });
+
+      const store = createMockStore();
+      const mockDeps = createMockDeps(store);
+      const platform = createMockPlatform();
+      const workflowRun = makeWorkflowRun('loop-node-failed-run');
+
+      await executeDagWorkflow(
+        mockDeps,
+        platform,
+        'conv-loop-node-failed',
+        testDir,
+        {
+          name: 'loop-node-failed',
+          nodes: [
+            {
+              id: 'my-loop',
+              loop: {
+                prompt: 'Keep working.',
+                until: 'COMPLETE',
+                max_iterations: 1,
+              },
+            },
+          ],
+        },
+        workflowRun,
+        'claude',
+        undefined,
+        join(testDir, 'artifacts'),
+        join(testDir, 'logs'),
+        'main',
+        'docs/',
+        minimalConfig
+      );
+
+      const eventTypes = (store.createWorkflowEvent as Mock<() => Promise<void>>).mock.calls.map(
+        call => (call[0] as { event_type: string }).event_type
+      );
+      expect(eventTypes).toContain('node_failed');
+      expect(eventTypes).not.toContain('node_completed');
+    });
+
     it('uses workflow-level Codex tuning instead of config defaults for loop nodes', async () => {
       mockGetAgentProviderDag.mockImplementation(() => ({
         sendQuery: mockSendQueryDag,
@@ -4262,6 +4356,60 @@ describe('executeDagWorkflow -- resume with priorCompletedNodes', () => {
       });
     });
 
+    it('interactive loop pause stores completion aliases when configured', async () => {
+      mockSendQueryDag.mockImplementation(function* () {
+        yield { type: 'assistant', content: 'Exploration summary.' };
+        yield { type: 'result', sessionId: 'loop-session-aliases' };
+      });
+
+      const mockDeps = createMockDeps();
+      const platform = createMockPlatform();
+      const workflowRun = makeWorkflowRun();
+
+      await executeDagWorkflow(
+        mockDeps,
+        platform,
+        'conv-dag',
+        testDir,
+        {
+          name: 'interactive-loop-aliases',
+          nodes: [
+            {
+              id: 'explore',
+              loop: {
+                prompt: 'Explore.',
+                until: 'PLAN_READY',
+                max_iterations: 10,
+                interactive: true,
+                complete_on_user_input: ['ready', 'create the plan'],
+                gate_message: 'Review exploration.',
+              },
+            },
+          ],
+        },
+        workflowRun,
+        'claude',
+        undefined,
+        join(testDir, 'artifacts'),
+        join(testDir, 'logs'),
+        'main',
+        'docs/',
+        minimalConfig
+      );
+
+      const pauseCalls = (
+        mockDeps.store.pauseWorkflowRun as Mock<
+          (id: string, ctx: Record<string, unknown>) => Promise<void>
+        >
+      ).mock.calls;
+      expect(pauseCalls.length).toBe(1);
+      expect(pauseCalls[0][1]).toMatchObject({
+        type: 'interactive_loop',
+        nodeId: 'explore',
+        completeOnUserInput: ['ready', 'create the plan'],
+      });
+    });
+
     it('interactive loop first iteration always gates even if AI emits signal', async () => {
       mockSendQueryDag.mockImplementation(function* () {
         yield {
@@ -4334,13 +4482,16 @@ describe('executeDagWorkflow -- resume with priorCompletedNodes', () => {
       const platform = createMockPlatform();
       // Simulate a resumed run where the user said "approved"
       const workflowRun = makeWorkflowRun('resume-signal-run', {
+        status: 'running',
         metadata: {
-          approval: {
+          lastApproval: {
             type: 'interactive_loop',
             nodeId: 'refine',
             iteration: 1,
             sessionId: 'loop-session-2',
             message: 'Review and provide feedback.',
+            resolution: 'feedback',
+            resolvedAt: '2026-04-20T10:00:00.000Z',
           },
           loop_user_input: 'approved',
         },
@@ -4396,15 +4547,18 @@ describe('executeDagWorkflow -- resume with priorCompletedNodes', () => {
 
       const mockDeps = createMockDeps();
       const platform = createMockPlatform();
-      // Simulate a resumed run: metadata has loop gate state and user input
+      // Simulate a resumed run: metadata keeps the resolved gate in lastApproval.
       const workflowRun = makeWorkflowRun('resumed-run-id', {
+        status: 'running',
         metadata: {
-          approval: {
+          lastApproval: {
             type: 'interactive_loop',
             nodeId: 'refine',
             iteration: 1,
             sessionId: 'loop-session-1',
             message: 'Review the plan.',
+            resolution: 'feedback',
+            resolvedAt: '2026-04-20T10:00:00.000Z',
           },
           loop_user_input: 'Add error handling',
         },
@@ -4448,6 +4602,65 @@ describe('executeDagWorkflow -- resume with priorCompletedNodes', () => {
       // Should have resumed with stored session ID
       const sessionArg = mockSendQueryDag.mock.calls[0][2] as string | undefined;
       expect(sessionArg).toBe('loop-session-1');
+    });
+
+    it('interactive loop resumes from legacy failed-row approval metadata', async () => {
+      mockSendQueryDag.mockImplementation(function* () {
+        yield { type: 'assistant', content: 'Updated plan. <promise>APPROVED</promise>' };
+        yield { type: 'result', sessionId: 'legacy-loop-session-2' };
+      });
+
+      const mockDeps = createMockDeps();
+      const platform = createMockPlatform();
+      const workflowRun = makeWorkflowRun('legacy-resume-run-id', {
+        status: 'failed',
+        metadata: {
+          approval: {
+            type: 'interactive_loop',
+            nodeId: 'refine',
+            iteration: 1,
+            sessionId: 'legacy-loop-session-1',
+            message: 'Review the plan.',
+          },
+          loop_user_input: 'Legacy feedback',
+        },
+      });
+
+      await executeDagWorkflow(
+        mockDeps,
+        platform,
+        'conv-dag',
+        testDir,
+        {
+          name: 'interactive-loop-legacy-resume',
+          nodes: [
+            {
+              id: 'refine',
+              loop: {
+                prompt: 'User said: $LOOP_USER_INPUT. Refine the plan.',
+                until: 'APPROVED',
+                max_iterations: 10,
+                interactive: true,
+                gate_message: 'Review the plan.',
+              },
+            },
+          ],
+        },
+        workflowRun,
+        'claude',
+        undefined,
+        join(testDir, 'artifacts'),
+        join(testDir, 'logs'),
+        'main',
+        'docs/',
+        minimalConfig
+      );
+
+      expect(mockSendQueryDag.mock.calls.length).toBe(1);
+      const promptArg = mockSendQueryDag.mock.calls[0][0] as string;
+      expect(promptArg).toContain('Legacy feedback');
+      const sessionArg = mockSendQueryDag.mock.calls[0][2] as string | undefined;
+      expect(sessionArg).toBe('legacy-loop-session-1');
     });
 
     it('loop iteration fails loudly when SDK returns error_during_execution', async () => {
@@ -5143,9 +5356,12 @@ describe('executeDagWorkflow -- approval node', () => {
     expect((pauseCalls[0][1] as Record<string, unknown>).captureResponse).toBeUndefined();
   });
 
-  it('on_reject runs AI prompt and re-pauses on rejection resume', async () => {
+  it('on_reject runs AI prompt and re-pauses on rejection resume with semantic snapshot fields', async () => {
     mockSendQueryDag.mockImplementation(function* () {
-      yield { type: 'assistant', content: 'Fixed based on feedback' };
+      yield { type: 'assistant', content: 'Investigating fix. ' };
+      yield { type: 'tool', toolName: 'search_code' };
+      yield { type: 'assistant', content: 'Applied guard' };
+      yield { type: 'assistant', content: ' and updated handling' };
       yield { type: 'result', sessionId: 'reject-fix-session' };
     });
 
@@ -5155,13 +5371,16 @@ describe('executeDagWorkflow -- approval node', () => {
 
     // Simulate a rejection resume — metadata has rejection_reason set by reject handler
     const workflowRun = makeWorkflowRun('reject-resume-run', {
+      status: 'running',
       metadata: {
-        approval: {
+        lastApproval: {
           type: 'approval',
           nodeId: 'review',
           message: 'Approve this plan?',
           onRejectPrompt: 'Fix based on: $REJECTION_REASON',
           onRejectMaxAttempts: 3,
+          resolution: 'rejected',
+          resolvedAt: '2026-04-20T10:00:00.000Z',
         },
         rejection_reason: 'Missing edge case handling',
         rejection_count: 1,
@@ -5208,14 +5427,20 @@ describe('executeDagWorkflow -- approval node', () => {
     ).mock.calls;
     expect(pauseCalls.length).toBe(1);
     expect(pauseCalls[0][1]).toMatchObject({
-      lastOutput: 'Fixed based on feedback',
+      lastOutput: 'Investigating fix. Applied guard and updated handling',
+      lastOutputTruncated: false,
+      finalAssistantOutput: 'Applied guardand updated handling',
+      finalAssistantOutputTruncated: false,
     });
   });
 
-  it('interactive loop bounds large lastOutput before pausing', async () => {
+  it('interactive loop bounds large lastOutput and keeps a shorter final assistant summary', async () => {
     const largeOutput = 'A'.repeat(9000);
+    const finalSummary = 'Short closing summary';
     mockSendQueryDag.mockImplementation(function* () {
       yield { type: 'assistant', content: largeOutput };
+      yield { type: 'tool', toolName: 'search_code' };
+      yield { type: 'assistant', content: finalSummary };
       yield { type: 'result', sessionId: 'loop-session-large' };
     });
 
@@ -5264,6 +5489,190 @@ describe('executeDagWorkflow -- approval node', () => {
     const lastOutput = approvalContext.lastOutput as string;
     expect(lastOutput.length).toBeLessThanOrEqual(8000);
     expect(lastOutput.endsWith('[truncated]')).toBe(true);
+    expect(approvalContext.lastOutputTruncated).toBe(true);
+    expect(approvalContext.finalAssistantOutput).toBe(finalSummary);
+    expect(approvalContext.finalAssistantOutputTruncated).toBe(false);
+    expect(approvalContext.fullOutput).toBe(`${largeOutput}${finalSummary}`);
+  });
+
+  it('interactive loop stores finalAssistantOutput when no tool was used', async () => {
+    const finalResponse = 'Draft section ready for review';
+    mockSendQueryDag.mockImplementation(function* () {
+      yield { type: 'assistant', content: finalResponse };
+      yield { type: 'result', sessionId: 'loop-session-no-tool' };
+    });
+
+    const mockDeps = createMockDeps();
+    const platform = createMockPlatform();
+    const workflowRun = makeWorkflowRun();
+
+    await executeDagWorkflow(
+      mockDeps,
+      platform,
+      'conv-dag',
+      testDir,
+      {
+        name: 'interactive-loop-no-tool-output',
+        nodes: [
+          {
+            id: 'refine',
+            loop: {
+              prompt: 'Refine the plan.',
+              until: 'APPROVED',
+              max_iterations: 10,
+              interactive: true,
+              gate_message: 'Review the plan and provide feedback.',
+            },
+          },
+        ],
+      },
+      workflowRun,
+      'claude',
+      undefined,
+      join(testDir, 'artifacts'),
+      join(testDir, 'logs'),
+      'main',
+      'docs/',
+      minimalConfig
+    );
+
+    const pauseCalls = (
+      mockDeps.store.pauseWorkflowRun as Mock<
+        (id: string, ctx: Record<string, unknown>) => Promise<void>
+      >
+    ).mock.calls;
+    expect(pauseCalls.length).toBe(1);
+    const approvalContext = pauseCalls[0][1] as Record<string, unknown>;
+    expect(approvalContext).toMatchObject({
+      lastOutput: finalResponse,
+      lastOutputTruncated: false,
+      finalAssistantOutput: finalResponse,
+      finalAssistantOutputTruncated: false,
+    });
+  });
+
+  it('interactive loop omits finalAssistantOutput when no assistant text follows the last tool', async () => {
+    mockSendQueryDag.mockImplementation(function* () {
+      yield { type: 'assistant', content: 'Ran analysis before tool.' };
+      yield { type: 'tool', toolName: 'search_code' };
+      yield { type: 'tool_result', toolName: 'search_code', toolOutput: 'match found' };
+      yield { type: 'result', sessionId: 'loop-session-no-final-assistant' };
+    });
+
+    const mockDeps = createMockDeps();
+    const platform = createMockPlatform();
+    const workflowRun = makeWorkflowRun();
+
+    await executeDagWorkflow(
+      mockDeps,
+      platform,
+      'conv-dag',
+      testDir,
+      {
+        name: 'interactive-loop-no-trailing-assistant',
+        nodes: [
+          {
+            id: 'refine',
+            loop: {
+              prompt: 'Refine the plan.',
+              until: 'APPROVED',
+              max_iterations: 10,
+              interactive: true,
+              gate_message: 'Review the plan and provide feedback.',
+            },
+          },
+        ],
+      },
+      workflowRun,
+      'claude',
+      undefined,
+      join(testDir, 'artifacts'),
+      join(testDir, 'logs'),
+      'main',
+      'docs/',
+      minimalConfig
+    );
+
+    const pauseCalls = (
+      mockDeps.store.pauseWorkflowRun as Mock<
+        (id: string, ctx: Record<string, unknown>) => Promise<void>
+      >
+    ).mock.calls;
+    expect(pauseCalls.length).toBe(1);
+    const approvalContext = pauseCalls[0][1] as Record<string, unknown>;
+    expect(approvalContext).toMatchObject({
+      lastOutput: 'Ran analysis before tool.',
+      lastOutputTruncated: false,
+    });
+    expect(approvalContext.finalAssistantOutput).toBeUndefined();
+    expect(approvalContext.finalAssistantOutputTruncated).toBeUndefined();
+  });
+
+  it('interactive loop breaks assistant segments on non-assistant chunks without resetting the tool anchor', async () => {
+    mockSendQueryDag.mockImplementation(function* () {
+      yield { type: 'assistant', content: 'Before tool. ' };
+      yield { type: 'tool', toolName: 'search_code' };
+      yield { type: 'assistant', content: 'After tool first ' };
+      yield { type: 'assistant', content: 'segment' };
+      yield { type: 'thinking', content: 'reasoning' };
+      yield { type: 'assistant', content: ' After thinking' };
+      yield { type: 'system', content: 'system note' };
+      yield { type: 'assistant', content: ' After system' };
+      yield { type: 'tool_result', toolName: 'search_code', toolOutput: 'ok' };
+      yield { type: 'assistant', content: ' After tool result' };
+      yield { type: 'rate_limit', rateLimitInfo: { retry_after_ms: 1000 } };
+      yield { type: 'assistant', content: ' After rate limit' };
+      yield { type: 'result', sessionId: 'loop-session-boundaries' };
+    });
+
+    const mockDeps = createMockDeps();
+    const platform = createMockPlatform();
+    const workflowRun = makeWorkflowRun();
+
+    await executeDagWorkflow(
+      mockDeps,
+      platform,
+      'conv-dag',
+      testDir,
+      {
+        name: 'interactive-loop-boundaries',
+        nodes: [
+          {
+            id: 'refine',
+            loop: {
+              prompt: 'Refine the plan.',
+              until: 'APPROVED',
+              max_iterations: 10,
+              interactive: true,
+              gate_message: 'Review the plan and provide feedback.',
+            },
+          },
+        ],
+      },
+      workflowRun,
+      'claude',
+      undefined,
+      join(testDir, 'artifacts'),
+      join(testDir, 'logs'),
+      'main',
+      'docs/',
+      minimalConfig
+    );
+
+    const pauseCalls = (
+      mockDeps.store.pauseWorkflowRun as Mock<
+        (id: string, ctx: Record<string, unknown>) => Promise<void>
+      >
+    ).mock.calls;
+    expect(pauseCalls.length).toBe(1);
+    const approvalContext = pauseCalls[0][1] as Record<string, unknown>;
+    expect(approvalContext).toMatchObject({
+      lastOutput:
+        'Before tool.After tool firstsegmentAfter thinkingAfter systemAfter tool resultAfter rate limit',
+      lastOutputTruncated: false,
+      finalAssistantOutput: 'After rate limit',
+      finalAssistantOutputTruncated: false,
+    });
   });
 
   it('on_reject cancels when max_attempts exhausted', async () => {
@@ -5273,13 +5682,16 @@ describe('executeDagWorkflow -- approval node', () => {
 
     // rejection_count already at max_attempts
     const workflowRun = makeWorkflowRun('reject-exhausted-run', {
+      status: 'running',
       metadata: {
-        approval: {
+        lastApproval: {
           type: 'approval',
           nodeId: 'review',
           message: 'Approve this plan?',
           onRejectPrompt: 'Fix based on: $REJECTION_REASON',
           onRejectMaxAttempts: 3,
+          resolution: 'rejected',
+          resolvedAt: '2026-04-20T10:00:00.000Z',
         },
         rejection_reason: 'Still not right',
         rejection_count: 3,
@@ -5333,13 +5745,16 @@ describe('executeDagWorkflow -- approval node', () => {
     const platform = createMockPlatform();
 
     const workflowRun = makeWorkflowRun('reject-max1-run', {
+      status: 'running',
       metadata: {
-        approval: {
+        lastApproval: {
           type: 'approval',
           nodeId: 'review',
           message: 'Approve?',
           onRejectPrompt: 'Fix: $REJECTION_REASON',
           onRejectMaxAttempts: 1,
+          resolution: 'rejected',
+          resolvedAt: '2026-04-20T10:00:00.000Z',
         },
         rejection_reason: 'Bad',
         rejection_count: 1,
@@ -6124,6 +6539,63 @@ describe('executeDagWorkflow -- script nodes', () => {
     );
 
     expect(mockSendQueryDag.mock.calls.length).toBe(0);
+  });
+
+  it('named bun scripts receive workflow runtime env aliases', async () => {
+    const mockDeps = createMockDeps();
+    const platform = createMockPlatform();
+    const workflowRun = makeWorkflowRun('script-env-alias-run-id', {
+      workflow_name: 'script-env-alias-test',
+      conversation_id: 'conv-env-alias',
+      user_message: 'env alias test',
+    });
+
+    const artifactsDir = join(testDir, 'artifacts');
+    const scriptsDir = join(testDir, '.archon', 'scripts');
+    const commandsDir = join(testDir, '.archon', 'commands');
+    await mkdir(scriptsDir, { recursive: true });
+    await mkdir(commandsDir, { recursive: true });
+    await writeFile(
+      join(scriptsDir, 'show-env.ts'),
+      [
+        'console.log(JSON.stringify({',
+        '  artifactsDir: process.env.ARTIFACTS_DIR ?? "",',
+        '  archonArtifactsDir: process.env.ARCHON_ARTIFACTS_DIR ?? "",',
+        '  baseBranch: process.env.BASE_BRANCH ?? "",',
+        '  archonBaseBranch: process.env.ARCHON_BASE_BRANCH ?? ""',
+        '}));',
+      ].join('\n')
+    );
+    await writeFile(join(commandsDir, 'use-env.md'), 'Captured env: $show-env.output');
+
+    await executeDagWorkflow(
+      mockDeps,
+      platform,
+      'conv-env-alias',
+      testDir,
+      {
+        name: 'named-script-env-alias-test',
+        nodes: [
+          { id: 'show-env', script: 'show-env', runtime: 'bun' },
+          { id: 'use-env', command: 'use-env', depends_on: ['show-env'] },
+        ],
+      },
+      workflowRun,
+      'claude',
+      undefined,
+      artifactsDir,
+      join(testDir, 'logs'),
+      'main',
+      'docs/',
+      minimalConfig
+    );
+
+    expect(mockSendQueryDag.mock.calls.length).toBe(1);
+    const prompt = mockSendQueryDag.mock.calls[0][0] as string;
+    expect(prompt).toContain(`"artifactsDir":"${artifactsDir}"`);
+    expect(prompt).toContain(`"archonArtifactsDir":"${artifactsDir}"`);
+    expect(prompt).toContain('"baseBranch":"main"');
+    expect(prompt).toContain('"archonBaseBranch":"main"');
   });
 
   it('named bun script executes from Archon default scripts when repo script is absent', async () => {

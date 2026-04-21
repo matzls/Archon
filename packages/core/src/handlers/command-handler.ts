@@ -25,7 +25,7 @@ import type {
   WorkflowLoadError,
   WorkflowDefinition,
 } from '@archon/workflows/schemas/workflow';
-import { isApprovalContext } from '@archon/workflows/schemas/workflow-run';
+import { getPausedOutputPreview, isApprovalContext } from '@archon/workflows/schemas/workflow-run';
 import * as workflowDb from '../db/workflows';
 import {
   approveWorkflow,
@@ -668,8 +668,15 @@ async function handleWorkflowCommand(
           msg += `  ID: ${run.id}\n`;
           msg += `  Path: ${run.working_path ?? '(unknown)'}\n`;
           msg += `  Started: ${new Date(run.started_at).toISOString()}\n\n`;
-          if (run.status === 'paused' && approval?.lastOutput) {
-            msg += `  Latest output:\n${approval.lastOutput.trim()}\n\n`;
+          if (run.status === 'paused') {
+            const preview = getPausedOutputPreview(approval);
+            if (preview) {
+              msg += `  Paused preview:\n${preview.text.trim()}\n`;
+              if (preview.truncated) {
+                msg += '  Preview clipped on this surface.\n';
+              }
+              msg += '\n';
+            }
           }
         }
 

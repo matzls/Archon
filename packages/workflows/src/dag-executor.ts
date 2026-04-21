@@ -17,6 +17,7 @@ import type {
 } from './deps';
 import type {
   AgentRequestOptions,
+  MessageChunk,
   SendQueryOptions,
   NodeConfig,
   ProviderCapabilities,
@@ -34,6 +35,7 @@ import type {
   NodeOutput,
   TriggerRule,
   WorkflowRun,
+  ApprovalContext,
   EffortLevel,
   ThinkingConfig,
   SandboxSettings,
@@ -44,11 +46,13 @@ import {
   isApprovalNode,
   isCancelNode,
   isScriptNode,
-  isApprovalContext,
+  isLastApprovalContext,
+  getResumeApprovalContext,
 } from './schemas';
 import { formatToolCall } from './utils/tool-formatter';
 import { createLogger } from '@archon/paths';
 import { getWorkflowEventEmitter } from './event-emitter';
+import type { WorkflowEmitterEvent } from './event-emitter';
 import { evaluateCondition } from './condition-evaluator';
 import { inferProviderFromModel, isModelCompatible } from './model-validation';
 import {
@@ -94,8 +98,25 @@ interface WorkflowLevelOptions {
   additionalDirectories?: string[];
 }
 
+type ApprovalPauseSnapshot = Pick<
+  ApprovalContext,
+  'lastOutput' | 'lastOutputTruncated' | 'finalAssistantOutput' | 'finalAssistantOutputTruncated'
+>;
+
 /** Internal node execution result — extends NodeOutput with cost data for aggregation. */
-type NodeExecutionResult = NodeOutput & { costUsd?: number };
+type NodeExecutionResult = NodeOutput & {
+  costUsd?: number;
+  approvalSnapshot?: ApprovalPauseSnapshot;
+};
+
+function getDagResumeApprovalContext(workflowRun: WorkflowRun): ApprovalContext | undefined {
+  const lastApproval = workflowRun.metadata.lastApproval;
+  if (isLastApprovalContext(lastApproval)) {
+    return lastApproval;
+  }
+
+  return getResumeApprovalContext(workflowRun);
+}
 
 /** Throttle state for cancel checks (reads — no write contention in WAL mode) */
 const lastNodeCancelCheck = new Map<string, number>();
@@ -116,18 +137,97 @@ const DEFAULT_NODE_MAX_RETRIES = 2;
 const MAX_APPROVAL_LAST_OUTPUT_CHARS = 8000;
 const APPROVAL_LAST_OUTPUT_TRUNCATION_SUFFIX = '\n\n[truncated]';
 
-function toApprovalLastOutput(output: string | undefined): string | undefined {
+function toApprovalSnapshotText(
+  output: string | undefined
+): { text: string; truncated: boolean } | undefined {
   if (typeof output !== 'string') return undefined;
   const normalized = output.trim();
   if (normalized.length === 0) return undefined;
   if (normalized.length <= MAX_APPROVAL_LAST_OUTPUT_CHARS) {
-    return normalized;
+    return { text: normalized, truncated: false };
   }
   const keepLength = Math.max(
     0,
     MAX_APPROVAL_LAST_OUTPUT_CHARS - APPROVAL_LAST_OUTPUT_TRUNCATION_SUFFIX.length
   );
-  return normalized.slice(0, keepLength) + APPROVAL_LAST_OUTPUT_TRUNCATION_SUFFIX;
+  return {
+    text: normalized.slice(0, keepLength) + APPROVAL_LAST_OUTPUT_TRUNCATION_SUFFIX,
+    truncated: true,
+  };
+}
+
+function normalizeApprovalSnapshotChunk(chunk: MessageChunk): MessageChunk {
+  if (chunk.type !== 'assistant') {
+    return chunk;
+  }
+
+  return {
+    type: 'assistant',
+    content: stripCompletionTags(chunk.content),
+  };
+}
+
+function extractFinalAssistantOutput(chunks: readonly MessageChunk[]): string | undefined {
+  let currentAssistantSegment: string | undefined;
+  let latestAssistantSegment: string | undefined;
+
+  for (const chunk of chunks) {
+    if (chunk.type === 'assistant') {
+      currentAssistantSegment = (currentAssistantSegment ?? '') + chunk.content;
+      latestAssistantSegment = currentAssistantSegment;
+      continue;
+    }
+
+    currentAssistantSegment = undefined;
+    if (chunk.type === 'tool') {
+      latestAssistantSegment = undefined;
+    }
+  }
+
+  const normalized = latestAssistantSegment?.trim();
+  return normalized ? normalized : undefined;
+}
+
+function buildApprovalPauseSnapshot(
+  chunks: readonly MessageChunk[],
+  lastOutputSource: string | undefined
+): ApprovalPauseSnapshot {
+  const lastOutput = toApprovalSnapshotText(lastOutputSource);
+  const finalAssistantOutput = toApprovalSnapshotText(extractFinalAssistantOutput(chunks));
+
+  return {
+    ...(lastOutput
+      ? {
+          lastOutput: lastOutput.text,
+          lastOutputTruncated: lastOutput.truncated,
+        }
+      : {}),
+    ...(finalAssistantOutput
+      ? {
+          finalAssistantOutput: finalAssistantOutput.text,
+          finalAssistantOutputTruncated: finalAssistantOutput.truncated,
+        }
+      : {}),
+  };
+}
+
+function hasApprovalPauseSnapshot(snapshot: ApprovalPauseSnapshot | undefined): boolean {
+  return snapshot?.lastOutput !== undefined || snapshot?.finalAssistantOutput !== undefined;
+}
+
+function emitApprovalPendingEvent(
+  runId: string,
+  nodeId: string,
+  message: string,
+  snapshot: ApprovalPauseSnapshot
+): void {
+  getWorkflowEventEmitter().emit({
+    type: 'approval_pending',
+    runId,
+    nodeId,
+    message,
+    ...snapshot,
+  } as WorkflowEmitterEvent);
 }
 const DEFAULT_NODE_RETRY_DELAY_MS = 3000;
 
@@ -208,6 +308,29 @@ async function safeSendMessage(
  */
 function shellQuote(value: string): string {
   return `'${value.replaceAll("'", "'\\''")}'`;
+}
+
+function buildNodeSubprocessEnv(
+  artifactsDir: string,
+  baseBranch: string,
+  envVars?: Record<string, string>
+): NodeJS.ProcessEnv {
+  const runtimeEnv: NodeJS.ProcessEnv = {
+    ...process.env,
+    ARTIFACTS_DIR: artifactsDir,
+    ARCHON_ARTIFACTS_DIR: artifactsDir,
+  };
+
+  if (baseBranch) {
+    runtimeEnv.BASE_BRANCH = baseBranch;
+    runtimeEnv.ARCHON_BASE_BRANCH = baseBranch;
+  }
+
+  if (!envVars || Object.keys(envVars).length === 0) {
+    return runtimeEnv;
+  }
+
+  return { ...runtimeEnv, ...envVars };
 }
 
 /**
@@ -637,6 +760,7 @@ async function executeNodeInternal(
   let nodeNumTurns: number | undefined;
   let nodeModelUsage: Record<string, unknown> | undefined;
   const batchMessages: string[] = [];
+  const approvalSnapshotChunks: MessageChunk[] = [];
 
   // Create per-node abort controller for idle timeout cleanup
   const nodeAbortController = new AbortController();
@@ -664,6 +788,7 @@ async function executeNodeInternal(
         nodeAbortController.abort();
       }
     )) {
+      approvalSnapshotChunks.push(normalizeApprovalSnapshotChunk(msg));
       const tickNow = Date.now();
       const nodeKey = `${workflowRun.id}:${node.id}`;
 
@@ -1056,11 +1181,14 @@ async function executeNodeInternal(
     lastNodeCancelCheck.delete(`${workflowRun.id}:${node.id}`);
     lastNodeActivityUpdate.delete(`${workflowRun.id}:${node.id}`);
 
+    const approvalSnapshot = buildApprovalPauseSnapshot(approvalSnapshotChunks, nodeOutputText);
+
     return {
       state: 'completed',
       output: nodeOutputText,
       sessionId: newSessionId,
       costUsd: nodeCostUsd,
+      ...(hasApprovalPauseSnapshot(approvalSnapshot) ? { approvalSnapshot } : {}),
     };
   } catch (error) {
     const err = error as Error;
@@ -1173,8 +1301,7 @@ async function executeBashNode(
   const finalScript = substituteNodeOutputRefs(substitutedScript, nodeOutputs, true);
 
   const timeout = node.timeout ?? SUBPROCESS_DEFAULT_TIMEOUT;
-  const subprocessEnv =
-    envVars && Object.keys(envVars).length > 0 ? { ...process.env, ...envVars } : undefined;
+  const subprocessEnv = buildNodeSubprocessEnv(artifactsDir, baseBranch, envVars);
 
   try {
     const { stdout, stderr } = await execFileAsync('bash', ['-c', finalScript], {
@@ -1327,8 +1454,7 @@ async function executeScriptNode(
   const finalScript = substituteNodeOutputRefs(substitutedScript, nodeOutputs, false);
 
   const timeout = node.timeout ?? SUBPROCESS_DEFAULT_TIMEOUT;
-  const subprocessEnv =
-    envVars && Object.keys(envVars).length > 0 ? { ...process.env, ...envVars } : undefined;
+  const subprocessEnv = buildNodeSubprocessEnv(artifactsDir, baseBranch, envVars);
 
   // Build the command and args based on runtime and inline vs named
   let cmd = '';
@@ -1672,6 +1798,33 @@ async function executeLoopNode(
 ): Promise<NodeExecutionResult> {
   const loop = node.loop;
   const msgContext = { workflowId: workflowRun.id, nodeName: node.id };
+  const loopNodeStartTime = Date.now();
+
+  const persistLoopNodeFailed = async (error: string): Promise<void> => {
+    await logNodeError(logDir, workflowRun.id, node.id, error).catch((logErr: Error) => {
+      getLog().warn({ err: logErr, nodeId: node.id }, 'loop.node_error_log_write_failed');
+    });
+    deps.store
+      .createWorkflowEvent({
+        workflow_run_id: workflowRun.id,
+        event_type: 'node_failed',
+        step_name: node.id,
+        data: { error },
+      })
+      .catch((err: Error) => {
+        getLog().error(
+          { err, workflowRunId: workflowRun.id, eventType: 'node_failed' },
+          'workflow_event_persist_failed'
+        );
+      });
+    getWorkflowEventEmitter().emit({
+      type: 'node_failed',
+      runId: workflowRun.id,
+      nodeId: node.id,
+      nodeName: node.id,
+      error,
+    });
+  };
 
   // Resolve AI client — fail fast with descriptive error
   let aiClient: ReturnType<typeof deps.getAgentProvider>;
@@ -1684,12 +1837,12 @@ async function executeLoopNode(
       { err, nodeId: node.id, provider: workflowProvider },
       'loop_node.provider_failed'
     );
+    await persistLoopNodeFailed(errorMsg);
     return { state: 'failed', output: '', error: errorMsg };
   }
 
   // Detect interactive loop resume — check if workflowRun.metadata has loop gate state for this node
-  const rawApproval = workflowRun.metadata?.approval;
-  const loopGateMeta = isApprovalContext(rawApproval) ? rawApproval : undefined;
+  const loopGateMeta = getDagResumeApprovalContext(workflowRun);
   const isLoopResume = loopGateMeta?.type === 'interactive_loop' && loopGateMeta.nodeId === node.id;
   const startIteration = isLoopResume ? (loopGateMeta.iteration ?? 0) + 1 : 1;
   let currentSessionId: string | undefined = isLoopResume ? loopGateMeta.sessionId : undefined;
@@ -1714,6 +1867,30 @@ async function executeLoopNode(
   const logEventStoreError = (err: Error, iteration: number): void => {
     getLog().error({ err, nodeId: node.id, iteration }, 'loop_node.iteration_event_failed');
   };
+
+  if (!isLoopResume) {
+    getLog().info({ nodeId: node.id, provider: workflowProvider }, 'dag_node_started');
+    await logNodeStart(logDir, workflowRun.id, node.id, '<loop>');
+    deps.store
+      .createWorkflowEvent({
+        workflow_run_id: workflowRun.id,
+        event_type: 'node_started',
+        step_name: node.id,
+        data: { type: 'loop', provider: workflowProvider },
+      })
+      .catch((err: Error) => {
+        getLog().error(
+          { err, workflowRunId: workflowRun.id, eventType: 'node_started' },
+          'workflow_event_persist_failed'
+        );
+      });
+    getWorkflowEventEmitter().emit({
+      type: 'node_started',
+      runId: workflowRun.id,
+      nodeId: node.id,
+      nodeName: node.id,
+    });
+  }
 
   for (let i = startIteration; i <= loop.max_iterations; i++) {
     const iterationStart = Date.now();
@@ -1761,6 +1938,7 @@ async function executeLoopNode(
     // Stream AI response for this iteration
     let fullOutput = ''; // raw, for signal detection
     let cleanOutput = ''; // stripped, for platform display
+    const approvalSnapshotChunks: MessageChunk[] = [];
     let iterationIdleTimedOut = false;
     const iterationAbortController = new AbortController();
 
@@ -1798,9 +1976,13 @@ async function executeLoopNode(
         );
         iterationAbortController.abort();
       })) {
+        const approvalSnapshotMsg = normalizeApprovalSnapshotChunk(msg);
+        approvalSnapshotChunks.push(approvalSnapshotMsg);
+
         if (msg.type === 'assistant') {
           fullOutput += msg.content;
-          const cleaned = stripCompletionTags(msg.content);
+          const cleaned =
+            approvalSnapshotMsg.type === 'assistant' ? approvalSnapshotMsg.content : '';
           cleanOutput += cleaned;
           if (platform.getStreamingMode() === 'stream' && cleaned) {
             await safeSendMessage(platform, conversationId, cleaned, msgContext);
@@ -1955,6 +2137,7 @@ async function executeLoopNode(
         .catch((evtErr: Error) => {
           logEventStoreError(evtErr, i);
         });
+      await persistLoopNodeFailed(`Loop iteration ${i} failed: ${err.message}`);
       return {
         state: 'failed',
         output: '',
@@ -2066,7 +2249,7 @@ async function executeLoopNode(
           event_type: 'node_completed',
           step_name: node.id,
           data: {
-            duration_ms: Date.now() - iterationStart,
+            duration_ms: Date.now() - loopNodeStartTime,
             node_output: lastIterationOutput,
             ...(loopTotalCostUsd !== undefined ? { cost_usd: loopTotalCostUsd } : {}),
             ...(loopFinalStopReason ? { stop_reason: loopFinalStopReason } : {}),
@@ -2084,7 +2267,7 @@ async function executeLoopNode(
         runId: workflowRun.id,
         nodeId: node.id,
         nodeName: node.id,
-        duration: Date.now() - iterationStart,
+        duration: Date.now() - loopNodeStartTime,
         ...(loopTotalCostUsd !== undefined ? { costUsd: loopTotalCostUsd } : {}),
         ...(loopFinalStopReason ? { stopReason: loopFinalStopReason } : {}),
         ...(loopTotalNumTurns !== undefined ? { numTurns: loopTotalNumTurns } : {}),
@@ -2143,6 +2326,7 @@ async function executeLoopNode(
           'loop_node.no_progress_streak_reached'
         );
         await safeSendMessage(platform, conversationId, errorMsg, msgContext);
+        await persistLoopNodeFailed(errorMsg);
         return {
           state: 'failed',
           output: lastIterationOutput,
@@ -2156,7 +2340,10 @@ async function executeLoopNode(
     // completion signal. The user reviews the AI's output and provides feedback or approval.
     // On approval, the AI will emit the signal in the next iteration, exiting above.
     if (loop.interactive && loop.gate_message) {
-      const approvalLastOutput = toApprovalLastOutput(lastIterationOutput);
+      const approvalSnapshot = buildApprovalPauseSnapshot(
+        approvalSnapshotChunks,
+        lastIterationOutput
+      );
       const gateMsg =
         `\u23f8 **Input required** (loop \`${node.id}\`, iteration ${String(i)}): ${loop.gate_message}\n\n` +
         `Run ID: \`${workflowRun.id}\`\n` +
@@ -2171,6 +2358,9 @@ async function executeLoopNode(
         getLog().error(
           { nodeId: node.id, workflowRunId: workflowRun.id, iteration: i },
           'loop_node.gate_message_send_failed'
+        );
+        await persistLoopNodeFailed(
+          `Loop gate message failed to deliver for node '${node.id}' - cannot pause safely`
         );
         return {
           state: 'failed',
@@ -2191,18 +2381,16 @@ async function executeLoopNode(
       await deps.store.pauseWorkflowRun(workflowRun.id, {
         nodeId: node.id,
         message: loop.gate_message,
-        ...(approvalLastOutput ? { lastOutput: approvalLastOutput } : {}),
+        ...(lastIterationOutput ? { fullOutput: lastIterationOutput } : {}),
+        ...approvalSnapshot,
         type: 'interactive_loop',
         iteration: i,
         sessionId: currentSessionId,
+        ...(loop.complete_on_user_input
+          ? { completeOnUserInput: loop.complete_on_user_input }
+          : {}),
       });
-      getWorkflowEventEmitter().emit({
-        type: 'approval_pending',
-        runId: workflowRun.id,
-        nodeId: node.id,
-        message: loop.gate_message,
-        ...(approvalLastOutput ? { lastOutput: approvalLastOutput } : {}),
-      });
+      emitApprovalPendingEvent(workflowRun.id, node.id, loop.gate_message, approvalSnapshot);
       // Return completed — the between-layer status check sees 'paused' and halts cleanly.
       // This mirrors the approval-node pattern, preventing false "DAG nodes failed" warnings
       // in multi-node workflows. Resume correctness relies on the 'paused' DB status, not
@@ -2218,6 +2406,7 @@ async function executeLoopNode(
     'loop_node.max_iterations_reached'
   );
   await safeSendMessage(platform, conversationId, errorMsg, msgContext);
+  await persistLoopNodeFailed(errorMsg);
   return {
     state: 'failed',
     output: lastIterationOutput,
@@ -2251,11 +2440,10 @@ async function executeApprovalNode(
   issueContext?: string
 ): Promise<NodeOutput> {
   const msgContext = { workflowId: workflowRun.id, nodeName: node.id };
-  let approvalLastOutput: string | undefined;
+  let approvalSnapshot: ApprovalPauseSnapshot | undefined;
 
   // Detect rejection resume — check metadata for rejection_reason set by reject handlers
-  const rawApproval = workflowRun.metadata?.approval;
-  const approvalMeta = isApprovalContext(rawApproval) ? rawApproval : undefined;
+  const approvalMeta = getDagResumeApprovalContext(workflowRun);
   const rawRejection = workflowRun.metadata?.rejection_reason;
   const rejectionReason =
     approvalMeta?.type === 'approval' &&
@@ -2352,7 +2540,7 @@ async function executeApprovalNode(
     if (output.state === 'failed') {
       return output;
     }
-    approvalLastOutput = toApprovalLastOutput(output.output);
+    approvalSnapshot = output.approvalSnapshot ?? buildApprovalPauseSnapshot([], output.output);
     // Fall through to re-pause at the approval gate
   }
 
@@ -2370,7 +2558,7 @@ async function executeApprovalNode(
       step_name: node.id,
       data: {
         message: node.approval.message,
-        ...(approvalLastOutput ? { last_output: approvalLastOutput } : {}),
+        ...(approvalSnapshot?.lastOutput ? { last_output: approvalSnapshot.lastOutput } : {}),
       },
     })
     .catch((err: Error) => {
@@ -2382,7 +2570,7 @@ async function executeApprovalNode(
 
   await deps.store.pauseWorkflowRun(workflowRun.id, {
     message: node.approval.message,
-    ...(approvalLastOutput ? { lastOutput: approvalLastOutput } : {}),
+    ...(approvalSnapshot ?? {}),
     nodeId: node.id,
     type: 'approval',
     captureResponse: node.approval.capture_response,
@@ -2390,13 +2578,7 @@ async function executeApprovalNode(
     onRejectMaxAttempts: node.approval.on_reject?.max_attempts,
   });
 
-  getWorkflowEventEmitter().emit({
-    type: 'approval_pending',
-    runId: workflowRun.id,
-    nodeId: node.id,
-    message: node.approval.message,
-    ...(approvalLastOutput ? { lastOutput: approvalLastOutput } : {}),
-  });
+  emitApprovalPendingEvent(workflowRun.id, node.id, node.approval.message, approvalSnapshot ?? {});
 
   // Return completed — the between-layer status check will see 'paused' and break.
   // On resume, the approve endpoint writes a real node_completed event with the user's response.

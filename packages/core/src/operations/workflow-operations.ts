@@ -8,9 +8,11 @@ import { createLogger } from '@archon/paths';
 import {
   RESUMABLE_WORKFLOW_STATUSES,
   TERMINAL_WORKFLOW_STATUSES,
-  isApprovalContext,
+  getPausedApprovalContext,
+  getPausedOutputPreview,
+  matchesInteractiveLoopCompletionInput,
 } from '@archon/workflows/schemas/workflow-run';
-import type { WorkflowRun, ApprovalContext } from '@archon/workflows/schemas/workflow-run';
+import type { WorkflowRun } from '@archon/workflows/schemas/workflow-run';
 import * as workflowDb from '../db/workflows';
 import * as workflowEventDb from '../db/workflow-events';
 
@@ -93,9 +95,11 @@ export async function getWorkflowStatus(): Promise<WorkflowStatusData> {
 export async function resumeWorkflow(runId: string): Promise<WorkflowRun> {
   const run = await getRunOrThrow(runId, 'operations.workflow_resume_lookup_failed');
   if (!RESUMABLE_WORKFLOW_STATUSES.includes(run.status)) {
-    throw new Error(
-      `Cannot resume run with status '${run.status}'. Only failed or paused runs can be resumed.`
-    );
+    const resumeGuidance =
+      run.status === 'paused'
+        ? 'Paused runs must be approved or rejected first.'
+        : 'Only failed runs can be resumed.';
+    throw new Error(`Cannot resume run with status '${run.status}'. ${resumeGuidance}`);
   }
   return run;
 }
@@ -138,10 +142,7 @@ export async function approveWorkflow(
       `Cannot approve run with status '${run.status}'. Only paused runs can be approved.`
     );
   }
-  const rawApproval = run.metadata.approval;
-  const approval: ApprovalContext | undefined = isApprovalContext(rawApproval)
-    ? rawApproval
-    : undefined;
+  const approval = getPausedApprovalContext(run);
   if (!approval?.nodeId) {
     throw new Error('Workflow run is paused but missing approval context.');
   }
@@ -154,18 +155,41 @@ export async function approveWorkflow(
     // emits the completion signal (meaning the user actually approved). Writing it
     // here would cause the resume to skip the loop node entirely.
     if (approval.type === 'interactive_loop') {
+      const completesLoop = matchesInteractiveLoopCompletionInput(approval, approvalComment);
+      if (completesLoop) {
+        const pausedOutputPreview = getPausedOutputPreview(approval);
+        await workflowEventDb.createWorkflowEvent({
+          workflow_run_id: runId,
+          event_type: 'node_completed',
+          step_name: approval.nodeId,
+          data: {
+            node_output: approval.fullOutput ?? pausedOutputPreview?.text ?? '',
+            approval_decision: 'approved',
+            loop_completion_input: approvalComment,
+          },
+        });
+      }
       await workflowEventDb.createWorkflowEvent({
         workflow_run_id: runId,
         event_type: 'approval_received',
         step_name: approval.nodeId,
-        data: { decision: 'approved', comment: approvalComment, iteration: approval.iteration },
+        data: {
+          decision: 'approved',
+          comment: approvalComment,
+          iteration: approval.iteration,
+          ...(completesLoop ? { transition: 'complete_loop' } : {}),
+        },
       });
       // Transition to 'failed' so findResumableRun picks it up.
-      // IMPORTANT: metadata is MERGED (not replaced) — the approval context must survive
-      // intact so the resumed executor can detect the correct startIteration.
-      await workflowDb.updateWorkflowRun(runId, {
+      // The live pause state is archived into `lastApproval` and cleared from
+      // `metadata.approval` so non-paused runs do not keep a live-looking gate.
+      await workflowDb.resolveWorkflowRunApproval(runId, {
         status: 'failed',
-        metadata: { loop_user_input: approvalComment },
+        resolution: completesLoop ? 'completed' : 'feedback',
+        metadata: completesLoop
+          ? { loop_completion_input: approvalComment }
+          : { loop_user_input: approvalComment },
+        ...(comment !== undefined ? { decisionText: comment } : {}),
       });
       return {
         workflowName: run.workflow_name,
@@ -192,9 +216,11 @@ export async function approveWorkflow(
       data: { decision: 'approved', comment: approvalComment },
     });
     // Transition to 'failed' so findResumableRun picks it up. Clear any rejection state.
-    await workflowDb.updateWorkflowRun(runId, {
+    await workflowDb.resolveWorkflowRunApproval(runId, {
       status: 'failed',
+      resolution: 'approved',
       metadata: { approval_response: 'approved', rejection_reason: '', rejection_count: 0 },
+      ...(comment !== undefined ? { decisionText: comment } : {}),
     });
   } catch (error) {
     const err = error as Error;
@@ -230,13 +256,13 @@ export async function rejectWorkflow(
       `Cannot reject run with status '${run.status}'. Only paused runs can be rejected.`
     );
   }
-  const rawApproval = run.metadata.approval;
-  const approval: ApprovalContext | undefined = isApprovalContext(rawApproval)
-    ? rawApproval
-    : undefined;
+  const approval = getPausedApprovalContext(run);
+  if (!approval?.nodeId) {
+    throw new Error('Workflow run is paused but missing approval context.');
+  }
   const rejectReason = reason ?? 'Rejected';
   const currentCount = (run.metadata.rejection_count as number | undefined) ?? 0;
-  const maxAttempts = approval?.onRejectMaxAttempts ?? 3;
+  const maxAttempts = approval.onRejectMaxAttempts ?? 3;
 
   try {
     await workflowEventDb.createWorkflowEvent({
@@ -246,9 +272,14 @@ export async function rejectWorkflow(
       data: { decision: 'rejected', reason: rejectReason },
     });
 
-    if (approval?.onRejectPrompt !== undefined) {
+    if (approval.onRejectPrompt !== undefined) {
       if (currentCount + 1 >= maxAttempts) {
-        await workflowDb.cancelWorkflowRun(runId);
+        await workflowDb.resolveWorkflowRunApproval(runId, {
+          status: 'cancelled',
+          resolution: 'rejected',
+          metadata: { rejection_reason: rejectReason, rejection_count: currentCount + 1 },
+          ...(reason !== undefined ? { decisionText: reason } : {}),
+        });
         return {
           workflowName: run.workflow_name,
           workingPath: run.working_path,
@@ -259,9 +290,11 @@ export async function rejectWorkflow(
           maxAttemptsReached: true,
         };
       }
-      await workflowDb.updateWorkflowRun(runId, {
+      await workflowDb.resolveWorkflowRunApproval(runId, {
         status: 'failed',
+        resolution: 'rejected',
         metadata: { rejection_reason: rejectReason, rejection_count: currentCount + 1 },
+        ...(reason !== undefined ? { decisionText: reason } : {}),
       });
       return {
         workflowName: run.workflow_name,
@@ -274,7 +307,11 @@ export async function rejectWorkflow(
       };
     }
 
-    await workflowDb.cancelWorkflowRun(runId);
+    await workflowDb.resolveWorkflowRunApproval(runId, {
+      status: 'cancelled',
+      resolution: 'rejected',
+      ...(reason !== undefined ? { decisionText: reason } : {}),
+    });
   } catch (error) {
     const err = error as Error;
     getLog().error(

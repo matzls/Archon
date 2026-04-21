@@ -7,7 +7,13 @@ import { approveWorkflowRun, getWorkflowRunByWorker, rejectWorkflowRun } from '@
 import { useWorkflowStore } from '@/stores/workflow-store';
 import { StatusIcon } from '@/components/workflows/StatusIcon';
 import { formatDurationMs } from '@/lib/format';
-import { isTerminalStatus } from '@/lib/workflow-utils';
+import {
+  buildWorkflowExecutionPath,
+  getPausedOutputPreview,
+  isTerminalStatus,
+  parseWorkflowApproval,
+  shouldShowFullPausedOutputAction,
+} from '@/lib/workflow-utils';
 import type { DagNodeState } from '@/lib/types';
 
 interface WorkflowProgressCardProps {
@@ -44,16 +50,22 @@ export function WorkflowProgressCard({
 
   // Merge: prefer live state when available
   const status = liveState?.status ?? restStatus;
+  const isPaused = status === 'paused';
+  const restApproval = parseWorkflowApproval(runData?.run?.metadata.approval);
+  const approval = isPaused ? (liveState?.approval ?? restApproval) : null;
   const dagNodes: DagNodeState[] = liveState?.dagNodes ?? [];
   const currentTool = liveState?.currentTool ?? null;
-  const approval = liveState?.approval ?? null;
   const error = liveState?.error;
   const startedAt = liveState?.startedAt;
+  const pausedOutputPreview = getPausedOutputPreview(approval);
+  const latestOutput = pausedOutputPreview?.text ?? '';
+  const hasLatestOutput = latestOutput.length > 0;
+  const isLatestOutputClipped = pausedOutputPreview?.truncated ?? false;
+  const showFullPausedOutputAction = shouldShowFullPausedOutputAction(status, runId, approval);
 
   const completedCount = dagNodes.filter(n => n.status === 'completed').length;
   const totalNodes = dagNodes.length;
   const isRunning = status === 'running' || status === 'pending';
-  const isPaused = status === 'paused';
 
   // Expand/collapse state
   const [expanded, setExpanded] = useState(false);
@@ -102,10 +114,15 @@ export function WorkflowProgressCard({
 
   const handleViewFullScreen = (): void => {
     if (runId) {
-      navigate(`/workflows/runs/${runId}`);
+      navigate(buildWorkflowExecutionPath(runId));
     } else {
       navigate(`/chat/${encodeURIComponent(workerConversationId)}`);
     }
+  };
+
+  const handleViewFullPausedOutput = (): void => {
+    if (!runId) return;
+    navigate(buildWorkflowExecutionPath(runId, 'logs', true));
   };
 
   // Loading state: no run data yet
@@ -209,6 +226,19 @@ export function WorkflowProgressCard({
                   {approval?.message ?? 'Waiting for approval'}
                 </p>
               </div>
+              {hasLatestOutput && (
+                <div className="space-y-1">
+                  <p className="text-[11px] font-medium text-text-secondary">Latest output</p>
+                  {isLatestOutputClipped && (
+                    <p className="text-[11px] text-warning">
+                      Output clipped; showing the latest available text.
+                    </p>
+                  )}
+                  <div className="max-h-40 overflow-y-auto rounded-md border border-border bg-surface-elevated px-3 py-2 text-xs text-text-secondary whitespace-pre-wrap break-words">
+                    {latestOutput}
+                  </div>
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
@@ -263,12 +293,22 @@ export function WorkflowProgressCard({
 
           {/* Footer: View Full Screen */}
           <div className="border-t border-border px-3 py-1.5">
-            <button
-              onClick={handleViewFullScreen}
-              className="text-[10px] text-primary hover:text-accent-bright transition-colors"
-            >
-              View Full Screen &rarr;
-            </button>
+            <div className="flex items-center gap-3">
+              {showFullPausedOutputAction && (
+                <button
+                  onClick={handleViewFullPausedOutput}
+                  className="text-[10px] text-primary hover:text-accent-bright transition-colors"
+                >
+                  View full paused output &rarr;
+                </button>
+              )}
+              <button
+                onClick={handleViewFullScreen}
+                className="text-[10px] text-primary hover:text-accent-bright transition-colors"
+              >
+                View Full Screen &rarr;
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -159,43 +159,121 @@ describe('handleWorkflowArtifact', () => {
 });
 
 describe('handleWorkflowStatus — approval field', () => {
-  test('stores approval on new paused entry', () => {
+  test('stores approval with additive paused snapshot fields on new paused entry', () => {
+    const approval = {
+      nodeId: 'gate',
+      message: 'Please review',
+      lastOutput: 'Latest workflow output',
+      lastOutputTruncated: false,
+      finalAssistantOutput: 'Final assistant summary',
+      finalAssistantOutputTruncated: true,
+    };
+
     useWorkflowStore.getState().handleWorkflowStatus(
       statusEvent({
         runId: 'run-ap1',
         status: 'paused',
-        approval: { nodeId: 'gate', message: 'Please review' },
+        approval,
       })
     );
     const wf = useWorkflowStore.getState().workflows.get('run-ap1');
-    expect(wf!.approval).toEqual({ nodeId: 'gate', message: 'Please review' });
+    expect(wf!.approval).toEqual(approval);
   });
 
-  test('sets approval when existing workflow transitions to paused', () => {
+  test('preserves additive approval fields when existing workflow transitions to paused', () => {
+    const approval = {
+      nodeId: 'gate',
+      message: 'Please review',
+      lastOutput: 'Latest workflow output',
+      lastOutputTruncated: true,
+      finalAssistantOutput: 'Final assistant summary',
+      finalAssistantOutputTruncated: false,
+    };
+
     useWorkflowStore.getState().handleWorkflowStatus(statusEvent({ runId: 'run-ap2' }));
     useWorkflowStore.getState().handleWorkflowStatus(
       statusEvent({
         runId: 'run-ap2',
         status: 'paused',
-        approval: { nodeId: 'gate', message: 'Please review' },
+        approval,
       })
     );
     const wf = useWorkflowStore.getState().workflows.get('run-ap2');
-    expect(wf!.approval).toEqual({ nodeId: 'gate', message: 'Please review' });
+    expect(wf!.approval).toEqual(approval);
+  });
+
+  test('ignores approval payload on non-paused status events', () => {
+    useWorkflowStore.getState().handleWorkflowStatus(
+      statusEvent({
+        runId: 'run-ap3',
+        status: 'running',
+        approval: {
+          nodeId: 'gate',
+          message: 'Historical gate context',
+          lastOutput: 'Archived workflow output',
+          lastOutputTruncated: false,
+          finalAssistantOutput: 'Archived assistant summary',
+          finalAssistantOutputTruncated: false,
+        },
+      })
+    );
+    const wf = useWorkflowStore.getState().workflows.get('run-ap3');
+    expect(wf!.approval).toBeUndefined();
   });
 
   test('clears approval when workflow transitions out of paused', () => {
     useWorkflowStore.getState().handleWorkflowStatus(
       statusEvent({
-        runId: 'run-ap3',
+        runId: 'run-ap4',
         status: 'paused',
-        approval: { nodeId: 'gate', message: 'Please review' },
+        approval: {
+          nodeId: 'gate',
+          message: 'Please review',
+          lastOutput: 'Latest workflow output',
+          lastOutputTruncated: false,
+          finalAssistantOutput: 'Final assistant summary',
+          finalAssistantOutputTruncated: false,
+        },
       })
     );
     useWorkflowStore
       .getState()
-      .handleWorkflowStatus(statusEvent({ runId: 'run-ap3', status: 'running' }));
-    const wf = useWorkflowStore.getState().workflows.get('run-ap3');
+      .handleWorkflowStatus(statusEvent({ runId: 'run-ap4', status: 'running' }));
+    const wf = useWorkflowStore.getState().workflows.get('run-ap4');
+    expect(wf!.approval).toBeUndefined();
+  });
+
+  test('keeps approval cleared when paused workflow transitions to failed with stale approval payload', () => {
+    useWorkflowStore.getState().handleWorkflowStatus(
+      statusEvent({
+        runId: 'run-ap5',
+        status: 'paused',
+        approval: {
+          nodeId: 'gate',
+          message: 'Please review',
+          lastOutput: 'Latest workflow output',
+          lastOutputTruncated: false,
+          finalAssistantOutput: 'Final assistant summary',
+          finalAssistantOutputTruncated: false,
+        },
+      })
+    );
+    useWorkflowStore.getState().handleWorkflowStatus(
+      statusEvent({
+        runId: 'run-ap5',
+        status: 'failed',
+        error: 'Gate resolved already',
+        approval: {
+          nodeId: 'gate',
+          message: 'Historical gate context',
+          lastOutput: 'Archived workflow output',
+          lastOutputTruncated: false,
+          finalAssistantOutput: 'Archived assistant summary',
+          finalAssistantOutputTruncated: false,
+        },
+      })
+    );
+    const wf = useWorkflowStore.getState().workflows.get('run-ap5');
     expect(wf!.approval).toBeUndefined();
   });
 });
@@ -354,16 +432,41 @@ describe('handleLoopIteration', () => {
     expect(useWorkflowStore.getState().workflows).toBe(before);
   });
 
-  test('no-ops when nodeId not yet in dagNodes', () => {
+  test('creates a synthetic running node when loop iteration arrives before dag node event', () => {
     useWorkflowStore.getState().handleWorkflowStatus(statusEvent({ runId: 'run-li1' }));
     useWorkflowStore
       .getState()
       .handleLoopIteration(
         loopIterationEvent({ runId: 'run-li1', iteration: 1, nodeId: 'ghost-node' })
       );
-    // Node was not registered — dagNodes must remain empty
     const wf = useWorkflowStore.getState().workflows.get('run-li1')!;
-    expect(wf.dagNodes).toHaveLength(0);
+    expect(wf.dagNodes).toHaveLength(1);
+    expect(wf.dagNodes[0]).toEqual({
+      nodeId: 'ghost-node',
+      name: 'ghost-node',
+      status: 'running',
+      currentIteration: 1,
+      maxIterations: 5,
+      iterations: [{ iteration: 1, status: 'running', duration: undefined }],
+    });
+  });
+
+  test('keeps loop node running after a completed iteration when no dag node event exists yet', () => {
+    useWorkflowStore.getState().handleWorkflowStatus(statusEvent({ runId: 'run-li1b' }));
+    useWorkflowStore.getState().handleLoopIteration(
+      loopIterationEvent({
+        runId: 'run-li1b',
+        iteration: 1,
+        nodeId: 'ghost-node',
+        status: 'completed',
+        total: 0,
+        duration: 1200,
+      })
+    );
+    const node = useWorkflowStore.getState().workflows.get('run-li1b')!.dagNodes[0]!;
+    expect(node.status).toBe('running');
+    expect(node.currentIteration).toBe(1);
+    expect(node.iterations).toEqual([{ iteration: 1, status: 'completed', duration: 1200 }]);
   });
 
   test('appends first iteration to existing node', () => {
