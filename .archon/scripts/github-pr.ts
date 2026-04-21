@@ -110,6 +110,28 @@ function parseRemoteHost(remoteUrl: string): string | null {
   }
 }
 
+function parseRemoteRepoSlug(remoteUrl: string): string | null {
+  const trimmed = remoteUrl.trim();
+  if (!trimmed) return null;
+
+  const sshLike = /^(?:ssh:\/\/)?git@[^/:]+[:/](.+)$/i.exec(trimmed);
+  const rawPath = sshLike?.[1] ?? (() : string | null => {
+    try {
+      return new URL(trimmed).pathname;
+    } catch {
+      return null;
+    }
+  })();
+
+  if (typeof rawPath !== 'string') return null;
+
+  const normalized = rawPath.replace(/^\/+/, '').replace(/\.git$/i, '');
+  const segments = normalized.split('/').filter(segment => segment.length > 0);
+  if (segments.length < 2) return null;
+
+  return `${segments.at(-2) ?? ''}/${segments.at(-1) ?? ''}`;
+}
+
 function getEnvTokenNames(env: NodeJS.ProcessEnv): string[] {
   return TOKEN_ENV_NAMES.filter(name => {
     const value = env[name];
@@ -274,10 +296,21 @@ function readPrRequest(path: string): PrRequest {
   }
 }
 
-function getCurrentPr(env: NodeJS.ProcessEnv): PrInfo | null {
+function getCurrentPr(env: NodeJS.ProcessEnv, repoSlug: string, branchName: string): PrInfo | null {
   const result = runCommand(
     'gh',
-    ['pr', 'view', 'HEAD', '--json', 'number,url,isDraft,headRefName,baseRefName,title'],
+    [
+      'pr',
+      'list',
+      '--repo',
+      repoSlug,
+      '--head',
+      branchName,
+      '--state',
+      'open',
+      '--json',
+      'number,url,isDraft,headRefName,baseRefName,title',
+    ],
     { env, allowFailure: true }
   );
 
@@ -286,7 +319,8 @@ function getCurrentPr(env: NodeJS.ProcessEnv): PrInfo | null {
   }
 
   try {
-    return JSON.parse(result.stdout) as PrInfo;
+    const prs = JSON.parse(result.stdout) as PrInfo[];
+    return prs.find(pr => pr.headRefName === branchName) ?? prs[0] ?? null;
   } catch {
     return null;
   }
@@ -400,6 +434,10 @@ runGit(['push', '-u', 'origin', 'HEAD']);
 
 const remoteUrl = runGit(['remote', 'get-url', 'origin']).stdout.trim();
 const remoteHost = parseRemoteHost(remoteUrl);
+const remoteRepoSlug = parseRemoteRepoSlug(remoteUrl);
+if (remoteRepoSlug === null) {
+  fail(`could not derive owner/repo slug from origin remote: ${remoteUrl}`);
+}
 const authDecision = resolveAuthDecision(remoteHost);
 if (authDecision.chosenAuthSource === 'stored' && authDecision.envTokenNames.length > 0) {
   console.error(
@@ -407,20 +445,34 @@ if (authDecision.chosenAuthSource === 'stored' && authDecision.envTokenNames.len
   );
 }
 
-let pr = getCurrentPr(authDecision.env);
+let pr = getCurrentPr(authDecision.env, remoteRepoSlug, branch);
 if (pr) {
   ensureMutationAllowed(authDecision, request);
-  runGh(['pr', 'edit', String(pr.number), '--title', title, '--body-file', bodyPath], authDecision.env);
+  runGh(
+    ['pr', 'edit', String(pr.number), '--repo', remoteRepoSlug, '--title', title, '--body-file', bodyPath],
+    authDecision.env
+  );
 } else {
   ensureMutationAllowed(authDecision, request);
-  const createArgs = ['pr', 'create', '--title', title, '--body-file', bodyPath, '--base', baseBranch];
+  const createArgs = [
+    'pr',
+    'create',
+    '--repo',
+    remoteRepoSlug,
+    '--title',
+    title,
+    '--body-file',
+    bodyPath,
+    '--base',
+    baseBranch,
+  ];
   if (request.draft === true) {
     createArgs.push('--draft');
   }
   runGh(createArgs, authDecision.env);
 }
 
-pr = getCurrentPr(authDecision.env);
+pr = getCurrentPr(authDecision.env, remoteRepoSlug, branch);
 if (!pr) {
   fail('gh pr view could not resolve the current branch PR after create/edit');
 }
@@ -428,8 +480,8 @@ if (!pr) {
 const shouldEnsureReady = request.ready === true || request.draft === false;
 if (shouldEnsureReady && pr.isDraft) {
   ensureMutationAllowed(authDecision, request);
-  runGh(['pr', 'ready', String(pr.number)], authDecision.env);
-  pr = getCurrentPr(authDecision.env);
+  runGh(['pr', 'ready', String(pr.number), '--repo', remoteRepoSlug], authDecision.env);
+  pr = getCurrentPr(authDecision.env, remoteRepoSlug, branch);
   if (!pr) {
     fail('gh pr view could not resolve the PR after gh pr ready');
   }
