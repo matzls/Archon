@@ -163,7 +163,7 @@ export async function approveWorkflow(
           event_type: 'node_completed',
           step_name: approval.nodeId,
           data: {
-            node_output: pausedOutputPreview?.text ?? '',
+            node_output: approval.fullOutput ?? pausedOutputPreview?.text ?? '',
             approval_decision: 'approved',
             loop_completion_input: approvalComment,
           },

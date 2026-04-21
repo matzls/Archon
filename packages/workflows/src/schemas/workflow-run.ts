@@ -108,6 +108,8 @@ export type WorkflowRun = z.infer<typeof workflowRunSchema>;
 export interface ApprovalContext {
   nodeId: string;
   message: string;
+  /** Full durable loop output used for resume semantics (not UI preview rendering). */
+  fullOutput?: string;
   /** Bounded copy of the latest assistant output shown immediately before pausing. */
   lastOutput?: string;
   /** Whether the bounded compatibility `lastOutput` snapshot was clipped. */

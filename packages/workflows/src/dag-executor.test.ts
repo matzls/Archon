@@ -5492,6 +5492,7 @@ describe('executeDagWorkflow -- approval node', () => {
     expect(approvalContext.lastOutputTruncated).toBe(true);
     expect(approvalContext.finalAssistantOutput).toBe(finalSummary);
     expect(approvalContext.finalAssistantOutputTruncated).toBe(false);
+    expect(approvalContext.fullOutput).toBe(`${largeOutput}${finalSummary}`);
   });
 
   it('interactive loop stores finalAssistantOutput when no tool was used', async () => {

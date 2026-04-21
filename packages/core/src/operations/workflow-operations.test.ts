@@ -131,7 +131,7 @@ describe('approveWorkflow', () => {
     });
   });
 
-  test('approves interactive_loop completion alias — writes node_completed from preferred paused preview', async () => {
+  test('approves interactive_loop completion alias — writes node_completed from full loop output', async () => {
     const run = makePausedRun({
       metadata: {
         approval: {
@@ -139,6 +139,7 @@ describe('approveWorkflow', () => {
           message: 'Say ready when done',
           type: 'interactive_loop',
           iteration: 2,
+          fullOutput: 'Full exploration summary with all sections intact.',
           lastOutput: 'Compatibility preview',
           finalAssistantOutput: 'Exploration summary for the plan.',
           completeOnUserInput: ['ready', 'create the plan'],
@@ -155,7 +156,7 @@ describe('approveWorkflow', () => {
       event_type: 'node_completed',
       step_name: 'explore',
       data: {
-        node_output: 'Exploration summary for the plan.',
+        node_output: 'Full exploration summary with all sections intact.',
         approval_decision: 'approved',
         loop_completion_input: ' Ready ',
       },

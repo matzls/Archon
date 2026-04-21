@@ -2381,6 +2381,7 @@ async function executeLoopNode(
       await deps.store.pauseWorkflowRun(workflowRun.id, {
         nodeId: node.id,
         message: loop.gate_message,
+        ...(lastIterationOutput ? { fullOutput: lastIterationOutput } : {}),
         ...approvalSnapshot,
         type: 'interactive_loop',
         iteration: i,
