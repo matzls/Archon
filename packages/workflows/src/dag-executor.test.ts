@@ -4356,6 +4356,68 @@ describe('executeDagWorkflow -- resume with priorCompletedNodes', () => {
       });
     });
 
+    it('interactive loop refreshes activity when the same node key runs again', async () => {
+      mockSendQueryDag.mockImplementation(function* () {
+        yield { type: 'assistant', content: 'Exploration summary.' };
+        yield { type: 'result', sessionId: 'loop-session-heartbeat' };
+      });
+
+      const store = createMockStore();
+      const mockDeps = createMockDeps(store);
+      const platform = createMockPlatform();
+      const workflow = {
+        name: 'interactive-loop-heartbeat',
+        nodes: [
+          {
+            id: 'refine',
+            loop: {
+              prompt: 'Explore.',
+              until: 'APPROVED',
+              max_iterations: 10,
+              interactive: true,
+              gate_message: 'Review the plan.',
+            },
+          },
+        ],
+      } as const;
+
+      await executeDagWorkflow(
+        mockDeps,
+        platform,
+        'conv-dag',
+        testDir,
+        workflow,
+        makeWorkflowRun('heartbeat-run'),
+        'claude',
+        undefined,
+        join(testDir, 'artifacts'),
+        join(testDir, 'logs'),
+        'main',
+        'docs/',
+        minimalConfig
+      );
+
+      await executeDagWorkflow(
+        mockDeps,
+        platform,
+        'conv-dag',
+        testDir,
+        workflow,
+        makeWorkflowRun('heartbeat-run'),
+        'claude',
+        undefined,
+        join(testDir, 'artifacts'),
+        join(testDir, 'logs'),
+        'main',
+        'docs/',
+        minimalConfig
+      );
+
+      expect(
+        (store.updateWorkflowActivity as Mock<(id: string) => Promise<void>>).mock.calls
+      ).toHaveLength(2);
+    });
+
     it('interactive loop pause stores completion aliases when configured', async () => {
       mockSendQueryDag.mockImplementation(function* () {
         yield { type: 'assistant', content: 'Exploration summary.' };
@@ -4467,6 +4529,145 @@ describe('executeDagWorkflow -- resume with priorCompletedNodes', () => {
         nodeId: 'refine',
         iteration: 1,
       });
+    });
+
+    it('interactive loop cancel during iteration exits without approval_requested', async () => {
+      let now = 0;
+      const nowSpy = spyOn(Date, 'now').mockImplementation(() => {
+        now += 15_000;
+        return now;
+      });
+
+      mockSendQueryDag.mockImplementation(function* () {
+        yield { type: 'assistant', content: 'Exploration chunk 1' };
+        yield { type: 'assistant', content: 'Exploration chunk 2' };
+        yield { type: 'result', sessionId: 'loop-session-cancelled' };
+      });
+
+      const store = createMockStore();
+      let statusCallCount = 0;
+      (store.getWorkflowRunStatus as Mock<() => Promise<string | null>>).mockImplementation(() => {
+        statusCallCount++;
+        return Promise.resolve(statusCallCount >= 3 ? 'cancelled' : 'running');
+      });
+      const mockDeps = createMockDeps(store);
+      const platform = createMockPlatform();
+
+      try {
+        await executeDagWorkflow(
+          mockDeps,
+          platform,
+          'conv-dag',
+          testDir,
+          {
+            name: 'interactive-loop-mid-iteration-cancel',
+            nodes: [
+              {
+                id: 'refine',
+                loop: {
+                  prompt: 'Explore.',
+                  until: 'APPROVED',
+                  max_iterations: 10,
+                  interactive: true,
+                  gate_message: 'Review the plan.',
+                },
+              },
+            ],
+          },
+          makeWorkflowRun('loop-mid-iteration-cancel'),
+          'claude',
+          undefined,
+          join(testDir, 'artifacts'),
+          join(testDir, 'logs'),
+          'main',
+          'docs/',
+          minimalConfig
+        );
+      } finally {
+        nowSpy.mockRestore();
+      }
+
+      const eventTypes = (
+        store.createWorkflowEvent as Mock<
+          (data: { event_type: string; step_name?: string }) => Promise<void>
+        >
+      ).mock.calls.map(call => (call[0] as { event_type: string }).event_type);
+      expect(
+        (
+          store.pauseWorkflowRun as Mock<
+            (id: string, ctx: Record<string, unknown>) => Promise<void>
+          >
+        ).mock.calls
+      ).toHaveLength(0);
+      expect(eventTypes).not.toContain('approval_requested');
+      expect(eventTypes).not.toContain('node_failed');
+      expect(
+        (store.failWorkflowRun as Mock<(id: string, error: string) => Promise<void>>).mock.calls
+      ).toHaveLength(0);
+    });
+
+    it('interactive loop pause-race does not emit approval_requested or node_failed', async () => {
+      mockSendQueryDag.mockImplementation(function* () {
+        yield { type: 'assistant', content: 'Exploration summary.' };
+        yield { type: 'result', sessionId: 'loop-session-race' };
+      });
+
+      const workflowRun = makeWorkflowRun('loop-pause-race');
+      const store = createMockStore();
+      let statusCallCount = 0;
+      (store.getWorkflowRunStatus as Mock<() => Promise<string | null>>).mockImplementation(() => {
+        statusCallCount++;
+        return Promise.resolve(statusCallCount >= 3 ? 'cancelled' : 'running');
+      });
+      (
+        store.pauseWorkflowRun as Mock<(id: string, ctx: Record<string, unknown>) => Promise<void>>
+      ).mockRejectedValueOnce(
+        new Error(`Workflow run not found or not in running state (id: ${workflowRun.id})`)
+      );
+
+      const mockDeps = createMockDeps(store);
+      const platform = createMockPlatform();
+
+      await executeDagWorkflow(
+        mockDeps,
+        platform,
+        'conv-dag',
+        testDir,
+        {
+          name: 'interactive-loop-pause-race',
+          nodes: [
+            {
+              id: 'refine',
+              loop: {
+                prompt: 'Explore.',
+                until: 'APPROVED',
+                max_iterations: 10,
+                interactive: true,
+                gate_message: 'Review the plan.',
+              },
+            },
+          ],
+        },
+        workflowRun,
+        'claude',
+        undefined,
+        join(testDir, 'artifacts'),
+        join(testDir, 'logs'),
+        'main',
+        'docs/',
+        minimalConfig
+      );
+
+      const eventTypes = (
+        store.createWorkflowEvent as Mock<
+          (data: { event_type: string; step_name?: string }) => Promise<void>
+        >
+      ).mock.calls.map(call => (call[0] as { event_type: string }).event_type);
+      expect(eventTypes).not.toContain('approval_requested');
+      expect(eventTypes).not.toContain('node_failed');
+      expect(
+        (store.failWorkflowRun as Mock<(id: string, error: string) => Promise<void>>).mock.calls
+      ).toHaveLength(0);
     });
 
     it('interactive loop exits on resume when AI emits completion signal (user approved)', async () => {
@@ -5245,6 +5446,56 @@ describe('executeDagWorkflow -- approval node', () => {
       onRejectPrompt: 'Fix based on: $REJECTION_REASON',
       onRejectMaxAttempts: 3,
     });
+  });
+
+  it('approval node does not emit approval_requested after cancel-race pause failure', async () => {
+    const workflowRun = makeWorkflowRun('approval-cancelled-run');
+    const store = createMockStore();
+    (
+      store.pauseWorkflowRun as Mock<(id: string, ctx: Record<string, unknown>) => Promise<void>>
+    ).mockRejectedValueOnce(
+      new Error(`Workflow run not found or not in running state (id: ${workflowRun.id})`)
+    );
+    (store.getWorkflowRunStatus as Mock<() => Promise<string | null>>).mockResolvedValue(
+      'cancelled'
+    );
+
+    const mockDeps = createMockDeps(store);
+    const platform = createMockPlatform();
+
+    await executeDagWorkflow(
+      mockDeps,
+      platform,
+      'conv-approval',
+      testDir,
+      {
+        name: 'approval-cancel-race',
+        nodes: [
+          {
+            id: 'review',
+            approval: { message: 'Approve this plan?' },
+          },
+        ],
+      },
+      workflowRun,
+      'claude',
+      undefined,
+      join(testDir, 'artifacts'),
+      join(testDir, 'logs'),
+      'main',
+      'docs/',
+      minimalConfig
+    );
+
+    const eventTypes = (
+      store.createWorkflowEvent as Mock<
+        (data: { event_type: string; step_name?: string }) => Promise<void>
+      >
+    ).mock.calls.map(call => (call[0] as { event_type: string }).event_type);
+    expect(eventTypes).not.toContain('approval_requested');
+    expect(
+      (store.failWorkflowRun as Mock<(id: string, error: string) => Promise<void>>).mock.calls
+    ).toHaveLength(0);
   });
 
   it('approval node without capture_response stores empty node output', async () => {

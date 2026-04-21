@@ -219,6 +219,65 @@ function emitApprovalPendingEvent(
     ...snapshot,
   } as WorkflowEmitterEvent);
 }
+
+type NonRunningWorkflowStatus = Exclude<WorkflowRun['status'], 'running'> | 'deleted';
+
+function toNonRunningWorkflowStatus(
+  status: WorkflowRun['status'] | null
+): NonRunningWorkflowStatus | undefined {
+  if (status === null) return 'deleted';
+  return status === 'running' ? undefined : status;
+}
+
+function buildExternalStopNodeResult(
+  output: string,
+  sessionId?: string,
+  costUsd?: number
+): NodeExecutionResult {
+  return {
+    state: 'completed',
+    output,
+    ...(sessionId !== undefined ? { sessionId } : {}),
+    ...(costUsd !== undefined ? { costUsd } : {}),
+  };
+}
+
+async function pauseWorkflowRunSafely(
+  deps: WorkflowDeps,
+  workflowRunId: string,
+  approvalContext: ApprovalContext,
+  nodeId: string
+): Promise<'paused' | 'cancelled' | 'deleted'> {
+  try {
+    await deps.store.pauseWorkflowRun(workflowRunId, approvalContext);
+    return 'paused';
+  } catch (error) {
+    const err = error as Error;
+    if (!err.message.startsWith('Workflow run not found or not in running state')) {
+      throw err;
+    }
+
+    try {
+      const stopStatus = toNonRunningWorkflowStatus(
+        await deps.store.getWorkflowRunStatus(workflowRunId)
+      );
+      if (stopStatus === 'cancelled' || stopStatus === 'deleted') {
+        getLog().info(
+          { workflowRunId, nodeId, status: stopStatus },
+          'workflow.pause_stopped_externally'
+        );
+        return stopStatus;
+      }
+    } catch (statusErr) {
+      getLog().warn(
+        { err: statusErr as Error, workflowRunId, nodeId },
+        'workflow.pause_status_recheck_failed'
+      );
+    }
+
+    throw err;
+  }
+}
 const DEFAULT_NODE_RETRY_DELAY_MS = 3000;
 
 /**
@@ -1789,6 +1848,7 @@ async function executeLoopNode(
   const loop = node.loop;
   const msgContext = { workflowId: workflowRun.id, nodeName: node.id };
   const loopNodeStartTime = Date.now();
+  const nodeKey = `${workflowRun.id}:${node.id}`;
 
   const persistLoopNodeFailed = async (error: string): Promise<void> => {
     await logNodeError(logDir, workflowRun.id, node.id, error).catch((logErr: Error) => {
@@ -1883,24 +1943,30 @@ async function executeLoopNode(
     });
   }
 
+  // Resumed interactive runs can be handled by the same process that paused them.
+  // Reset throttling so the next iteration does not inherit stale heartbeat/check timestamps.
+  lastNodeCancelCheck.delete(nodeKey);
+  lastNodeActivityUpdate.delete(nodeKey);
+
   for (let i = startIteration; i <= loop.max_iterations; i++) {
     const iterationStart = Date.now();
 
     // Check for non-running status between iterations (cancellation, deletion, or future: pause)
-    const runStatus = await deps.store.getWorkflowRunStatus(workflowRun.id);
-    if (runStatus === null || runStatus !== 'running') {
-      const effectiveStatus = runStatus ?? 'deleted';
+    const runStopStatus = toNonRunningWorkflowStatus(
+      await deps.store.getWorkflowRunStatus(workflowRun.id)
+    );
+    if (runStopStatus) {
       getLog().info(
-        { workflowRunId: workflowRun.id, nodeId: node.id, iteration: i, status: effectiveStatus },
+        { workflowRunId: workflowRun.id, nodeId: node.id, iteration: i, status: runStopStatus },
         'loop_node.stop_detected'
       );
       await safeSendMessage(
         platform,
         conversationId,
-        `Loop node '${node.id}' stopped at iteration ${String(i)} (${effectiveStatus})`,
+        `Loop node '${node.id}' stopped at iteration ${String(i)} (${runStopStatus})`,
         msgContext
       );
-      return { state: 'failed', output: '', error: `Workflow ${effectiveStatus}` };
+      return buildExternalStopNodeResult(lastIterationOutput, currentSessionId, loopTotalCostUsd);
     }
 
     // Emit iteration started
@@ -1931,6 +1997,7 @@ async function executeLoopNode(
     let cleanOutput = ''; // stripped, for platform display
     const approvalSnapshotChunks: MessageChunk[] = [];
     let iterationIdleTimedOut = false;
+    let stopDuringIteration: NonRunningWorkflowStatus | undefined;
     const iterationAbortController = new AbortController();
 
     try {
@@ -1969,6 +2036,46 @@ async function executeLoopNode(
       })) {
         const approvalSnapshotMsg = normalizeApprovalSnapshotChunk(msg);
         approvalSnapshotChunks.push(approvalSnapshotMsg);
+        const tickNow = Date.now();
+
+        if (tickNow - (lastNodeCancelCheck.get(nodeKey) ?? 0) > CANCEL_CHECK_INTERVAL_MS) {
+          lastNodeCancelCheck.set(nodeKey, tickNow);
+          try {
+            stopDuringIteration = toNonRunningWorkflowStatus(
+              await deps.store.getWorkflowRunStatus(workflowRun.id)
+            );
+            if (stopDuringIteration) {
+              getLog().info(
+                {
+                  workflowRunId: workflowRun.id,
+                  nodeId: node.id,
+                  iteration: i,
+                  status: stopDuringIteration,
+                },
+                'loop_node.stop_detected_during_iteration'
+              );
+              iterationAbortController.abort();
+              break;
+            }
+          } catch (cancelCheckErr) {
+            getLog().warn(
+              { err: cancelCheckErr as Error, workflowRunId: workflowRun.id, nodeId: node.id },
+              'dag.status_check_failed'
+            );
+          }
+        }
+
+        if (tickNow - (lastNodeActivityUpdate.get(nodeKey) ?? 0) > ACTIVITY_HEARTBEAT_INTERVAL_MS) {
+          lastNodeActivityUpdate.set(nodeKey, tickNow);
+          try {
+            await deps.store.updateWorkflowActivity(workflowRun.id);
+          } catch (activityErr) {
+            getLog().warn(
+              { err: activityErr as Error, workflowRunId: workflowRun.id, nodeId: node.id },
+              'dag.activity_update_failed'
+            );
+          }
+        }
 
         if (msg.type === 'assistant') {
           fullOutput += msg.content;
@@ -2135,6 +2242,14 @@ async function executeLoopNode(
         error: `Loop iteration ${i} failed: ${err.message}`,
         costUsd: loopTotalCostUsd,
       };
+    }
+
+    if (stopDuringIteration) {
+      return buildExternalStopNodeResult(
+        cleanOutput || fullOutput,
+        currentSessionId,
+        loopTotalCostUsd
+      );
     }
 
     // Notify on idle timeout
@@ -2359,6 +2474,25 @@ async function executeLoopNode(
           error: `Loop gate message failed to deliver for node '${node.id}' — cannot pause safely`,
         };
       }
+      const pauseOutcome = await pauseWorkflowRunSafely(
+        deps,
+        workflowRun.id,
+        {
+          nodeId: node.id,
+          message: loop.gate_message,
+          ...approvalSnapshot,
+          type: 'interactive_loop',
+          iteration: i,
+          sessionId: currentSessionId,
+          ...(loop.complete_on_user_input
+            ? { completeOnUserInput: loop.complete_on_user_input }
+            : {}),
+        },
+        node.id
+      );
+      if (pauseOutcome !== 'paused') {
+        return buildExternalStopNodeResult(lastIterationOutput, currentSessionId, loopTotalCostUsd);
+      }
       deps.store
         .createWorkflowEvent({
           workflow_run_id: workflowRun.id,
@@ -2369,17 +2503,6 @@ async function executeLoopNode(
         .catch((err: Error) => {
           logEventStoreError(err, i);
         });
-      await deps.store.pauseWorkflowRun(workflowRun.id, {
-        nodeId: node.id,
-        message: loop.gate_message,
-        ...approvalSnapshot,
-        type: 'interactive_loop',
-        iteration: i,
-        sessionId: currentSessionId,
-        ...(loop.complete_on_user_input
-          ? { completeOnUserInput: loop.complete_on_user_input }
-          : {}),
-      });
       emitApprovalPendingEvent(workflowRun.id, node.id, loop.gate_message, approvalSnapshot);
       // Return completed — the between-layer status check sees 'paused' and halts cleanly.
       // This mirrors the approval-node pattern, preventing false "DAG nodes failed" warnings
@@ -2542,6 +2665,24 @@ async function executeApprovalNode(
     `Approve: \`/workflow approve ${workflowRun.id}\` | Reject: \`/workflow reject ${workflowRun.id}\``;
   await safeSendMessage(platform, conversationId, approvalMsg, msgContext);
 
+  const pauseOutcome = await pauseWorkflowRunSafely(
+    deps,
+    workflowRun.id,
+    {
+      message: node.approval.message,
+      ...(approvalSnapshot ?? {}),
+      nodeId: node.id,
+      type: 'approval',
+      captureResponse: node.approval.capture_response,
+      onRejectPrompt: node.approval.on_reject?.prompt,
+      onRejectMaxAttempts: node.approval.on_reject?.max_attempts,
+    },
+    node.id
+  );
+  if (pauseOutcome !== 'paused') {
+    return { state: 'completed' as const, output: '' };
+  }
+
   deps.store
     .createWorkflowEvent({
       workflow_run_id: workflowRun.id,
@@ -2559,23 +2700,12 @@ async function executeApprovalNode(
       );
     });
 
-  await deps.store.pauseWorkflowRun(workflowRun.id, {
-    message: node.approval.message,
-    ...(approvalSnapshot ?? {}),
-    nodeId: node.id,
-    type: 'approval',
-    captureResponse: node.approval.capture_response,
-    onRejectPrompt: node.approval.on_reject?.prompt,
-    onRejectMaxAttempts: node.approval.on_reject?.max_attempts,
-  });
-
   emitApprovalPendingEvent(workflowRun.id, node.id, node.approval.message, approvalSnapshot ?? {});
 
   // Return completed — the between-layer status check will see 'paused' and break.
   // On resume, the approve endpoint writes a real node_completed event with the user's response.
   return { state: 'completed' as const, output: '' };
 }
-
 /**
  * Execute a complete DAG workflow.
  * Called from executeWorkflow() in executor.ts.
