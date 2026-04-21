@@ -3,7 +3,7 @@ title: Archon Paused Output UX Parity Plan
 kind: plan
 status: active
 created: 2026-04-20
-updated: 2026-04-20
+updated: 2026-04-21
 origin: user request to improve Archon Codex paused-output visibility after status snapshot truncation
 version: 1
 ---
@@ -22,8 +22,9 @@ Simple version:
 - Deeper fixes belong in later slices because they change runtime contracts,
   metadata semantics, or log retrieval.
 
-Slice 1 and Slice 2 are now implemented on `dev`. Slices 3 through 5 are still
-retained as roadmap scope and require separate review before coding.
+Slices 1 through 4 are now implemented on
+`codex/paused-output-slices-1-2-review` and are collected in draft PR #5 on
+`matzls/Archon`. Slice 5 remains the only open roadmap scope.
 
 # Orchestration Model
 
@@ -50,15 +51,17 @@ Canonical umbrella-plan reference:
 - absolute:
   `/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/archon-paused-output-ux-parity_plan.md`
 
-Default handover rules for every later slice:
+Default handover rules for the remaining slice:
 
 - use the umbrella plan as context only
 - activate exactly one named slice
 - state the expected slice artifact explicitly, for example PRD, brief, or
   implementation run
 - reuse review branch `codex/paused-output-slices-1-2-review`
-- create a fresh clean local worktree from that branch for the active slice
-  when needed
+- prefer the persistent review worktree
+  `/Users/mase/.archon/worktrees/Personal-Projects/Archon/review/paused-output-review`
+  and only create a fresh clean worktree from the review branch when there is a
+  concrete reason to do so
 - treat every other slice as non-scope unless the umbrella plan is updated
 - pause for human review at the slice artifact checkpoint before broader
   implementation
@@ -68,8 +71,10 @@ Default wording to reuse in future prompts:
 > Use the umbrella plan at
 > `docs/plans/archon-paused-output-ux-parity_plan.md` as context only. Treat
 > `<Slice Name>` as the only active scope. Reuse review branch
-> `codex/paused-output-slices-1-2-review` and create a fresh clean local
-> worktree from it for this slice.
+> `codex/paused-output-slices-1-2-review` and prefer the persistent review
+> worktree at
+> `/Users/mase/.archon/worktrees/Personal-Projects/Archon/review/paused-output-review`
+> for this slice.
 > Create or refine the slice-specific artifact first. Do not implement directly
 > from the umbrella plan. Keep all other slices out of scope. Pause for review
 > when the slice artifact is ready.
@@ -87,7 +92,9 @@ Active slice artifact goal:
 
 Operating rules:
 - reuse review branch `codex/paused-output-slices-1-2-review`
-- create a fresh clean local worktree from that branch for the active slice
+- prefer the persistent review worktree at
+  `/Users/mase/.archon/worktrees/Personal-Projects/Archon/review/paused-output-review`
+- only create a fresh clean local worktree from that branch when needed
 - do not implement directly from the umbrella plan
 - keep all other slices out of scope
 - pause for human review when the slice artifact is ready
@@ -99,7 +106,7 @@ the same scope limits.
 
 ## Historical Archon Lane And Current Review Branch
 
-Operator decisions as of 2026-04-20:
+Operator decisions as of 2026-04-21:
 
 - Slice 1 and Slice 2 were implemented through the historical Archon execution
   lane:
@@ -107,14 +114,19 @@ Operator decisions as of 2026-04-20:
   - worktree: retired; the old
     `/Users/mase/.archon/worktrees/Personal-Projects/Archon/archon/task-piv-paused-output-web-parity-v2`
     path no longer exists locally
-- The active long-lived review branch is now:
+- Slice 3 and Slice 4 were implemented directly on the persistent review lane
+  after slice-specific PRDs were created and reviewed.
+- The active long-lived review lane is now:
   - branch: `codex/paused-output-slices-1-2-review`
-  - PR base: `dev`
-  - local review worktree for this session: `/tmp/archon-paused-output-review`
+  - PR base: `codex/paused-output-review-base`
+  - draft review PR: `matzls/Archon#5`
+  - persistent local review worktree:
+    `/Users/mase/.archon/worktrees/Personal-Projects/Archon/review/paused-output-review`
 - Keep future umbrella slices on this same draft review branch so there is one
-  PR to review after the whole plan is implemented.
-- For future implementation sessions, create a fresh clean local worktree from
-  the review branch instead of reviving the retired Archon path.
+  PR to review and merge after the whole plan is implemented.
+- For future implementation sessions, prefer the persistent review worktree or
+  create a fresh clean worktree from the review branch instead of reviving the
+  retired Archon path.
 - Do not continue umbrella-slice implementation in the dirty root `dev`
   checkout.
 
@@ -124,23 +136,40 @@ Operator decisions as of 2026-04-20:
 | --- | --- | --- | --- | --- |
 | Slice 1: Web Paused Output Parity | `docs/prd/paused-output-web-parity.prd.md` | `archon/task-piv-paused-output-web-parity-v2` | Implemented; in draft review branch | Shipped through the historical Archon lane, manually verified in the branch UI, and reconstructed onto `codex/paused-output-slices-1-2-review` so the final review can happen in one PR. |
 | Slice 2: Paused Snapshot Contract Design | `docs/prd/paused-snapshot-contract-design.prd.md` | `archon/task-piv-paused-output-web-parity-v2` | Implemented; in draft review branch | The `finalAssistantOutput` paused snapshot contract shipped through workflows, server, and web, integrated on `dev` via `b1299cd9`, and is now included in the draft review branch. |
-| Slice 3: Runtime Metadata Hygiene | TBD | next clean worktree from `codex/paused-output-slices-1-2-review` | Deferred | Requires workflow-state semantics review; add it to the same draft review branch after implementation. |
-| Slice 4: Full Output Fallback | TBD | next clean worktree from `codex/paused-output-slices-1-2-review` | Deferred | Requires API/log-access design; add it to the same draft review branch after implementation. |
-| Slice 5: Non-Web Adapter Review | TBD | next clean worktree from `codex/paused-output-slices-1-2-review` | Deferred | Requires adapter-specific review; add it to the same draft review branch after implementation. |
+| Slice 3: Runtime Metadata Hygiene | `docs/prd/runtime-metadata-hygiene.prd.md` | `codex/paused-output-slices-1-2-review` | Implemented; in draft review branch | Clears live-looking approval metadata after pause resolution, archives the latest resolved gate under `lastApproval`, and keeps the work on the same review PR. |
+| Slice 4: Full Output Fallback | `docs/prd/full-output-fallback.prd.md` | `codex/paused-output-slices-1-2-review` | Implemented; in draft review branch | Adds the clipped-preview `View full paused output` deeplink, query-param run-details routing, and logs focus behavior on the same review PR. |
+| Slice 5: Non-Web Adapter Review | TBD | `codex/paused-output-slices-1-2-review` | Pending artifact | Create or refine the slice-specific artifact first, then keep the implementation on the same review branch and PR. |
 
 # Current Orchestration Ledger
 
 - Active slice: none
-- Most recently implemented slice: Slice 2
-- Next planned slice: Slice 3: Runtime Metadata Hygiene
+- Most recently implemented slice: Slice 4
+- Next planned slice: Slice 5: Non-Web Adapter Review
 - Draft review branch: `codex/paused-output-slices-1-2-review`
-- Draft review PR target: `dev`
-- Local review worktree for this session: `/tmp/archon-paused-output-review`
+- Draft review PR target: `codex/paused-output-review-base`
+- Draft review PR: `https://github.com/matzls/Archon/pull/5`
+- Persistent local review worktree: `/Users/mase/.archon/worktrees/Personal-Projects/Archon/review/paused-output-review`
 - Historical Archon implementation lane: `archon/task-piv-paused-output-web-parity-v2` (retired)
-- Historical Slice 1 run ID: `0fcda4d1b1b047ea74b1d59028f8e595`
-- Review artifact set now covers Slice 1 and Slice 2 together
-- Validation status: `bun run validate` passed in the reconstructed draft review worktree after dependency installation
-- Last updated: 2026-04-20 Slice 1 and Slice 2 implemented; draft review branch prepared for one end-of-plan PR review
+- Review artifact set now covers Slices 1 through 4 together
+- Validation status:
+  - Slice 4 targeted Web checks passed:
+    `bun --filter @archon/web type-check`,
+    `bun test packages/web/src/lib/workflow-utils.test.ts`,
+    and targeted ESLint on the touched Web files
+  - broad `bun run validate` remains noisy in the review worktree for
+    dependency-resolution reasons outside the Slice 4 Web surface
+- Last updated: 2026-04-21 Slices 1 through 4 implemented on PR #5; Slice 5 remains the only open umbrella scope
+
+## Current Canonical Read
+
+When this plan conflicts with archived slice notes below, trust this section:
+
+- PR #5 on `matzls/Archon` is the single paused-output review PR
+- branch `codex/paused-output-slices-1-2-review` is the delivery branch
+- worktree `/Users/mase/.archon/worktrees/Personal-Projects/Archon/review/paused-output-review`
+  is the persistent review worktree
+- Slices 1 through 4 are implemented
+- Slice 5 is the next and only active umbrella scope
 
 ## Latest Slice 1 Execution Result
 

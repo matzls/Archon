@@ -1,7 +1,7 @@
 ---
 title: Full Output Fallback
-status: handoff_candidate
-workflow_handoff_status: handoff_candidate
+status: implemented
+workflow_handoff_status: implemented
 created: 2026-04-21
 updated: 2026-04-21
 source_plan: docs/plans/archon-paused-output-ux-parity_plan.md
@@ -9,6 +9,14 @@ slice: 4
 ---
 
 # PRD: Full Output Fallback
+
+## Implementation Status
+
+Historical note as of 2026-04-21:
+
+- Slice 4 is implemented on `codex/paused-output-slices-1-2-review`
+- it is included in draft PR #5 on `matzls/Archon`
+- the remaining sections are preserved as the original slice artifact
 
 ## 1. Problem Statement
 
@@ -224,9 +232,8 @@ Before merge or PR:
 bun run validate
 ```
 
-## 12. Operator Handoff Prompt
+## 12. Historical Handoff Note
 
-Use this PRD as the complete implementation scope for Slice 4 only. Reuse the
-existing worker-conversation logs path as the authoritative full paused-output
-source for Web. Keep normal paused payloads bounded, keep filesystem log access
-out of scope, and do not widen to Slice 5.
+This PRD already drove the Slice 4 implementation now carried in PR #5. Do not
+reuse it as the active implementation prompt for new work. For the next session,
+use the umbrella plan plus Slice 5 only.

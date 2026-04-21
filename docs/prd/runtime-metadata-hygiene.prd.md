@@ -1,14 +1,22 @@
 ---
 title: Runtime Metadata Hygiene
-status: handoff_candidate
-workflow_handoff_status: handoff_candidate
+status: implemented
+workflow_handoff_status: implemented
 created: 2026-04-20
-updated: 2026-04-20
+updated: 2026-04-21
 source_plan: docs/plans/archon-paused-output-ux-parity_plan.md
 slice: 3
 ---
 
 # PRD: Runtime Metadata Hygiene
+
+## Implementation Status
+
+Historical note as of 2026-04-21:
+
+- Slice 3 is implemented on `codex/paused-output-slices-1-2-review`
+- it is included in draft PR #5 on `matzls/Archon`
+- the remaining sections are preserved as the original slice artifact
 
 ## 1. Problem Statement
 
@@ -370,21 +378,10 @@ Do not include:
 - PR structure or base-branch changes
 - direct implementation from the umbrella plan
 
-## 14. Operator Handoff
+## 14. Historical Handoff Note
 
-Recommended next implementation lane after PRD approval:
-
-- yes, use `archon-piv-loop-codex`
-
-Operator rules for that follow-up run:
-
-- use this PRD as the only implementation scope input
-- do not feed the umbrella plan into the PIV implementation run
-- keep Slice 4 and Slice 5 out of scope
-- reuse branch `codex/paused-output-slices-1-2-review`
-- prefer the existing review worktree at `/tmp/archon-paused-output-review`
-  instead of creating a new auto-generated Archon branch/worktree
-- pause again for human review after implementation validation
-
-This PRD draft is the checkpoint for human review. Do not implement Slice 3 in
-this session.
+This PRD already drove the Slice 3 implementation now carried in PR #5. The
+current persistent review worktree is
+`/Users/mase/.archon/worktrees/Personal-Projects/Archon/review/paused-output-review`;
+the old `/tmp/archon-paused-output-review` path is no longer the canonical
+lane. Do not reuse this PRD as the active implementation prompt for new work.

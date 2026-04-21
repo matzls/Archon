@@ -1,14 +1,22 @@
 ---
 title: Paused Snapshot Contract Design
-status: handoff_candidate
-workflow_handoff_status: handoff_candidate
+status: implemented
+workflow_handoff_status: implemented
 created: 2026-04-20
-updated: 2026-04-20
+updated: 2026-04-21
 source_plan: docs/plans/archon-paused-output-ux-parity_plan.md
 slice: 2
 ---
 
 # PRD: Paused Snapshot Contract Design
+
+## Implementation Status
+
+Historical note as of 2026-04-21:
+
+- Slice 2 is implemented on `codex/paused-output-slices-1-2-review`
+- it is included in draft PR #5 on `matzls/Archon`
+- the remaining sections are preserved as the original slice artifact
 
 ## 1. Problem Statement
 
@@ -339,43 +347,13 @@ Rationale:
 - It is cross-package work, but still narrow enough to run as one focused PIV
   slice after approval.
 
-### Eventual Implementation Recommendation
+### Historical Implementation Note
 
-Yes. After this PRD is approved, the implementation should use
-`archon-piv-loop-codex`.
-
-Conditions:
-
-- use this PRD as the execution input, not the umbrella plan
-- reuse branch `archon/task-piv-paused-output-web-parity-v2`
-- reuse worktree
-  `/Users/mase/.archon/worktrees/Personal-Projects/Archon/archon/task-piv-paused-output-web-parity-v2`
-- keep Slices 3 through 5 out of scope
-
-### Operator Handoff Prompt
-
-```text
-Use archon-piv-loop-codex for Slice 2 only.
-
-Execution input:
-- PRD: docs/prd/paused-snapshot-contract-design.prd.md
-
-Lane requirements:
-- reuse branch archon/task-piv-paused-output-web-parity-v2
-- reuse worktree /Users/mase/.archon/worktrees/Personal-Projects/Archon/archon/task-piv-paused-output-web-parity-v2
-- do not implement from the umbrella plan
-- keep Slice 3, Slice 4, and Slice 5 out of scope
-
-Implementation goal:
-- preserve approval.lastOutput for compatibility
-- add typed truncation flags
-- add finalAssistantOutput using the last tool-free assistant turn contract
-- add executor and contract tests proving long lastOutput can coexist with a
-  shorter semantic finalAssistantOutput
-
-Stop after Slice 2 implementation and validation. Report exact files, tests,
-and residual risks.
-```
+This PRD already drove the Slice 2 implementation now carried in PR #5. The
+historical implementation lane used the retired
+`archon/task-piv-paused-output-web-parity-v2` branch/worktree. Do not reuse
+that lane for new work. For any later session, use the umbrella plan plus the
+currently active slice only.
 
 ## 16. Open Questions
 
