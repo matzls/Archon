@@ -205,6 +205,40 @@ export function getResumeApprovalContext(
   return isApprovalContext(legacyApproval) ? legacyApproval : undefined;
 }
 
+type PausedOutputPreviewSource = Pick<
+  ApprovalContext,
+  'lastOutput' | 'lastOutputTruncated' | 'finalAssistantOutput' | 'finalAssistantOutputTruncated'
+>;
+
+/** Select the best paused-output preview using the shared non-Web/Web precedence rule. */
+export function getPausedOutputPreview(
+  approval: PausedOutputPreviewSource | null | undefined
+): { text: string; truncated: boolean } | null {
+  if (!approval) {
+    return null;
+  }
+
+  const finalAssistantOutput = approval.finalAssistantOutput?.trim() ?? '';
+  if (finalAssistantOutput.length > 0) {
+    return {
+      text: finalAssistantOutput,
+      truncated:
+        approval.finalAssistantOutputTruncated ??
+        finalAssistantOutput.trimEnd().endsWith('[truncated]'),
+    };
+  }
+
+  const lastOutput = approval.lastOutput?.trim() ?? '';
+  if (lastOutput.length === 0) {
+    return null;
+  }
+
+  return {
+    text: lastOutput,
+    truncated: approval.lastOutputTruncated ?? lastOutput.trimEnd().endsWith('[truncated]'),
+  };
+}
+
 /** Normalize human gate replies for exact alias comparison. */
 export function normalizeInteractiveLoopInput(input: string): string {
   return input.trim().toLowerCase().replace(/\s+/g, ' ');
