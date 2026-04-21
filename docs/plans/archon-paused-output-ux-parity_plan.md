@@ -138,7 +138,7 @@ Operator decisions as of 2026-04-21:
 | Slice 2: Paused Snapshot Contract Design | `docs/prd/paused-snapshot-contract-design.prd.md` | `archon/task-piv-paused-output-web-parity-v2` | Implemented; in draft review branch | The `finalAssistantOutput` paused snapshot contract shipped through workflows, server, and web, integrated on `dev` via `b1299cd9`, and is now included in the draft review branch. |
 | Slice 3: Runtime Metadata Hygiene | `docs/prd/runtime-metadata-hygiene.prd.md` | `codex/paused-output-slices-1-2-review` | Implemented; in draft review branch | Clears live-looking approval metadata after pause resolution, archives the latest resolved gate under `lastApproval`, and keeps the work on the same review PR. |
 | Slice 4: Full Output Fallback | `docs/prd/full-output-fallback.prd.md` | `codex/paused-output-slices-1-2-review` | Implemented; in draft review branch | Adds the clipped-preview `View full paused output` deeplink, query-param run-details routing, and logs focus behavior on the same review PR. |
-| Slice 5: Non-Web Adapter Review | TBD | `codex/paused-output-slices-1-2-review` | Pending artifact | Create or refine the slice-specific artifact first, then keep the implementation on the same review branch and PR. |
+| Slice 5: Non-Web Adapter Review | `docs/prd/non-web-paused-output-adapter-review.prd.md` | `codex/paused-output-slices-1-2-review` | Artifact drafted; review checkpoint | The slice-specific PRD now exists on the persistent review branch and narrows Slice 5 to CLI plus shared `/workflow status` parity, with GitHub only on the forge side. |
 
 # Current Orchestration Ledger
 
@@ -150,7 +150,7 @@ Operator decisions as of 2026-04-21:
 - Draft review PR: `https://github.com/matzls/Archon/pull/5`
 - Persistent local review worktree: `/Users/mase/.archon/worktrees/Personal-Projects/Archon/review/paused-output-review`
 - Historical Archon implementation lane: `archon/task-piv-paused-output-web-parity-v2` (retired)
-- Review artifact set now covers Slices 1 through 4 together
+- Review artifact set now covers Slices 1 through 5, with Slice 5 paused at PRD review
 - Validation status:
   - Slice 4 targeted Web checks passed:
     `bun --filter @archon/web type-check`,
@@ -158,7 +158,7 @@ Operator decisions as of 2026-04-21:
     and targeted ESLint on the touched Web files
   - broad `bun run validate` remains noisy in the review worktree for
     dependency-resolution reasons outside the Slice 4 Web surface
-- Last updated: 2026-04-21 Slices 1 through 4 implemented on PR #5; Slice 5 remains the only open umbrella scope
+- Last updated: 2026-04-21 Slice 5 PRD drafted on PR #5; Slices 1 through 4 remain implemented and Slice 5 remains the only open umbrella scope
 
 ## Current Canonical Read
 
@@ -169,6 +169,7 @@ When this plan conflicts with archived slice notes below, trust this section:
 - worktree `/Users/mase/.archon/worktrees/Personal-Projects/Archon/review/paused-output-review`
   is the persistent review worktree
 - Slices 1 through 4 are implemented
+- Slice 5 artifact exists at `docs/prd/non-web-paused-output-adapter-review.prd.md`
 - Slice 5 is the next and only active umbrella scope
 
 ## Latest Slice 1 Execution Result
