@@ -151,6 +151,8 @@ Operator decisions as of 2026-04-21:
 - Persistent local review worktree: `/Users/mase/.archon/worktrees/Personal-Projects/Archon/review/paused-output-review`
 - Historical Archon implementation lane: `archon/task-piv-paused-output-web-parity-v2` (retired)
 - Review artifact set now covers Slices 1 through 5, with Slice 5 ready for a fresh implementation restart from its accepted PRD
+- Post-merge follow-up plan for a future pause -> alias approve -> resume integration-style regression test:
+  `docs/plans/paused-output-integration-test-plan.md`
 - Latest Slice 5 Archon implementation attempt: run `6a202657c75a5095ad648a79cc9e463e` failed cleanly after no durable progress in `implement`; the review worktree remained clean and no Slice 5 implementation commit was created
 - Validation status:
   - Slice 4 targeted Web checks passed:
@@ -173,6 +175,8 @@ When this plan conflicts with archived slice notes below, trust this section:
 - Slice 5 artifact exists at `docs/prd/non-web-paused-output-adapter-review.prd.md`
 - Slice 5 PRD is accepted and is the direct implementation input for the next fresh run
 - Slice 5 remains the next and only active umbrella scope
+- the future integration-style paused-output regression plan is tracked separately at
+  `docs/plans/paused-output-integration-test-plan.md` and is not part of the current slice implementation scope
 
 ## Latest Slice 1 Execution Result
 
