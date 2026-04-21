@@ -1303,7 +1303,36 @@ describe('workflowStatusCommand', () => {
     expect(calls.some(c => c.includes('running'))).toBe(true);
   });
 
-  it('should show latest paused output when present', async () => {
+  it('should show preferred paused preview when present', async () => {
+    const workflowDb = await import('@archon/core/db/workflows');
+    (workflowDb.listWorkflowRuns as ReturnType<typeof mock>).mockResolvedValueOnce([
+      {
+        id: 'run-paused',
+        workflow_name: 'archon-piv-loop-codex',
+        working_path: '/path/to/worktree',
+        status: 'paused',
+        started_at: new Date(Date.now() - 60 * 1000),
+        metadata: {
+          approval: {
+            nodeId: 'explore',
+            message: 'Answer the questions above.',
+            lastOutput: '## Questions\n1. Legacy?\n2. Legacy?',
+            finalAssistantOutput: '## Questions\n1. Scope?\n2. Validation?',
+          },
+        },
+      },
+    ]);
+
+    await workflowStatusCommand();
+
+    const calls = consoleSpy.mock.calls.map((c: unknown[]) => String(c[0]));
+    expect(calls.some(c => c.includes('Paused preview:'))).toBe(true);
+    expect(calls.some(c => c.includes('## Questions'))).toBe(true);
+    expect(calls.some(c => c.includes('1. Scope?'))).toBe(true);
+    expect(calls.some(c => c.includes('Legacy?'))).toBe(false);
+  });
+
+  it('should show fallback paused preview and clipped note when semantic preview is absent', async () => {
     const workflowDb = await import('@archon/core/db/workflows');
     (workflowDb.listWorkflowRuns as ReturnType<typeof mock>).mockResolvedValueOnce([
       {
@@ -1317,6 +1346,7 @@ describe('workflowStatusCommand', () => {
             nodeId: 'explore',
             message: 'Answer the questions above.',
             lastOutput: '## Questions\n1. Scope?\n2. Validation?',
+            lastOutputTruncated: true,
           },
         },
       },
@@ -1325,9 +1355,9 @@ describe('workflowStatusCommand', () => {
     await workflowStatusCommand();
 
     const calls = consoleSpy.mock.calls.map((c: unknown[]) => String(c[0]));
-    expect(calls.some(c => c.includes('Latest output:'))).toBe(true);
-    expect(calls.some(c => c.includes('## Questions'))).toBe(true);
+    expect(calls.some(c => c.includes('Paused preview:'))).toBe(true);
     expect(calls.some(c => c.includes('1. Scope?'))).toBe(true);
+    expect(calls.some(c => c.includes('Preview clipped on this surface.'))).toBe(true);
   });
 
   it('should output JSON when json=true', async () => {
@@ -2116,7 +2146,7 @@ describe('workflowRunCommand — progress rendering', () => {
     expect(stderrSpy).toHaveBeenCalledWith('[deploy] Skipped (when_condition)\n');
   });
 
-  it('should write approval_pending event to stderr', async () => {
+  it('should write preferred approval_pending preview to stderr', async () => {
     setupWorkflowMocks();
 
     const { executeWorkflow } = require('@archon/workflows/executor');
@@ -2127,7 +2157,9 @@ describe('workflowRunCommand — progress rendering', () => {
           runId: 'run-1',
           nodeId: 'review',
           message: 'Please review the changes',
-          lastOutput: '## Questions\n1. Scope?\n2. Validation?',
+          lastOutput: '## Questions\n1. Legacy?\n2. Legacy?',
+          finalAssistantOutput: '## Questions\n1. Scope?\n2. Validation?',
+          finalAssistantOutputTruncated: true,
         });
       }
       return { success: true, workflowRunId: 'run-1', paused: true };
@@ -2139,11 +2171,12 @@ describe('workflowRunCommand — progress rendering', () => {
       1,
       '[review] Waiting for approval: Please review the changes\n'
     );
-    expect(stderrSpy).toHaveBeenNthCalledWith(2, 'Latest output:\n');
+    expect(stderrSpy).toHaveBeenNthCalledWith(2, 'Paused preview:\n');
     expect(stderrSpy).toHaveBeenNthCalledWith(
       3,
       '    ## Questions\n    1. Scope?\n    2. Validation?\n'
     );
+    expect(stderrSpy).toHaveBeenNthCalledWith(4, 'Preview clipped on this surface.\n');
   });
 
   it('should not write tool_started without verbose', async () => {

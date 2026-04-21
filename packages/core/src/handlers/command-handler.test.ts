@@ -1336,7 +1336,42 @@ describe('CommandHandler', () => {
         expect(result.message).toContain('(unknown)');
       });
 
-      test('should show latest paused output when present', async () => {
+      test('should show preferred paused preview when present', async () => {
+        const startedAt = new Date();
+        mockListWorkflowRuns.mockResolvedValueOnce([
+          {
+            id: 'run-paused',
+            workflow_name: 'archon-piv-loop-codex',
+            conversation_id: 'conv-1',
+            parent_conversation_id: null,
+            codebase_id: null,
+            status: 'paused',
+            user_message: 'help',
+            metadata: {
+              approval: {
+                nodeId: 'explore',
+                message: 'Answer the questions above.',
+                lastOutput: '## Questions\n1. Legacy?\n2. Legacy?',
+                finalAssistantOutput: '## Questions\n1. Scope?\n2. Validation?',
+              },
+            },
+            started_at: startedAt,
+            completed_at: null,
+            last_activity_at: null,
+            working_path: '/workspace/worktrees/paused-run',
+          },
+        ]);
+
+        const result = await handleCommand(baseConversation, '/workflow status');
+
+        expect(result.success).toBe(true);
+        expect(result.message).toContain('Paused preview');
+        expect(result.message).toContain('## Questions');
+        expect(result.message).toContain('1. Scope?');
+        expect(result.message).not.toContain('Legacy?');
+      });
+
+      test('should show fallback paused preview and clipped note', async () => {
         const startedAt = new Date();
         mockListWorkflowRuns.mockResolvedValueOnce([
           {
@@ -1352,6 +1387,7 @@ describe('CommandHandler', () => {
                 nodeId: 'explore',
                 message: 'Answer the questions above.',
                 lastOutput: '## Questions\n1. Scope?\n2. Validation?',
+                lastOutputTruncated: true,
               },
             },
             started_at: startedAt,
@@ -1364,9 +1400,9 @@ describe('CommandHandler', () => {
         const result = await handleCommand(baseConversation, '/workflow status');
 
         expect(result.success).toBe(true);
-        expect(result.message).toContain('Latest output');
-        expect(result.message).toContain('## Questions');
+        expect(result.message).toContain('Paused preview');
         expect(result.message).toContain('1. Scope?');
+        expect(result.message).toContain('Preview clipped on this surface.');
       });
     });
 

@@ -138,19 +138,20 @@ Operator decisions as of 2026-04-21:
 | Slice 2: Paused Snapshot Contract Design | `docs/prd/paused-snapshot-contract-design.prd.md` | `archon/task-piv-paused-output-web-parity-v2` | Implemented; in draft review branch | The `finalAssistantOutput` paused snapshot contract shipped through workflows, server, and web, integrated on `dev` via `b1299cd9`, and is now included in the draft review branch. |
 | Slice 3: Runtime Metadata Hygiene | `docs/prd/runtime-metadata-hygiene.prd.md` | `codex/paused-output-slices-1-2-review` | Implemented; in draft review branch | Clears live-looking approval metadata after pause resolution, archives the latest resolved gate under `lastApproval`, and keeps the work on the same review PR. |
 | Slice 4: Full Output Fallback | `docs/prd/full-output-fallback.prd.md` | `codex/paused-output-slices-1-2-review` | Implemented; in draft review branch | Adds the clipped-preview `View full paused output` deeplink, query-param run-details routing, and logs focus behavior on the same review PR. |
-| Slice 5: Non-Web Adapter Review | `docs/prd/non-web-paused-output-adapter-review.prd.md` | `codex/paused-output-slices-1-2-review` | Artifact drafted; review checkpoint | The slice-specific PRD now exists on the persistent review branch and narrows Slice 5 to CLI plus shared `/workflow status` parity, with GitHub only on the forge side. |
+| Slice 5: Non-Web Adapter Review | `docs/prd/non-web-paused-output-adapter-review.prd.md` | `codex/paused-output-slices-1-2-review` | PRD accepted; implementation restart pending | The final Slice 5 PRD is accepted on the persistent review branch and narrows Slice 5 to CLI plus shared `/workflow status` parity, with GitHub only on the forge side. A first Archon implementation attempt failed cleanly because the CLI wording change and its adjacent test updates were split across task boundaries; the next fresh run should restart from the accepted PRD and allow paired in-scope code/test updates when validation depends on both. |
 
 # Current Orchestration Ledger
 
 - Active slice: none
 - Most recently implemented slice: Slice 4
-- Next planned slice: Slice 5: Non-Web Adapter Review
+- Next planned slice: Slice 5 implementation restart from the accepted PRD
 - Draft review branch: `codex/paused-output-slices-1-2-review`
 - Draft review PR target: `codex/paused-output-review-base`
 - Draft review PR: `https://github.com/matzls/Archon/pull/5`
 - Persistent local review worktree: `/Users/mase/.archon/worktrees/Personal-Projects/Archon/review/paused-output-review`
 - Historical Archon implementation lane: `archon/task-piv-paused-output-web-parity-v2` (retired)
-- Review artifact set now covers Slices 1 through 5, with Slice 5 paused at PRD review
+- Review artifact set now covers Slices 1 through 5, with Slice 5 ready for a fresh implementation restart from its accepted PRD
+- Latest Slice 5 Archon implementation attempt: run `6a202657c75a5095ad648a79cc9e463e` failed cleanly after no durable progress in `implement`; the review worktree remained clean and no Slice 5 implementation commit was created
 - Validation status:
   - Slice 4 targeted Web checks passed:
     `bun --filter @archon/web type-check`,
@@ -158,7 +159,7 @@ Operator decisions as of 2026-04-21:
     and targeted ESLint on the touched Web files
   - broad `bun run validate` remains noisy in the review worktree for
     dependency-resolution reasons outside the Slice 4 Web surface
-- Last updated: 2026-04-21 Slice 5 PRD drafted on PR #5; Slices 1 through 4 remain implemented and Slice 5 remains the only open umbrella scope
+- Last updated: 2026-04-21 Slice 5 PRD accepted on PR #5; the first implementation attempt failed cleanly without landing code, and the next run should restart from the accepted PRD
 
 ## Current Canonical Read
 
@@ -170,7 +171,8 @@ When this plan conflicts with archived slice notes below, trust this section:
   is the persistent review worktree
 - Slices 1 through 4 are implemented
 - Slice 5 artifact exists at `docs/prd/non-web-paused-output-adapter-review.prd.md`
-- Slice 5 is the next and only active umbrella scope
+- Slice 5 PRD is accepted and is the direct implementation input for the next fresh run
+- Slice 5 remains the next and only active umbrella scope
 
 ## Latest Slice 1 Execution Result
 
@@ -469,6 +471,10 @@ snapshot is clipped.
 Medium. This crosses database state, filesystem logs, API shape, and Web UI.
 
 # Slice 5: Non-Web Adapter Review (Follow-Up)
+
+Historical note only: this planning sketch is now superseded by
+`docs/prd/non-web-paused-output-adapter-review.prd.md`, which is the accepted
+Slice 5 implementation input.
 
 ## Goal
 

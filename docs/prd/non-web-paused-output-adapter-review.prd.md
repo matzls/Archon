@@ -1,6 +1,6 @@
 ---
 title: Non-Web Paused Output Adapter Review
-status: draft
+status: accepted
 created: 2026-04-21
 updated: 2026-04-21
 source_plan: docs/plans/archon-paused-output-ux-parity_plan.md
@@ -327,7 +327,7 @@ bun run validate
 
 ## 12. Review Decisions Captured
 
-The current Slice 5 draft now reflects these review decisions:
+The current Slice 5 PRD reflects these review decisions:
 
 1. Keep Slice 5 limited to CLI plus shared `/workflow status` parity.
 2. Do not add proactive paused notifications for non-Web adapters.
@@ -342,9 +342,17 @@ The current Slice 5 draft now reflects these review decisions:
 This document is the active Slice 5 artifact for PR #5 on
 `codex/paused-output-slices-1-2-review`.
 
-Use this PRD as the direct implementation input if Slice 5 is approved for
-coding later. Do not implement Slice 5 directly from the umbrella plan or from
-older slice artifacts.
+Use this PRD as the direct implementation input for the next fresh Slice 5
+implementation run. Do not implement Slice 5 directly from the umbrella plan or
+from older slice artifacts.
 
-This remains a review checkpoint until human review explicitly approves the
-Slice 5 direction.
+Human review accepted the Slice 5 direction. A first implementation attempt in
+run `6a202657c75a5095ad648a79cc9e463e` failed cleanly without landing code:
+Archon split the CLI wording change and the adjacent CLI test expectation
+updates into separate task iterations, so Task 3 kept reverting when task-scoped
+validation still expected the pre-Slice-5 `Latest output:` text.
+
+The worktree was left clean and no Slice 5 implementation commit was created.
+For the next fresh Slice 5 run, restart from this PRD and allow adjacent
+in-scope code and directly corresponding in-scope test updates to land together
+when task-scoped validation depends on both.
