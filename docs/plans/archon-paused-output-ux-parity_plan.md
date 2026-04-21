@@ -3,7 +3,7 @@ title: Archon Paused Output UX Parity Plan
 kind: plan
 status: active
 created: 2026-04-20
-updated: 2026-04-20
+updated: 2026-04-21
 origin: user request to improve Archon Codex paused-output visibility after status snapshot truncation
 version: 1
 ---
@@ -22,8 +22,9 @@ Simple version:
 - Deeper fixes belong in later slices because they change runtime contracts,
   metadata semantics, or log retrieval.
 
-Only Slice 1 is implementation-ready in this plan. Later slices are intentionally
-retained as roadmap scope but require separate review before coding.
+Slices 1 through 4 are now implemented on
+`codex/paused-output-slices-1-2-review` and are collected in draft PR #5 on
+`matzls/Archon`. Slice 5 remains the only open roadmap scope.
 
 # Orchestration Model
 
@@ -50,13 +51,17 @@ Canonical umbrella-plan reference:
 - absolute:
   `/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/archon-paused-output-ux-parity_plan.md`
 
-Default handover rules for every later slice:
+Default handover rules for the remaining slice:
 
 - use the umbrella plan as context only
 - activate exactly one named slice
 - state the expected slice artifact explicitly, for example PRD, brief, or
   implementation run
-- reuse the persistent Slice lane branch and worktree
+- reuse review branch `codex/paused-output-slices-1-2-review`
+- prefer the persistent review worktree
+  `/Users/mase/.archon/worktrees/Personal-Projects/Archon/review/paused-output-review`
+  and only create a fresh clean worktree from the review branch when there is a
+  concrete reason to do so
 - treat every other slice as non-scope unless the umbrella plan is updated
 - pause for human review at the slice artifact checkpoint before broader
   implementation
@@ -65,9 +70,11 @@ Default wording to reuse in future prompts:
 
 > Use the umbrella plan at
 > `docs/plans/archon-paused-output-ux-parity_plan.md` as context only. Treat
-> `<Slice Name>` as the only active scope. Reuse branch
-> `archon/task-piv-paused-output-web-parity-v2` and worktree
-> `/Users/mase/.archon/worktrees/Personal-Projects/Archon/archon/task-piv-paused-output-web-parity-v2`.
+> `<Slice Name>` as the only active scope. Reuse review branch
+> `codex/paused-output-slices-1-2-review` and prefer the persistent review
+> worktree at
+> `/Users/mase/.archon/worktrees/Personal-Projects/Archon/review/paused-output-review`
+> for this slice.
 > Create or refine the slice-specific artifact first. Do not implement directly
 > from the umbrella plan. Keep all other slices out of scope. Pause for review
 > when the slice artifact is ready.
@@ -84,8 +91,10 @@ Active slice artifact goal:
 - `<slice artifact to create or refine>`
 
 Operating rules:
-- reuse branch `archon/task-piv-paused-output-web-parity-v2`
-- reuse worktree `/Users/mase/.archon/worktrees/Personal-Projects/Archon/archon/task-piv-paused-output-web-parity-v2`
+- reuse review branch `codex/paused-output-slices-1-2-review`
+- prefer the persistent review worktree at
+  `/Users/mase/.archon/worktrees/Personal-Projects/Archon/review/paused-output-review`
+- only create a fresh clean local worktree from that branch when needed
 - do not implement directly from the umbrella plan
 - keep all other slices out of scope
 - pause for human review when the slice artifact is ready
@@ -95,49 +104,79 @@ named slice section from that plan as authoritative context and continue with
 the same scope limits.
 ```
 
-## Single Persistent Slice Lane
+## Historical Archon Lane And Current Review Branch
 
-Operator decision on 2026-04-20:
+Operator decisions as of 2026-04-21:
 
-- Keep all accepted umbrella slices on one persistent Git branch and one
-  persistent Archon worktree so review and merge happen through a single PR.
-- The active persistent lane is:
+- Slice 1 and Slice 2 were implemented through the historical Archon execution
+  lane:
   - branch: `archon/task-piv-paused-output-web-parity-v2`
-  - worktree:
+  - worktree: retired; the old
     `/Users/mase/.archon/worktrees/Personal-Projects/Archon/archon/task-piv-paused-output-web-parity-v2`
-- For Slice 2 and later, do not use Archon's default auto-generated branch.
-  Launch with the explicit branch above so Archon reuses the healthy existing
-  worktree when possible.
-- Do not reuse the older superseded Slice 1 lane
-  `archon/task-piv-paused-output-web-parity`.
-- Do not run umbrella-slice implementation directly in the dirty root `dev`
+    path no longer exists locally
+- Slice 3 and Slice 4 were implemented directly on the persistent review lane
+  after slice-specific PRDs were created and reviewed.
+- The active long-lived review lane is now:
+  - branch: `codex/paused-output-slices-1-2-review`
+  - PR base: `codex/paused-output-review-base`
+  - draft review PR: `matzls/Archon#5`
+  - persistent local review worktree:
+    `/Users/mase/.archon/worktrees/Personal-Projects/Archon/review/paused-output-review`
+- Keep future umbrella slices on this same draft review branch so there is one
+  PR to review and merge after the whole plan is implemented.
+- For future implementation sessions, prefer the persistent review worktree or
+  create a fresh clean worktree from the review branch instead of reviving the
+  retired Archon path.
+- Do not continue umbrella-slice implementation in the dirty root `dev`
   checkout.
 
 # Slice Progress
 
 | Slice | Artifact | PIV Branch | State | Notes |
 | --- | --- | --- | --- | --- |
-| Slice 1: Web Paused Output Parity | `docs/prd/paused-output-web-parity.prd.md` | `archon/task-piv-paused-output-web-parity-v2` | Implemented; Archon finalize failed | The restarted run advanced cleanly through `explore`, `create-plan`, implementation, code review, and approved `fix-feedback`. Slice 1 shipped in the worktree branch and was manually verified in the branch UI, but the workflow ended `failed` in `finalize` because `.archon/scripts/github-pr.ts` was invoked without `ARCHON_ARTIFACTS_DIR`. |
-| Slice 2: Paused Snapshot Contract Design | TBD | `archon/task-piv-paused-output-web-parity-v2` | Deferred | Requires `finalAssistantOutput` design decision before implementation; next Archon run should reuse the persistent Slice lane. |
-| Slice 3: Runtime Metadata Hygiene | TBD | `archon/task-piv-paused-output-web-parity-v2` | Deferred | Requires workflow-state semantics review; keep on the same persistent Slice lane. |
-| Slice 4: Full Output Fallback | TBD | `archon/task-piv-paused-output-web-parity-v2` | Deferred | Requires API/log-access design; keep on the same persistent Slice lane. |
-| Slice 5: Non-Web Adapter Review | TBD | `archon/task-piv-paused-output-web-parity-v2` | Deferred | Requires adapter-specific review; keep on the same persistent Slice lane. |
+| Slice 1: Web Paused Output Parity | `docs/prd/paused-output-web-parity.prd.md` | `archon/task-piv-paused-output-web-parity-v2` | Implemented; in draft review branch | Shipped through the historical Archon lane, manually verified in the branch UI, and reconstructed onto `codex/paused-output-slices-1-2-review` so the final review can happen in one PR. |
+| Slice 2: Paused Snapshot Contract Design | `docs/prd/paused-snapshot-contract-design.prd.md` | `archon/task-piv-paused-output-web-parity-v2` | Implemented; in draft review branch | The `finalAssistantOutput` paused snapshot contract shipped through workflows, server, and web, integrated on `dev` via `b1299cd9`, and is now included in the draft review branch. |
+| Slice 3: Runtime Metadata Hygiene | `docs/prd/runtime-metadata-hygiene.prd.md` | `codex/paused-output-slices-1-2-review` | Implemented; in draft review branch | Clears live-looking approval metadata after pause resolution, archives the latest resolved gate under `lastApproval`, and keeps the work on the same review PR. |
+| Slice 4: Full Output Fallback | `docs/prd/full-output-fallback.prd.md` | `codex/paused-output-slices-1-2-review` | Implemented; in draft review branch | Adds the clipped-preview `View full paused output` deeplink, query-param run-details routing, and logs focus behavior on the same review PR. |
+| Slice 5: Non-Web Adapter Review | `docs/prd/non-web-paused-output-adapter-review.prd.md` | `codex/paused-output-slices-1-2-review` | PRD accepted; implementation restart pending | The final Slice 5 PRD is accepted on the persistent review branch and narrows Slice 5 to CLI plus shared `/workflow status` parity, with GitHub only on the forge side. A first Archon implementation attempt failed cleanly because the CLI wording change and its adjacent test updates were split across task boundaries; the next fresh run should restart from the accepted PRD and allow paired in-scope code/test updates when validation depends on both. |
 
 # Current Orchestration Ledger
 
-- Active slice: Slice 1
-- Slice artifact: `docs/prd/paused-output-web-parity.prd.md`
-- Workflow: `archon-piv-loop-codex`
-- Branch: `archon/task-piv-paused-output-web-parity-v2`
-- Run ID: `0fcda4d1b1b047ea74b1d59028f8e595`
-- Worktree: `/Users/mase/.archon/worktrees/Personal-Projects/Archon/archon/task-piv-paused-output-web-parity-v2`
-- Persistent umbrella branch/worktree policy: reuse this same branch/worktree
-  for Slice 2+ Archon runs
-- Plan artifact: `.claude/archon/plans/paused-output-web-parity.plan.md`
-- Last observed status: failed
-- Last observed phase: `finalize`
-- Last approval response: `approved` completed the `fix-feedback` gate and advanced through `compose-finalize`
-- Last updated: 2026-04-20 Slice 1 implementation completed, branch UI verified on dashboard + chat, PR artifacts written, then `finalize` failed because `ARCHON_ARTIFACTS_DIR` was missing
+- Active slice: none
+- Most recently implemented slice: Slice 4
+- Next planned slice: Slice 5 implementation restart from the accepted PRD
+- Draft review branch: `codex/paused-output-slices-1-2-review`
+- Draft review PR target: `codex/paused-output-review-base`
+- Draft review PR: `https://github.com/matzls/Archon/pull/5`
+- Persistent local review worktree: `/Users/mase/.archon/worktrees/Personal-Projects/Archon/review/paused-output-review`
+- Historical Archon implementation lane: `archon/task-piv-paused-output-web-parity-v2` (retired)
+- Review artifact set now covers Slices 1 through 5, with Slice 5 ready for a fresh implementation restart from its accepted PRD
+- Post-merge follow-up plan for a future pause -> alias approve -> resume integration-style regression test:
+  `docs/plans/paused-output-integration-test-plan.md`
+- Latest Slice 5 Archon implementation attempt: run `6a202657c75a5095ad648a79cc9e463e` failed cleanly after no durable progress in `implement`; the review worktree remained clean and no Slice 5 implementation commit was created
+- Validation status:
+  - Slice 4 targeted Web checks passed:
+    `bun --filter @archon/web type-check`,
+    `bun test packages/web/src/lib/workflow-utils.test.ts`,
+    and targeted ESLint on the touched Web files
+  - broad `bun run validate` remains noisy in the review worktree for
+    dependency-resolution reasons outside the Slice 4 Web surface
+- Last updated: 2026-04-21 Slice 5 PRD accepted on PR #5; the first implementation attempt failed cleanly without landing code, and the next run should restart from the accepted PRD
+
+## Current Canonical Read
+
+When this plan conflicts with archived slice notes below, trust this section:
+
+- PR #5 on `matzls/Archon` is the single paused-output review PR
+- branch `codex/paused-output-slices-1-2-review` is the delivery branch
+- worktree `/Users/mase/.archon/worktrees/Personal-Projects/Archon/review/paused-output-review`
+  is the persistent review worktree
+- Slices 1 through 4 are implemented
+- Slice 5 artifact exists at `docs/prd/non-web-paused-output-adapter-review.prd.md`
+- Slice 5 PRD is accepted and is the direct implementation input for the next fresh run
+- Slice 5 remains the next and only active umbrella scope
+- the future integration-style paused-output regression plan is tracked separately at
+  `docs/plans/paused-output-integration-test-plan.md` and is not part of the current slice implementation scope
 
 ## Latest Slice 1 Execution Result
 
@@ -436,6 +475,10 @@ snapshot is clipped.
 Medium. This crosses database state, filesystem logs, API shape, and Web UI.
 
 # Slice 5: Non-Web Adapter Review (Follow-Up)
+
+Historical note only: this planning sketch is now superseded by
+`docs/prd/non-web-paused-output-adapter-review.prd.md`, which is the accepted
+Slice 5 implementation input.
 
 ## Goal
 

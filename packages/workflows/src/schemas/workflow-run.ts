@@ -26,10 +26,7 @@ export const TERMINAL_WORKFLOW_STATUSES: readonly WorkflowRunStatus[] = [
 ] as const;
 
 /** Statuses that allow a user to resume execution. */
-export const RESUMABLE_WORKFLOW_STATUSES: readonly WorkflowRunStatus[] = [
-  'failed',
-  'paused',
-] as const;
+export const RESUMABLE_WORKFLOW_STATUSES: readonly WorkflowRunStatus[] = ['failed'] as const;
 
 // ---------------------------------------------------------------------------
 // WorkflowStepStatus
@@ -111,6 +108,8 @@ export type WorkflowRun = z.infer<typeof workflowRunSchema>;
 export interface ApprovalContext {
   nodeId: string;
   message: string;
+  /** Full durable loop output used for resume semantics (not UI preview rendering). */
+  fullOutput?: string;
   /** Bounded copy of the latest assistant output shown immediately before pausing. */
   lastOutput?: string;
   /** Whether the bounded compatibility `lastOutput` snapshot was clipped. */
@@ -135,6 +134,20 @@ export interface ApprovalContext {
   onRejectMaxAttempts?: number;
 }
 
+/** Resolution metadata stored after a paused approval gate is handled. */
+export type ApprovalResolution = 'approved' | 'rejected' | 'feedback' | 'completed';
+
+/**
+ * Latest resolved approval context stored in workflow metadata after a gate is handled.
+ * This remains available for resume paths after live `metadata.approval` is cleared.
+ */
+export interface LastApprovalContext extends ApprovalContext {
+  resolution: ApprovalResolution;
+  resolvedAt: string;
+  decisionText?: string;
+  resumedAt?: string;
+}
+
 /**
  * Type guard for ApprovalContext.
  * Validates that the value is an object with the required nodeId and message fields.
@@ -148,6 +161,84 @@ export function isApprovalContext(val: unknown): val is ApprovalContext {
     typeof (val as Record<string, unknown>).nodeId === 'string' &&
     typeof (val as Record<string, unknown>).message === 'string'
   );
+}
+
+/** Type guard for the archived latest-gate metadata used by resume paths. */
+export function isLastApprovalContext(val: unknown): val is LastApprovalContext {
+  if (!isApprovalContext(val)) {
+    return false;
+  }
+
+  const record = val as { resolution?: unknown; resolvedAt?: unknown };
+  return typeof record.resolution === 'string' && typeof record.resolvedAt === 'string';
+}
+
+type WorkflowRunApprovalMetadata = Pick<WorkflowRun, 'metadata' | 'status'>;
+
+/** Return the live approval context only while the workflow is paused. */
+export function getPausedApprovalContext(
+  workflowRun: WorkflowRunApprovalMetadata
+): ApprovalContext | undefined {
+  if (workflowRun.status !== 'paused') {
+    return undefined;
+  }
+
+  const approval = workflowRun.metadata.approval;
+  return isApprovalContext(approval) ? approval : undefined;
+}
+
+/**
+ * Return the approval context that should be used for resume logic.
+ * Failed runs prefer archived `lastApproval`, with a legacy fallback to stale `approval`.
+ */
+export function getResumeApprovalContext(
+  workflowRun: WorkflowRunApprovalMetadata
+): ApprovalContext | LastApprovalContext | undefined {
+  if (workflowRun.status !== 'failed') {
+    return undefined;
+  }
+
+  const lastApproval = workflowRun.metadata.lastApproval;
+  if (isLastApprovalContext(lastApproval)) {
+    return lastApproval;
+  }
+
+  const legacyApproval = workflowRun.metadata.approval;
+  return isApprovalContext(legacyApproval) ? legacyApproval : undefined;
+}
+
+type PausedOutputPreviewSource = Pick<
+  ApprovalContext,
+  'lastOutput' | 'lastOutputTruncated' | 'finalAssistantOutput' | 'finalAssistantOutputTruncated'
+>;
+
+/** Select the best paused-output preview using the shared non-Web/Web precedence rule. */
+export function getPausedOutputPreview(
+  approval: PausedOutputPreviewSource | null | undefined
+): { text: string; truncated: boolean } | null {
+  if (!approval) {
+    return null;
+  }
+
+  const finalAssistantOutput = approval.finalAssistantOutput?.trim() ?? '';
+  if (finalAssistantOutput.length > 0) {
+    return {
+      text: finalAssistantOutput,
+      truncated:
+        approval.finalAssistantOutputTruncated ??
+        finalAssistantOutput.trimEnd().endsWith('[truncated]'),
+    };
+  }
+
+  const lastOutput = approval.lastOutput?.trim() ?? '';
+  if (lastOutput.length === 0) {
+    return null;
+  }
+
+  return {
+    text: lastOutput,
+    truncated: approval.lastOutputTruncated ?? lastOutput.trimEnd().endsWith('[truncated]'),
+  };
 }
 
 /** Normalize human gate replies for exact alias comparison. */

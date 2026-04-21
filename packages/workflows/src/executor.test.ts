@@ -260,7 +260,7 @@ describe('executeWorkflow', () => {
       expect(updateSpy).toHaveBeenCalledWith('self-run-789', { status: 'cancelled' });
     });
 
-    it('uses the actionable "in use" message format with workflow name, duration, and short id', async () => {
+    it('uses the actionable "in use" message format with workflow name, duration, and explicit abandon guidance', async () => {
       const otherRun = makeRun({
         id: 'abc12345-rest-of-uuid',
         workflow_name: 'archon-implement',
@@ -294,7 +294,7 @@ describe('executeWorkflow', () => {
       expect(sentMessage).toContain('2m 5s');
       // Concrete next actions — every line tells the user something to do.
       expect(sentMessage).toContain('/workflow status');
-      expect(sentMessage).toContain('/workflow cancel abc12345');
+      expect(sentMessage).toContain('/workflow abandon abc12345-rest-of-uuid');
       expect(sentMessage).toContain('--branch');
     });
 
@@ -582,6 +582,121 @@ describe('executeWorkflow', () => {
       // Should skip resume and create a fresh run
       expect(store.createWorkflowRun).toHaveBeenCalledTimes(1);
       expect(store.resumeWorkflowRun).not.toHaveBeenCalled();
+    });
+
+    it('resumes failed interactive-loop run from lastApproval when 0 completed nodes exist', async () => {
+      const failedRun = makeRun({
+        id: 'prior-run',
+        status: 'failed',
+        metadata: {
+          lastApproval: {
+            type: 'interactive_loop',
+            nodeId: 'refine',
+            message: 'Review the plan.',
+            iteration: 1,
+            sessionId: 'loop-session-1',
+            resolution: 'feedback',
+            resolvedAt: '2026-04-20T10:00:00.000Z',
+          },
+        },
+      });
+      const store = makeStore({
+        findResumableRun: mock(async () => failedRun),
+        getCompletedDagNodeOutputs: mock(async () => new Map()),
+        resumeWorkflowRun: mock(async () =>
+          makeRun({ id: 'resumed-prior-run', status: 'running' })
+        ),
+      });
+      const deps = makeDeps(store);
+
+      const result = await executeWorkflow(
+        deps,
+        makePlatform(),
+        'conv-1',
+        '/tmp',
+        makeWorkflow(),
+        'test message',
+        'db-conv-1'
+      );
+
+      expect(store.resumeWorkflowRun).toHaveBeenCalledWith('prior-run');
+      expect(store.createWorkflowRun).not.toHaveBeenCalled();
+      expect(result.workflowRunId).toBe('resumed-prior-run');
+    });
+
+    it('resumes failed interactive-loop run from legacy approval metadata when 0 completed nodes exist', async () => {
+      const failedRun = makeRun({
+        id: 'prior-run',
+        status: 'failed',
+        metadata: {
+          approval: {
+            type: 'interactive_loop',
+            nodeId: 'refine',
+            message: 'Review the plan.',
+            iteration: 1,
+            sessionId: 'legacy-loop-session-1',
+          },
+        },
+      });
+      const store = makeStore({
+        findResumableRun: mock(async () => failedRun),
+        getCompletedDagNodeOutputs: mock(async () => new Map()),
+        resumeWorkflowRun: mock(async () =>
+          makeRun({ id: 'legacy-resumed-run', status: 'running' })
+        ),
+      });
+      const deps = makeDeps(store);
+
+      const result = await executeWorkflow(
+        deps,
+        makePlatform(),
+        'conv-1',
+        '/tmp',
+        makeWorkflow(),
+        'test message',
+        'db-conv-1'
+      );
+
+      expect(store.resumeWorkflowRun).toHaveBeenCalledWith('prior-run');
+      expect(store.createWorkflowRun).not.toHaveBeenCalled();
+      expect(result.workflowRunId).toBe('legacy-resumed-run');
+    });
+
+    it('does not treat paused interactive-loop state as resumable', async () => {
+      const pausedRun = makeRun({
+        id: 'paused-prior-run',
+        status: 'paused',
+        metadata: {
+          lastApproval: {
+            type: 'interactive_loop',
+            nodeId: 'refine',
+            message: 'Review the plan.',
+            iteration: 1,
+            sessionId: 'loop-session-1',
+            resolution: 'feedback',
+            resolvedAt: '2026-04-20T10:00:00.000Z',
+          },
+        },
+      });
+      const store = makeStore({
+        findResumableRun: mock(async () => pausedRun),
+        getCompletedDagNodeOutputs: mock(async () => new Map()),
+      });
+      const deps = makeDeps(store);
+
+      const result = await executeWorkflow(
+        deps,
+        makePlatform(),
+        'conv-1',
+        '/tmp',
+        makeWorkflow(),
+        'test message',
+        'db-conv-1'
+      );
+
+      expect(store.resumeWorkflowRun).not.toHaveBeenCalled();
+      expect(store.createWorkflowRun).toHaveBeenCalledTimes(1);
+      expect(result.workflowRunId).toBe('run-123');
     });
 
     it('returns error when resumeWorkflowRun throws', async () => {
@@ -892,6 +1007,31 @@ describe('executeWorkflow', () => {
       const msg = (sendMessageSpy.mock.calls[0] as [string, string])[1];
       expect(msg).toContain('running 1m');
       expect(msg).toContain('Wait for it to finish');
+      expect(msg).toContain('/workflow abandon running-run');
+    });
+
+    it('uses stale-running copy when blocker has no recent activity', async () => {
+      const staleRunningRun = makeRun({
+        id: 'stale-run-123',
+        workflow_name: 'archon-implement',
+        status: 'running',
+        started_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+        last_activity_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+      });
+      const sendMessageSpy = mock(async () => {});
+      const platform = {
+        sendMessage: sendMessageSpy,
+        getPlatformType: mock(() => 'test' as const),
+      } as unknown as IWorkflowPlatform;
+      const store = makeStore({ getActiveWorkflowRunByPath: mock(async () => staleRunningRun) });
+      const deps = makeDeps(store);
+
+      await executeWorkflow(deps, platform, 'conv-1', '/tmp', makeWorkflow(), 'test', 'db-conv-1');
+
+      const msg = (sendMessageSpy.mock.calls[0] as [string, string])[1];
+      expect(msg).toContain('appears stale');
+      expect(msg).toContain('/workflow abandon stale-run-123');
+      expect(msg).not.toContain('Wait for it to finish');
     });
   });
 });

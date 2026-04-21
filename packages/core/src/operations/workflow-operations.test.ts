@@ -6,13 +6,13 @@ import { describe, test, expect, mock, beforeEach } from 'bun:test';
 
 const mockGetWorkflowRun = mock(() => Promise.resolve(null));
 const mockListWorkflowRuns = mock(() => Promise.resolve([]));
-const mockUpdateWorkflowRun = mock(() => Promise.resolve());
+const mockResolveWorkflowRunApproval = mock(() => Promise.resolve());
 const mockCancelWorkflowRun = mock(() => Promise.resolve());
 
 mock.module('../db/workflows', () => ({
   getWorkflowRun: mockGetWorkflowRun,
   listWorkflowRuns: mockListWorkflowRuns,
-  updateWorkflowRun: mockUpdateWorkflowRun,
+  resolveWorkflowRunApproval: mockResolveWorkflowRunApproval,
   cancelWorkflowRun: mockCancelWorkflowRun,
 }));
 
@@ -74,7 +74,7 @@ describe('approveWorkflow', () => {
   beforeEach(() => {
     mockGetWorkflowRun.mockClear();
     mockCreateWorkflowEvent.mockClear();
-    mockUpdateWorkflowRun.mockClear();
+    mockResolveWorkflowRunApproval.mockClear();
   });
 
   test('approves standard approval gate — writes node_completed + approval_received', async () => {
@@ -93,10 +93,11 @@ describe('approveWorkflow', () => {
     const secondCall = mockCreateWorkflowEvent.mock.calls[1][0] as Record<string, unknown>;
     expect(secondCall.event_type).toBe('approval_received');
 
-    // Transitions to failed + clears rejection state
-    expect(mockUpdateWorkflowRun).toHaveBeenCalledWith('run-1', {
+    expect(mockResolveWorkflowRunApproval).toHaveBeenCalledWith('run-1', {
       status: 'failed',
+      resolution: 'approved',
       metadata: { approval_response: 'approved', rejection_reason: '', rejection_count: 0 },
+      decisionText: 'Looks good',
     });
   });
 
@@ -122,10 +123,53 @@ describe('approveWorkflow', () => {
     const call = mockCreateWorkflowEvent.mock.calls[0][0] as Record<string, unknown>;
     expect(call.event_type).toBe('approval_received');
 
-    // Stores loop_user_input in metadata
-    expect(mockUpdateWorkflowRun).toHaveBeenCalledWith('run-1', {
+    expect(mockResolveWorkflowRunApproval).toHaveBeenCalledWith('run-1', {
       status: 'failed',
+      resolution: 'feedback',
       metadata: { loop_user_input: 'fix the tests' },
+      decisionText: 'fix the tests',
+    });
+  });
+
+  test('approves interactive_loop completion alias — writes node_completed from full loop output', async () => {
+    const run = makePausedRun({
+      metadata: {
+        approval: {
+          nodeId: 'explore',
+          message: 'Say ready when done',
+          type: 'interactive_loop',
+          iteration: 2,
+          fullOutput: 'Full exploration summary with all sections intact.',
+          lastOutput: 'Compatibility preview',
+          finalAssistantOutput: 'Exploration summary for the plan.',
+          completeOnUserInput: ['ready', 'create the plan'],
+        },
+      },
+    });
+    mockGetWorkflowRun.mockResolvedValueOnce(run);
+
+    const result = await approveWorkflow('run-1', ' Ready ');
+
+    expect(result.type).toBe('interactive_loop');
+    expect(mockCreateWorkflowEvent).toHaveBeenCalledTimes(2);
+    expect(mockCreateWorkflowEvent.mock.calls[0][0]).toMatchObject({
+      event_type: 'node_completed',
+      step_name: 'explore',
+      data: {
+        node_output: 'Full exploration summary with all sections intact.',
+        approval_decision: 'approved',
+        loop_completion_input: ' Ready ',
+      },
+    });
+    expect(mockCreateWorkflowEvent.mock.calls[1][0]).toMatchObject({
+      event_type: 'approval_received',
+      data: { transition: 'complete_loop' },
+    });
+    expect(mockResolveWorkflowRunApproval).toHaveBeenCalledWith('run-1', {
+      status: 'failed',
+      resolution: 'completed',
+      metadata: { loop_completion_input: ' Ready ' },
+      decisionText: ' Ready ',
     });
   });
 
@@ -161,9 +205,11 @@ describe('approveWorkflow', () => {
       event_type: 'approval_received',
       data: { transition: 'complete_loop' },
     });
-    expect(mockUpdateWorkflowRun).toHaveBeenCalledWith('run-1', {
+    expect(mockResolveWorkflowRunApproval).toHaveBeenCalledWith('run-1', {
       status: 'failed',
+      resolution: 'completed',
       metadata: { loop_completion_input: ' Ready ' },
+      decisionText: ' Ready ',
     });
   });
 
@@ -211,7 +257,7 @@ describe('rejectWorkflow', () => {
   beforeEach(() => {
     mockGetWorkflowRun.mockClear();
     mockCreateWorkflowEvent.mockClear();
-    mockUpdateWorkflowRun.mockClear();
+    mockResolveWorkflowRunApproval.mockClear();
     mockCancelWorkflowRun.mockClear();
   });
 
@@ -234,13 +280,15 @@ describe('rejectWorkflow', () => {
     expect(result.cancelled).toBe(false);
     expect(result.workflowName).toBe('test-workflow');
     expect(mockCancelWorkflowRun).not.toHaveBeenCalled();
-    expect(mockUpdateWorkflowRun).toHaveBeenCalledWith('run-1', {
+    expect(mockResolveWorkflowRunApproval).toHaveBeenCalledWith('run-1', {
       status: 'failed',
+      resolution: 'rejected',
       metadata: { rejection_reason: 'needs more tests', rejection_count: 1 },
+      decisionText: 'needs more tests',
     });
   });
 
-  test('rejects at max attempts — cancels run', async () => {
+  test('rejects at max attempts — archives decision and cancels run', async () => {
     const run = makePausedRun({
       metadata: {
         approval: {
@@ -257,16 +305,27 @@ describe('rejectWorkflow', () => {
     const result = await rejectWorkflow('run-1', 'still broken');
 
     expect(result.cancelled).toBe(true);
-    expect(mockCancelWorkflowRun).toHaveBeenCalledWith('run-1');
+    expect(mockResolveWorkflowRunApproval).toHaveBeenCalledWith('run-1', {
+      status: 'cancelled',
+      resolution: 'rejected',
+      metadata: { rejection_reason: 'still broken', rejection_count: 2 },
+      decisionText: 'still broken',
+    });
+    expect(mockCancelWorkflowRun).not.toHaveBeenCalled();
   });
 
-  test('rejects without onRejectPrompt — cancels immediately', async () => {
+  test('rejects without onRejectPrompt — archives decision and cancels immediately', async () => {
     mockGetWorkflowRun.mockResolvedValueOnce(makePausedRun());
 
     const result = await rejectWorkflow('run-1', 'no good');
 
     expect(result.cancelled).toBe(true);
-    expect(mockCancelWorkflowRun).toHaveBeenCalledWith('run-1');
+    expect(mockResolveWorkflowRunApproval).toHaveBeenCalledWith('run-1', {
+      status: 'cancelled',
+      resolution: 'rejected',
+      decisionText: 'no good',
+    });
+    expect(mockCancelWorkflowRun).not.toHaveBeenCalled();
   });
 
   test('throws on non-paused run', async () => {
@@ -275,6 +334,14 @@ describe('rejectWorkflow', () => {
     await expect(rejectWorkflow('run-1')).rejects.toThrow(
       "Cannot reject run with status 'completed'"
     );
+  });
+
+  test('throws on missing approval context before writing reject side effects', async () => {
+    mockGetWorkflowRun.mockResolvedValueOnce(makePausedRun({ metadata: {} }));
+
+    await expect(rejectWorkflow('run-1')).rejects.toThrow('missing approval context');
+    expect(mockCreateWorkflowEvent).not.toHaveBeenCalled();
+    expect(mockResolveWorkflowRunApproval).not.toHaveBeenCalled();
   });
 });
 
@@ -316,7 +383,15 @@ describe('resumeWorkflow', () => {
     mockGetWorkflowRun.mockResolvedValueOnce(makePausedRun({ status: 'completed' }));
 
     await expect(resumeWorkflow('run-1')).rejects.toThrow(
-      "Cannot resume run with status 'completed'"
+      "Cannot resume run with status 'completed'. Only failed runs can be resumed."
+    );
+  });
+
+  test('throws on paused run with approval guidance', async () => {
+    mockGetWorkflowRun.mockResolvedValueOnce(makePausedRun({ status: 'paused' }));
+
+    await expect(resumeWorkflow('run-1')).rejects.toThrow(
+      "Cannot resume run with status 'paused'. Paused runs must be approved or rejected first."
     );
   });
 

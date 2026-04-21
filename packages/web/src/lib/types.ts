@@ -268,6 +268,15 @@ export interface WorkflowArtifact {
   path?: string;
 }
 
+export interface WorkflowApproval {
+  nodeId: string;
+  message: string;
+  lastOutput?: string;
+  lastOutputTruncated?: boolean;
+  finalAssistantOutput?: string;
+  finalAssistantOutputTruncated?: boolean;
+}
+
 export interface WorkflowState {
   runId: string;
   workflowName: string;

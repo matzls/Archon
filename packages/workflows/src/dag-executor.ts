@@ -46,7 +46,8 @@ import {
   isApprovalNode,
   isCancelNode,
   isScriptNode,
-  isApprovalContext,
+  isLastApprovalContext,
+  getResumeApprovalContext,
 } from './schemas';
 import { formatToolCall } from './utils/tool-formatter';
 import { createLogger } from '@archon/paths';
@@ -107,6 +108,15 @@ type NodeExecutionResult = NodeOutput & {
   costUsd?: number;
   approvalSnapshot?: ApprovalPauseSnapshot;
 };
+
+function getDagResumeApprovalContext(workflowRun: WorkflowRun): ApprovalContext | undefined {
+  const lastApproval = workflowRun.metadata.lastApproval;
+  if (isLastApprovalContext(lastApproval)) {
+    return lastApproval;
+  }
+
+  return getResumeApprovalContext(workflowRun);
+}
 
 /** Throttle state for cancel checks (reads — no write contention in WAL mode) */
 const lastNodeCancelCheck = new Map<string, number>();
@@ -1892,8 +1902,7 @@ async function executeLoopNode(
   }
 
   // Detect interactive loop resume — check if workflowRun.metadata has loop gate state for this node
-  const rawApproval = workflowRun.metadata?.approval;
-  const loopGateMeta = isApprovalContext(rawApproval) ? rawApproval : undefined;
+  const loopGateMeta = getDagResumeApprovalContext(workflowRun);
   const isLoopResume = loopGateMeta?.type === 'interactive_loop' && loopGateMeta.nodeId === node.id;
   const startIteration = isLoopResume ? (loopGateMeta.iteration ?? 0) + 1 : 1;
   let currentSessionId: string | undefined = isLoopResume ? loopGateMeta.sessionId : undefined;
@@ -1947,7 +1956,6 @@ async function executeLoopNode(
   // Reset throttling so the next iteration does not inherit stale heartbeat/check timestamps.
   lastNodeCancelCheck.delete(nodeKey);
   lastNodeActivityUpdate.delete(nodeKey);
-
   for (let i = startIteration; i <= loop.max_iterations; i++) {
     const iterationStart = Date.now();
 
@@ -2480,6 +2488,7 @@ async function executeLoopNode(
         {
           nodeId: node.id,
           message: loop.gate_message,
+          ...(lastIterationOutput ? { fullOutput: lastIterationOutput } : {}),
           ...approvalSnapshot,
           type: 'interactive_loop',
           iteration: i,
@@ -2556,8 +2565,7 @@ async function executeApprovalNode(
   let approvalSnapshot: ApprovalPauseSnapshot | undefined;
 
   // Detect rejection resume — check metadata for rejection_reason set by reject handlers
-  const rawApproval = workflowRun.metadata?.approval;
-  const approvalMeta = isApprovalContext(rawApproval) ? rawApproval : undefined;
+  const approvalMeta = getDagResumeApprovalContext(workflowRun);
   const rawRejection = workflowRun.metadata?.rejection_reason;
   const rejectionReason =
     approvalMeta?.type === 'approval' &&
@@ -2699,7 +2707,6 @@ async function executeApprovalNode(
         'workflow.event_persist_failed'
       );
     });
-
   emitApprovalPendingEvent(workflowRun.id, node.id, node.approval.message, approvalSnapshot ?? {});
 
   // Return completed — the between-layer status check will see 'paused' and break.

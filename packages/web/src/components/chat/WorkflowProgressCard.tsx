@@ -7,40 +7,18 @@ import { approveWorkflowRun, getWorkflowRunByWorker, rejectWorkflowRun } from '@
 import { useWorkflowStore } from '@/stores/workflow-store';
 import { StatusIcon } from '@/components/workflows/StatusIcon';
 import { ensureUtc, formatDurationMs } from '@/lib/format';
-import { isTerminalStatus, parseWorkflowApproval } from '@/lib/workflow-utils';
+import {
+  buildWorkflowExecutionPath,
+  getPausedOutputPreview,
+  isTerminalStatus,
+  parseWorkflowApproval,
+  shouldShowFullPausedOutputAction,
+} from '@/lib/workflow-utils';
 import type { DagNodeState, WorkflowApproval } from '@/lib/types';
 
 interface WorkflowProgressCardProps {
   workflowName: string;
   workerConversationId: string;
-}
-
-function getPausedOutputPreview(
-  approval: WorkflowApproval | null
-): { text: string; truncated: boolean } | null {
-  if (!approval) {
-    return null;
-  }
-
-  const finalAssistantOutput = approval.finalAssistantOutput?.trim() ?? '';
-  if (finalAssistantOutput.length > 0) {
-    return {
-      text: finalAssistantOutput,
-      truncated:
-        approval.finalAssistantOutputTruncated ??
-        finalAssistantOutput.trimEnd().endsWith('[truncated]'),
-    };
-  }
-
-  const lastOutput = approval.lastOutput?.trim() ?? '';
-  if (lastOutput.length === 0) {
-    return null;
-  }
-
-  return {
-    text: lastOutput,
-    truncated: approval.lastOutputTruncated ?? lastOutput.trimEnd().endsWith('[truncated]'),
-  };
 }
 
 export function WorkflowProgressCard({
@@ -111,6 +89,7 @@ export function WorkflowProgressCard({
       currentTool: null,
     });
   }, [hydrateWorkflow, runData]);
+  const showFullPausedOutputAction = shouldShowFullPausedOutputAction(status, runId, approval);
 
   const completedCount = dagNodes.filter(n => n.status === 'completed').length;
   const totalNodes = dagNodes.length;
@@ -167,10 +146,15 @@ export function WorkflowProgressCard({
 
   const handleViewFullScreen = (): void => {
     if (runId) {
-      navigate(`/workflows/runs/${runId}`);
+      navigate(buildWorkflowExecutionPath(runId));
     } else {
       navigate(`/chat/${encodeURIComponent(workerConversationId)}`);
     }
+  };
+
+  const handleViewFullPausedOutput = (): void => {
+    if (!runId) return;
+    navigate(buildWorkflowExecutionPath(runId, 'logs', true));
   };
 
   // Loading state: no run data yet
@@ -341,12 +325,22 @@ export function WorkflowProgressCard({
 
           {/* Footer: View Full Screen */}
           <div className="border-t border-border px-3 py-1.5">
-            <button
-              onClick={handleViewFullScreen}
-              className="text-[10px] text-primary hover:text-accent-bright transition-colors"
-            >
-              View Full Screen &rarr;
-            </button>
+            <div className="flex items-center gap-3">
+              {showFullPausedOutputAction && (
+                <button
+                  onClick={handleViewFullPausedOutput}
+                  className="text-[10px] text-primary hover:text-accent-bright transition-colors"
+                >
+                  View full paused output &rarr;
+                </button>
+              )}
+              <button
+                onClick={handleViewFullScreen}
+                className="text-[10px] text-primary hover:text-accent-bright transition-colors"
+              >
+                View Full Screen &rarr;
+              </button>
+            </div>
           </div>
         </div>
       )}

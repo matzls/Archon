@@ -4,16 +4,6 @@
 import { describe, it, expect, beforeEach, afterEach, spyOn, mock } from 'bun:test';
 import type { WorkflowEmitterEvent } from '@archon/workflows/event-emitter';
 import { makeTestWorkflowWithSource } from '@archon/workflows/test-utils';
-import {
-  workflowListCommand,
-  workflowRunCommand,
-  workflowStatusCommand,
-  workflowResumeCommand,
-  workflowAbandonCommand,
-  workflowApproveCommand,
-  workflowRejectCommand,
-  workflowCleanupCommand,
-} from './workflow';
 
 const mockLogger = {
   fatal: mock(() => undefined),
@@ -143,6 +133,7 @@ mock.module('@archon/core/db/workflows', () => ({
   resumeWorkflowRun: mock(() => Promise.resolve(null)),
   getWorkflowRun: mock(() => Promise.resolve(null)),
   updateWorkflowRun: mock(() => Promise.resolve()),
+  resolveWorkflowRunApproval: mock(() => Promise.resolve()),
   listWorkflowRuns: mock(() => Promise.resolve([])),
   deleteOldWorkflowRuns: mock(() => Promise.resolve({ count: 0 })),
 }));
@@ -151,6 +142,17 @@ mock.module('@archon/core/db/workflow-events', () => ({
   listWorkflowEvents: mock(() => Promise.resolve([])),
   createWorkflowEvent: mock(() => Promise.resolve()),
 }));
+
+const {
+  workflowListCommand,
+  workflowRunCommand,
+  workflowStatusCommand,
+  workflowResumeCommand,
+  workflowAbandonCommand,
+  workflowApproveCommand,
+  workflowRejectCommand,
+  workflowCleanupCommand,
+} = await import('./workflow');
 
 describe('workflowListCommand', () => {
   let consoleSpy: ReturnType<typeof spyOn>;
@@ -1301,7 +1303,36 @@ describe('workflowStatusCommand', () => {
     expect(calls.some(c => c.includes('running'))).toBe(true);
   });
 
-  it('should show latest paused output when present', async () => {
+  it('should show preferred paused preview when present', async () => {
+    const workflowDb = await import('@archon/core/db/workflows');
+    (workflowDb.listWorkflowRuns as ReturnType<typeof mock>).mockResolvedValueOnce([
+      {
+        id: 'run-paused',
+        workflow_name: 'archon-piv-loop-codex',
+        working_path: '/path/to/worktree',
+        status: 'paused',
+        started_at: new Date(Date.now() - 60 * 1000),
+        metadata: {
+          approval: {
+            nodeId: 'explore',
+            message: 'Answer the questions above.',
+            lastOutput: '## Questions\n1. Legacy?\n2. Legacy?',
+            finalAssistantOutput: '## Questions\n1. Scope?\n2. Validation?',
+          },
+        },
+      },
+    ]);
+
+    await workflowStatusCommand();
+
+    const calls = consoleSpy.mock.calls.map((c: unknown[]) => String(c[0]));
+    expect(calls.some(c => c.includes('Paused preview:'))).toBe(true);
+    expect(calls.some(c => c.includes('## Questions'))).toBe(true);
+    expect(calls.some(c => c.includes('1. Scope?'))).toBe(true);
+    expect(calls.some(c => c.includes('Legacy?'))).toBe(false);
+  });
+
+  it('should show fallback paused preview and clipped note when semantic preview is absent', async () => {
     const workflowDb = await import('@archon/core/db/workflows');
     (workflowDb.listWorkflowRuns as ReturnType<typeof mock>).mockResolvedValueOnce([
       {
@@ -1315,6 +1346,7 @@ describe('workflowStatusCommand', () => {
             nodeId: 'explore',
             message: 'Answer the questions above.',
             lastOutput: '## Questions\n1. Scope?\n2. Validation?',
+            lastOutputTruncated: true,
           },
         },
       },
@@ -1323,9 +1355,9 @@ describe('workflowStatusCommand', () => {
     await workflowStatusCommand();
 
     const calls = consoleSpy.mock.calls.map((c: unknown[]) => String(c[0]));
-    expect(calls.some(c => c.includes('Latest output:'))).toBe(true);
-    expect(calls.some(c => c.includes('## Questions'))).toBe(true);
+    expect(calls.some(c => c.includes('Paused preview:'))).toBe(true);
     expect(calls.some(c => c.includes('1. Scope?'))).toBe(true);
+    expect(calls.some(c => c.includes('Preview clipped on this surface.'))).toBe(true);
   });
 
   it('should output JSON when json=true', async () => {
@@ -1825,7 +1857,6 @@ describe('workflowRejectCommand', () => {
 
   it('cancels immediately when no on_reject configured', async () => {
     const workflowDb = await import('@archon/core/db/workflows');
-    const core = await import('@archon/core');
 
     (workflowDb.getWorkflowRun as ReturnType<typeof mock>).mockResolvedValueOnce({
       id: 'run-plain',
@@ -1836,13 +1867,14 @@ describe('workflowRejectCommand', () => {
       codebase_id: null,
       metadata: { approval: { type: 'approval', nodeId: 'gate', message: 'Approve?' } },
     });
-    (core.createWorkflowStore as ReturnType<typeof mock>).mockReturnValueOnce({
-      createWorkflowEvent: mock(() => Promise.resolve()),
-    });
 
     await workflowRejectCommand('run-plain', 'not good');
 
-    expect(workflowDb.cancelWorkflowRun).toHaveBeenCalledWith('run-plain');
+    expect(workflowDb.resolveWorkflowRunApproval).toHaveBeenCalledWith('run-plain', {
+      status: 'cancelled',
+      resolution: 'rejected',
+      decisionText: 'not good',
+    });
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Rejected and cancelled'));
   });
 
@@ -1874,9 +1906,11 @@ describe('workflowRejectCommand', () => {
 
     await workflowRejectCommand('run-on-reject', 'needs work');
 
-    expect(workflowDb.updateWorkflowRun).toHaveBeenCalledWith('run-on-reject', {
+    expect(workflowDb.resolveWorkflowRunApproval).toHaveBeenCalledWith('run-on-reject', {
       status: 'failed',
+      resolution: 'rejected',
       metadata: { rejection_reason: 'needs work', rejection_count: 1 },
+      decisionText: 'needs work',
     });
     expect(consoleSpy).toHaveBeenCalledWith('Rejected workflow: my-wf');
     expect(consoleSpy).toHaveBeenCalledWith(
@@ -1892,7 +1926,6 @@ describe('workflowRejectCommand', () => {
 
   it('cancels when max attempts reached', async () => {
     const workflowDb = await import('@archon/core/db/workflows');
-    const core = await import('@archon/core');
 
     (workflowDb.getWorkflowRun as ReturnType<typeof mock>).mockResolvedValueOnce({
       id: 'run-max',
@@ -1912,13 +1945,15 @@ describe('workflowRejectCommand', () => {
         rejection_count: 2,
       },
     });
-    (core.createWorkflowStore as ReturnType<typeof mock>).mockReturnValueOnce({
-      createWorkflowEvent: mock(() => Promise.resolve()),
-    });
 
     await workflowRejectCommand('run-max', 'still bad');
 
-    expect(workflowDb.cancelWorkflowRun).toHaveBeenCalledWith('run-max');
+    expect(workflowDb.resolveWorkflowRunApproval).toHaveBeenCalledWith('run-max', {
+      status: 'cancelled',
+      resolution: 'rejected',
+      metadata: { rejection_reason: 'still bad', rejection_count: 3 },
+      decisionText: 'still bad',
+    });
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('max attempts reached'));
   });
 
@@ -2111,7 +2146,7 @@ describe('workflowRunCommand — progress rendering', () => {
     expect(stderrSpy).toHaveBeenCalledWith('[deploy] Skipped (when_condition)\n');
   });
 
-  it('should write approval_pending event to stderr', async () => {
+  it('should write preferred approval_pending preview to stderr', async () => {
     setupWorkflowMocks();
 
     const { executeWorkflow } = require('@archon/workflows/executor');
@@ -2122,7 +2157,9 @@ describe('workflowRunCommand — progress rendering', () => {
           runId: 'run-1',
           nodeId: 'review',
           message: 'Please review the changes',
-          lastOutput: '## Questions\n1. Scope?\n2. Validation?',
+          lastOutput: '## Questions\n1. Legacy?\n2. Legacy?',
+          finalAssistantOutput: '## Questions\n1. Scope?\n2. Validation?',
+          finalAssistantOutputTruncated: true,
         });
       }
       return { success: true, workflowRunId: 'run-1', paused: true };
@@ -2134,11 +2171,12 @@ describe('workflowRunCommand — progress rendering', () => {
       1,
       '[review] Waiting for approval: Please review the changes\n'
     );
-    expect(stderrSpy).toHaveBeenNthCalledWith(2, 'Latest output:\n');
+    expect(stderrSpy).toHaveBeenNthCalledWith(2, 'Paused preview:\n');
     expect(stderrSpy).toHaveBeenNthCalledWith(
       3,
       '    ## Questions\n    1. Scope?\n    2. Validation?\n'
     );
+    expect(stderrSpy).toHaveBeenNthCalledWith(4, 'Preview clipped on this surface.\n');
   });
 
   it('should not write tool_started without verbose', async () => {

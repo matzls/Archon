@@ -24,6 +24,7 @@ import {
 } from '@archon/workflows/event-emitter';
 import type { WorkflowLoadResult } from '@archon/workflows/schemas/workflow';
 import {
+  getPausedOutputPreview,
   isApprovalContext,
   type ApprovalContext,
   type WorkflowRun,
@@ -161,9 +162,15 @@ function renderWorkflowEvent(event: WorkflowEmitterEvent, verbose: boolean): voi
       break;
     case 'approval_pending':
       process.stderr.write(`[${event.nodeId}] Waiting for approval: ${event.message}\n`);
-      if (event.lastOutput) {
-        process.stderr.write('Latest output:\n');
-        process.stderr.write(`${indentBlock(event.lastOutput)}\n`);
+      {
+        const preview = getPausedOutputPreview(event);
+        if (preview) {
+          process.stderr.write('Paused preview:\n');
+          process.stderr.write(`${indentBlock(preview.text)}\n`);
+          if (preview.truncated) {
+            process.stderr.write('Preview clipped on this surface.\n');
+          }
+        }
       }
       break;
     case 'tool_started':
@@ -915,9 +922,15 @@ export async function workflowStatusCommand(json?: boolean, verbose?: boolean): 
       console.log(`  Path:   ${run.working_path ?? '(none)'}`);
       console.log(`  Status: ${run.status}`);
       console.log(`  Age:    ${age}`);
-      if (run.status === 'paused' && approval?.lastOutput) {
-        console.log('  Latest output:');
-        console.log(indentBlock(approval.lastOutput));
+      if (run.status === 'paused') {
+        const preview = getPausedOutputPreview(approval);
+        if (preview) {
+          console.log('  Paused preview:');
+          console.log(indentBlock(preview.text));
+          if (preview.truncated) {
+            console.log('  Preview clipped on this surface.');
+          }
+        }
       }
 
       if (verbose) {
