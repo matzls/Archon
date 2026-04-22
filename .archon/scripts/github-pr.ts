@@ -474,7 +474,7 @@ if (pr) {
 
 pr = getCurrentPr(authDecision.env, remoteRepoSlug, branch);
 if (!pr) {
-  fail('gh pr view could not resolve the current branch PR after create/edit');
+  fail('could not resolve the current branch PR after create/edit');
 }
 
 const shouldEnsureReady = request.ready === true || request.draft === false;
@@ -483,7 +483,7 @@ if (shouldEnsureReady && pr.isDraft) {
   runGh(['pr', 'ready', String(pr.number), '--repo', remoteRepoSlug], authDecision.env);
   pr = getCurrentPr(authDecision.env, remoteRepoSlug, branch);
   if (!pr) {
-    fail('gh pr view could not resolve the PR after gh pr ready');
+    fail('could not resolve the PR after gh pr ready');
   }
 }
 
