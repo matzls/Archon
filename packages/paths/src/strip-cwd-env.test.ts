@@ -97,6 +97,65 @@ describe('stripCwdEnv', () => {
   });
 });
 
+describe('stripCwdEnv — operator logging (#1302)', () => {
+  const tmpDir = join(import.meta.dir, '__strip-cwd-env-log-test-tmp__');
+  let stderrSpy: ReturnType<typeof spyOn>;
+  let stderrWrites: string[];
+
+  beforeEach(() => {
+    mkdirSync(tmpDir, { recursive: true });
+    stderrWrites = [];
+    stderrSpy = spyOn(process.stderr, 'write').mockImplementation((chunk: unknown) => {
+      stderrWrites.push(typeof chunk === 'string' ? chunk : String(chunk));
+      return true;
+    });
+  });
+
+  afterEach(() => {
+    stderrSpy.mockRestore();
+    rmSync(tmpDir, { recursive: true, force: true });
+    delete process.env.TEST_STRIP_LOG_A;
+    delete process.env.TEST_STRIP_LOG_B;
+    delete process.env.TEST_STRIP_LOG_C;
+  });
+
+  it('emits [archon] stripped line with count and filename when keys are stripped', () => {
+    writeFileSync(join(tmpDir, '.env'), 'TEST_STRIP_LOG_A=leaked\nTEST_STRIP_LOG_B=leaked\n');
+    process.env.TEST_STRIP_LOG_A = 'leaked';
+    process.env.TEST_STRIP_LOG_B = 'leaked';
+    stripCwdEnv(tmpDir);
+    const line = stderrWrites.find(s => s.startsWith('[archon] stripped'));
+    expect(line).toBeDefined();
+    expect(line).toContain('stripped 2 keys');
+    expect(line).toContain(tmpDir);
+    expect(line).toContain('(.env)');
+  });
+
+  it('lists every contributing filename when keys span multiple .env files', () => {
+    writeFileSync(join(tmpDir, '.env'), 'TEST_STRIP_LOG_A=leaked\n');
+    writeFileSync(join(tmpDir, '.env.local'), 'TEST_STRIP_LOG_B=leaked\n');
+    process.env.TEST_STRIP_LOG_A = 'leaked';
+    process.env.TEST_STRIP_LOG_B = 'leaked';
+    stripCwdEnv(tmpDir);
+    const line = stderrWrites.find(s => s.startsWith('[archon] stripped'));
+    expect(line).toBeDefined();
+    expect(line).toContain('(.env, .env.local)');
+  });
+
+  it('emits no [archon] stripped line when no CWD .env files exist', () => {
+    stripCwdEnv(tmpDir);
+    const line = stderrWrites.find(s => s.startsWith('[archon] stripped'));
+    expect(line).toBeUndefined();
+  });
+
+  it('emits no [archon] stripped line when .env file is empty', () => {
+    writeFileSync(join(tmpDir, '.env'), '');
+    stripCwdEnv(tmpDir);
+    const line = stderrWrites.find(s => s.startsWith('[archon] stripped'));
+    expect(line).toBeUndefined();
+  });
+});
+
 describe('stripCwdEnv — nested Claude Code marker stripping', () => {
   const tmpDir = join(import.meta.dir, '__strip-markers-test-tmp__');
 

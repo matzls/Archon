@@ -46,6 +46,9 @@ e2e-screenshots/
 .archon/artifacts/
 artifacts/
 
+# Cross-run workflow state (e.g. issue-triage memory)
+.archon/state/
+
 # Agent artifacts (generated, local only)
 .agents/*
 !.agents/skills/
@@ -57,6 +60,7 @@ artifacts/
 .claude/archon/
 .claude/mockups/
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
 e2e-testing-findings-session2.md
 
 # Local workspace

@@ -260,6 +260,19 @@ const MOCK_FAILED_RUN: MockWorkflowRun = {
   completed_at: NOW,
 };
 
+const MOCK_PAUSED_RUN: MockWorkflowRun = {
+  ...MOCK_RUNNING_RUN,
+  id: 'run-paused-1',
+  status: 'paused',
+  metadata: {
+    approval: {
+      type: 'approval_gate',
+      nodeId: 'approve',
+      message: 'Approve deployment?',
+    },
+  },
+};
+
 const MOCK_PENDING_RUN: MockWorkflowRun = {
   ...MOCK_RUNNING_RUN,
   id: 'run-uuid-3',
@@ -1204,6 +1217,8 @@ describe('DELETE /api/workflows/runs/:runId', () => {
 describe('POST /api/workflows/runs/:runId/approve', () => {
   beforeEach(() => {
     mockApproveWorkflowOperation.mockReset();
+    mockCreateWorkflowEvent.mockReset();
+    mockUpdateWorkflowRun.mockReset();
   });
 
   test('returns 404 when run not found', async () => {
@@ -1275,6 +1290,46 @@ describe('POST /api/workflows/runs/:runId/approve', () => {
   });
 
   test('interactive loop completion alias stores last output as node output', async () => {
+    mockApproveWorkflowOperation.mockImplementationOnce(
+      async (_runId: string, approvalComment?: string) => {
+        const comment = approvalComment ?? 'Approved';
+
+        await mockCreateWorkflowEvent({
+          workflow_run_id: 'run-loop-ready',
+          event_type: 'node_completed',
+          step_name: 'explore',
+          data: {
+            node_output: 'Exploration summary.',
+            approval_decision: 'approved',
+            loop_completion_input: comment,
+          },
+        });
+        await mockCreateWorkflowEvent({
+          workflow_run_id: 'run-loop-ready',
+          event_type: 'approval_received',
+          step_name: 'explore',
+          data: {
+            decision: 'approved',
+            comment,
+            iteration: 3,
+            transition: 'complete_loop',
+          },
+        });
+        await mockUpdateWorkflowRun('run-loop-ready', {
+          status: 'failed',
+          metadata: { loop_completion_input: comment },
+        });
+
+        return {
+          workflowName: 'deploy',
+          workingPath: '/tmp/worktrees/feature',
+          userMessage: 'Deploy to staging',
+          codebaseId: 'cb-uuid-1',
+          conversationId: 'conv-uuid-1',
+          type: 'interactive_loop' as const,
+        };
+      }
+    );
     mockGetWorkflowRun.mockResolvedValueOnce({
       ...MOCK_PAUSED_RUN,
       id: 'run-loop-ready',

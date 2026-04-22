@@ -5,8 +5,8 @@
  * from the file extension: .ts/.js -> bun, .py -> uv.
  */
 import { readdir, stat } from 'fs/promises';
-import { resolve, join, basename, extname } from 'path';
-import { createLogger, getDefaultScriptsPath } from '@archon/paths';
+import { join, basename, extname } from 'path';
+import { createLogger, getDefaultScriptsPath, getHomeScriptsPath } from '@archon/paths';
 import { BUNDLED_SCRIPTS, isBinaryBuild } from './defaults/bundled-defaults';
 
 /** Normalize path separators to forward slashes for cross-platform consistency */
@@ -56,12 +56,24 @@ function getRuntimeForExtension(ext: string): ScriptRuntime | undefined {
 }
 
 /**
- * Recursively scan a directory and return all script files with their names, paths, and runtimes.
- * Skips files with unknown extensions. Throws on duplicate script names.
+ * Maximum subfolder depth we descend into when scanning scripts.
+ *
+ * `1` matches the workflows/commands convention: allow one level of
+ * grouping (e.g. `.archon/scripts/triage/foo.ts`) but no nested folders.
+ * We stop at 1 deliberately — deeper nesting has never been part of the
+ * documented convention and adds no organizational value, just routing
+ * ambiguity when two basenames collide across folders.
+ */
+const MAX_SCRIPT_DISCOVERY_DEPTH = 1;
+
+/**
+ * Scan a directory for script files, descending at most `MAX_SCRIPT_DISCOVERY_DEPTH`
+ * folders deep. Skips files with unknown extensions. Throws on duplicate script names.
  */
 async function scanScriptDir(
   dirPath: string,
-  scripts: Map<string, ScriptDefinition>
+  scripts: Map<string, ScriptDefinition>,
+  depth = 0
 ): Promise<void> {
   let entries: string[];
   try {
@@ -89,7 +101,10 @@ async function scanScriptDir(
     }
 
     if (entryStat.isDirectory()) {
-      await scanScriptDir(entryPath, scripts);
+      // 1-depth cap: allow one level of grouping (e.g. `.archon/scripts/triage/foo.ts`)
+      // but stop there. Matches the workflows/commands convention — no nested folders.
+      if (depth >= MAX_SCRIPT_DISCOVERY_DEPTH) continue;
+      await scanScriptDir(entryPath, scripts, depth + 1);
       continue;
     }
 
@@ -119,7 +134,7 @@ async function scanScriptDir(
 /**
  * Discover scripts from a directory (expected to be .archon/scripts/ or equivalent).
  * Returns a Map of script name -> ScriptDefinition.
- * Throws if duplicate script names are found across different extensions.
+ * Throws if duplicate script names are found across different extensions within the directory.
  * Returns an empty Map if the directory does not exist.
  */
 export async function discoverScripts(dir: string): Promise<Map<string, ScriptDefinition>> {
@@ -130,7 +145,35 @@ export async function discoverScripts(dir: string): Promise<Map<string, ScriptDe
 }
 
 /**
+ * Discover scripts across all scopes for a given repo cwd.
+ *
+ * Resolution order (repo wins on same-name collision — matches the
+ * workflows/commands precedence):
+ *   1. `<cwd>/.archon/scripts/` — repo-scoped (`source: 'project'` equivalent)
+ *   2. `~/.archon/scripts/`    — home-scoped (`source: 'global'` equivalent)
+ *
+ * Within a single scope, duplicate basenames across extensions still throw
+ * (matches `discoverScripts` behavior). Across scopes, the repo-level entry
+ * silently overrides the home-level one.
+ */
+export async function discoverScriptsForCwd(cwd: string): Promise<Map<string, ScriptDefinition>> {
+  const homeScripts = await discoverScripts(getHomeScriptsPath());
+  const repoScripts = await discoverScripts(join(cwd, '.archon', 'scripts'));
+
+  // Start with home, overlay repo (repo wins)
+  const merged = new Map<string, ScriptDefinition>(homeScripts);
+  for (const [name, def] of repoScripts) {
+    if (merged.has(name)) {
+      getLog().debug({ name }, 'script.repo_overrides_home');
+    }
+    merged.set(name, def);
+  }
+  return merged;
+}
+
+/**
  * Returns bundled default scripts embedded in the binary/build.
+ * Follows the bundled-defaults.ts pattern for future extensibility.
  */
 export function getDefaultScripts(): Map<string, BundledScriptDefinition> {
   const defaults = new Map<string, BundledScriptDefinition>();
@@ -164,16 +207,17 @@ export async function discoverDefaultScripts(): Promise<Map<string, ResolvedScri
 }
 
 /**
- * Resolve a named script using repo-local scripts first, then Archon defaults.
+ * Resolve a named script using repo-local scripts first, then home-scoped
+ * scripts, then Archon defaults.
  */
 export async function resolveNamedScript(
   cwd: string,
   scriptName: string
 ): Promise<ResolvedScriptDefinition | null> {
-  const repoScripts = await discoverScripts(resolve(cwd, '.archon', 'scripts'));
-  const repoScript = repoScripts.get(scriptName);
-  if (repoScript) {
-    return repoScript;
+  const discoveredScripts = await discoverScriptsForCwd(cwd);
+  const discoveredScript = discoveredScripts.get(scriptName);
+  if (discoveredScript) {
+    return discoveredScript;
   }
 
   const defaultScripts = await discoverDefaultScripts();

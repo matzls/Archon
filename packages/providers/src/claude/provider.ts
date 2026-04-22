@@ -87,8 +87,9 @@ async function buildSubprocessEnv(
   cwd: string,
   requestOptions?: AgentRequestOptions
 ): Promise<NodeJS.ProcessEnv> {
+  // Using || intentionally: empty string should be treated as missing credential.
   const hasExplicitTokens = Boolean(
-    process.env.CLAUDE_CODE_OAUTH_TOKEN ?? process.env.CLAUDE_API_KEY
+    process.env.CLAUDE_CODE_OAUTH_TOKEN || process.env.CLAUDE_API_KEY
   );
   const authMode = hasExplicitTokens ? 'explicit' : 'global';
   getLog().info(
@@ -421,6 +422,9 @@ async function applyNodeConfig(
     if (Object.keys(builtHooks).length > 0) {
       // Merge with existing hooks (PostToolUse capture hook)
       const existingHooks = options.hooks as SDKHooksMap | undefined;
+      if (!options.hooks) {
+        (options as Record<string, unknown>).hooks = {};
+      }
       for (const [event, matchers] of Object.entries(builtHooks)) {
         if (!matchers) continue;
         const existing = existingHooks?.[event] as HookCallbackMatcher[] | undefined;

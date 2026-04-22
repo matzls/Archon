@@ -152,6 +152,33 @@ export function buildResultChunk(messages: readonly unknown[]): MessageChunk {
 }
 
 /**
+ * Attempt to parse a Pi assistant transcript as the structured-output JSON
+ * requested via `outputFormat`. Handles two common model failure modes:
+ *  - trailing/leading whitespace (always stripped)
+ *  - markdown code fences (```json ... ``` or bare ``` ... ```) that models
+ *    emit despite the "no code fences" instruction in the prompt
+ *
+ * Returns the parsed value on success, `undefined` on any failure. Callers
+ * treat `undefined` as "structured output unavailable" and degrade via the
+ * dag-executor's existing missing-structured-output warning.
+ */
+export function tryParseStructuredOutput(text: string): unknown {
+  const trimmed = text.trim();
+  if (trimmed.length === 0) return undefined;
+  // Strip ```json / ``` fences if present. Match only at boundaries so we
+  // don't mangle JSON strings that legitimately contain backticks.
+  const cleaned = trimmed
+    .replace(/^```(?:json)?\s*\n?/i, '')
+    .replace(/\n?\s*```\s*$/, '')
+    .trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Pure mapper from Pi's `AgentSessionEvent` → zero-or-more Archon `MessageChunk`s.
  *
  * Most Pi events map 1:1 or are skipped. Tool execution is split across
@@ -240,16 +267,34 @@ export type BridgeQueueItem =
   | { kind: 'done' }
   | { kind: 'error'; error: Error };
 
+/** Lets the UI stub push notifications into the session's chunk queue. */
+export interface BridgeNotifier {
+  setEmitter(fn: ((chunk: MessageChunk) => void) | undefined): void;
+}
+
 export async function* bridgeSession(
   session: AgentSession,
   prompt: string,
-  abortSignal?: AbortSignal
+  abortSignal?: AbortSignal,
+  jsonSchema?: Record<string, unknown>,
+  uiBridge?: BridgeNotifier
 ): AsyncGenerator<MessageChunk> {
   const queue = new AsyncQueue<BridgeQueueItem>();
+  uiBridge?.setEmitter(chunk => {
+    queue.push({ kind: 'chunk', chunk });
+  });
+  // Best-effort structured-output buffer. Only accumulates when the caller
+  // requested a JSON schema; otherwise stays empty and the terminal chunk
+  // passes through untouched.
+  const wantsStructured = jsonSchema !== undefined;
+  let assistantBuffer = '';
 
   const unsubscribe = session.subscribe((event: AgentSessionEvent) => {
     try {
       for (const chunk of mapPiEvent(event)) {
+        if (wantsStructured && chunk.type === 'assistant') {
+          assistantBuffer += chunk.content;
+        }
         queue.push({ kind: 'chunk', chunk });
       }
     } catch (err) {
@@ -291,8 +336,28 @@ export async function* bridgeSession(
       // Pi's session.sessionId is always a UUID (even for in-memory); we emit
       // it unconditionally and let the caller decide whether resume is
       // meaningful (capability-gated at the registry level).
-      if (item.chunk.type === 'result' && session.sessionId) {
-        yield { ...item.chunk, sessionId: session.sessionId };
+      if (item.chunk.type === 'result') {
+        let terminal: MessageChunk = item.chunk;
+        if (session.sessionId) {
+          terminal = { ...terminal, sessionId: session.sessionId };
+        }
+        // Best-effort structured output: parse the accumulated assistant
+        // transcript as JSON and attach. On parse failure, leave it off —
+        // the dag-executor's existing dag.structured_output_missing path
+        // warns and downstream $node.output.field refs degrade to '' instead
+        // of propagating bogus data.
+        if (wantsStructured) {
+          const parsed = tryParseStructuredOutput(assistantBuffer);
+          if (parsed !== undefined) {
+            terminal = { ...terminal, structuredOutput: parsed };
+          } else {
+            getLog().warn(
+              { bufferLength: assistantBuffer.length },
+              'pi.event-bridge.structured_output_parse_failed'
+            );
+          }
+        }
+        yield terminal;
       } else {
         yield item.chunk;
       }
@@ -302,6 +367,7 @@ export async function* bridgeSession(
     // a no-op and pending iterate() waiters resolve — otherwise a consumer
     // abort mid-iteration would leak this generator on the promise forever.
     queue.close();
+    uiBridge?.setEmitter(undefined);
     unsubscribe();
     if (abortSignal) {
       abortSignal.removeEventListener('abort', onAbort);

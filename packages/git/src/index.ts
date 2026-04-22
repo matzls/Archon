@@ -44,6 +44,7 @@ export {
   getCanonicalRepoPath,
   verifyWorktreeOwnership,
 } from './worktree';
+export type { WorktreeLayout, WorktreeBaseOverride } from './worktree';
 
 // Branch operations
 export {

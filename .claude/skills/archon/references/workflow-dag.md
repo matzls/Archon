@@ -175,6 +175,8 @@ Structured output is a real Codex-safe feature:
 ```
 
 This enables downstream references such as `$classify.output.issue_type`.
+On Claude and Codex this is SDK-enforced; on Pi it is best-effort via prompt
+augmentation and JSON extraction from the result text.
 
 ## Loop Notes
 

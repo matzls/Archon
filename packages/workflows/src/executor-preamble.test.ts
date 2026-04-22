@@ -204,7 +204,7 @@ describe('executeWorkflow preamble', () => {
       expect(blockCall).toBeDefined();
       const blockMsg = blockCall?.[1] as string;
       expect(blockMsg).toContain('active-workflow');
-      expect(blockMsg).toContain('/workflow cancel');
+      expect(blockMsg).toContain('/workflow abandon');
 
       // The guard now runs AFTER the row is created (so it always has a
       // self-ID to exclude). On guard fire, the just-created row is marked

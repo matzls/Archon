@@ -59,7 +59,7 @@ Workflows live in `.archon/workflows/` relative to the working directory:
 
 Archon discovers workflows recursively - subdirectories are fine. If a workflow file fails to load (syntax error, validation failure), it's skipped and the error is reported via `/workflow list`.
 
-> **Global workflows:** For workflows that apply to every project, place them in `~/.archon/.archon/workflows/`. Global workflows are overridden by same-named repo workflows. See [Global Workflows](/guides/global-workflows/).
+> **Global workflows:** For workflows that apply to every project, place them in `~/.archon/workflows/`. Global workflows are overridden by same-named repo workflows. See [Global Workflows](/guides/global-workflows/).
 
 > **CLI vs Server:** The CLI reads workflow files from wherever you run it (sees uncommitted changes). The server reads from the workspace clone at `~/.archon/workspaces/owner/repo/`, which only syncs from the remote before worktree creation. If you edit a workflow locally but don't push, the server won't see it.
 
@@ -122,12 +122,18 @@ webSearchMode: live              # Codex only; workflow-level only
 additionalDirectories:           # Codex only; workflow-level only
   - /absolute/path/to/shared/repo
 interactive: true                # Web only: run in foreground instead of background
+worktree:                        # Optional: pin isolation behavior regardless of caller
+  enabled: false                 #   false = always run in the live checkout (CLI --no-worktree
+                                 #           and web both honor it). Use for read-only workflows
+                                 #           like triage/reporting. true = must use a worktree;
+                                 #           CLI --no-worktree hard-errors. Omit to let the
+                                 #           caller decide (current default = worktree).
 
 # Required for DAG-based
 nodes:
   - id: classify                 # Unique node ID (used for dependency refs and $id.output)
     command: classify-issue      # Loads from .archon/commands/classify-issue.md
-    output_format:               # Optional: enforce structured JSON output (Claude + Codex)
+    output_format:               # Optional: structured JSON output. SDK-enforced on Claude/Codex; best-effort (prompt + JSON extraction) on Pi.
       type: object
       properties:
         type:
@@ -193,7 +199,7 @@ nodes:
 | `provider` | string | inherited | Per-node provider override (any registered provider, e.g. `'claude'`, `'codex'`) |
 | `model` | string | inherited | Per-node model override |
 | `modelReasoningEffort` | `'minimal'`\|`'low'`\|`'medium'`\|`'high'`\|`'xhigh'` | inherited | Codex only. Per-node reasoning override for `command`/`prompt` nodes. Resolves as `node > workflow > assistants.codex.*` |
-| `output_format` | object | — | JSON Schema for structured output (Claude and Codex) |
+| `output_format` | object | — | JSON Schema for structured output. SDK-enforced on Claude and Codex; best-effort on Pi (schema appended to prompt, JSON extracted from result text) |
 | `allowed_tools` | string[] | — | Whitelist of built-in tools. `[]` = no tools. Claude only |
 | `denied_tools` | string[] | — | Tools to remove. Applied after `allowed_tools`. Claude only |
 | `hooks` | object | — | Per-node SDK hook callbacks. Claude only. See [Hooks](/guides/hooks/) |

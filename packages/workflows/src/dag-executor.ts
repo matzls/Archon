@@ -887,7 +887,19 @@ async function executeNodeInternal(
 
       if (msg.type === 'assistant' && msg.content) {
         nodeOutputText += msg.content; // ALWAYS capture for $node_id.output
-        if (streamingMode === 'stream') {
+        if (streamingMode === 'stream' || msg.flush) {
+          // `flush` chunks (e.g. Pi notify() emitting a plannotator review URL)
+          // must reach the user before the node blocks. Drain any queued batch
+          // content first so order is preserved.
+          if (streamingMode === 'batch' && batchMessages.length > 0) {
+            await safeSendMessage(
+              platform,
+              conversationId,
+              batchMessages.join('\n\n'),
+              nodeContext
+            );
+            batchMessages.length = 0;
+          }
           await safeSendMessage(platform, conversationId, msg.content, nodeContext);
         } else {
           batchMessages.push(msg.content);
@@ -1537,12 +1549,47 @@ async function executeScriptNode(
         args = ['run', ...withFlags, 'python', '-c', finalScript];
       }
     } else {
-      // Named script — look up in repo's .archon/scripts/ first, then fall
-      // back to Archon's bundled default scripts (BUNDLED_SCRIPTS).
-      const scriptDef = await resolveNamedScript(cwd, finalScript);
+      // Named script — look up across repo and home scopes, then fall back
+      // to Archon's bundled/default scripts. Wrap discovery in its own try/catch
+      // so permission errors on ~/.archon/scripts/ are attributed correctly.
+      let scriptDef: Awaited<ReturnType<typeof resolveNamedScript>>;
+      try {
+        scriptDef = await resolveNamedScript(cwd, finalScript);
+      } catch (discoveryErr) {
+        const err = discoveryErr as Error;
+        const errorMsg = `Script node '${node.id}': failed to discover scripts — ${err.message}`;
+        getLog().error({ err, nodeId: node.id, cwd }, 'script_discovery_failed');
+        await safeSendMessage(platform, conversationId, errorMsg, nodeContext);
+        await logNodeError(logDir, workflowRun.id, node.id, errorMsg);
+
+        emitter.emit({
+          type: 'node_failed',
+          runId: workflowRun.id,
+          nodeId: node.id,
+          nodeName: node.id,
+          error: errorMsg,
+        });
+        deps.store
+          .createWorkflowEvent({
+            workflow_run_id: workflowRun.id,
+            event_type: 'node_failed',
+            step_name: node.id,
+            data: { error: errorMsg, type: 'script' },
+          })
+          .catch((dbErr: Error) => {
+            getLog().error(
+              { err: dbErr, workflowRunId: workflowRun.id, eventType: 'node_failed' },
+              'workflow_event_persist_failed'
+            );
+          });
+
+        return { state: 'failed', output: '', error: errorMsg };
+      }
 
       if (!scriptDef) {
-        const errorMsg = `Script node '${node.id}': named script '${finalScript}' not found in .archon/scripts/ or bundled defaults`;
+        const errorMsg =
+          `Script node '${node.id}': named script '${finalScript}' not found in ` +
+          '.archon/scripts/, ~/.archon/scripts/, or bundled defaults';
         getLog().error({ nodeId: node.id, scriptName: finalScript }, 'script_not_found');
         await safeSendMessage(platform, conversationId, errorMsg, nodeContext);
         await logNodeError(logDir, workflowRun.id, node.id, errorMsg);
