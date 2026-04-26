@@ -108,6 +108,15 @@ not cover the case or when the user asks where something is documented.
 Prefer Archon workflows ending in `-codex` when they exist. That suffix indicates
 the workflow has been tuned or separated for Codex behavior.
 
+Important mental model:
+
+- this host skill lets the outer Codex session choose, launch, and monitor
+  Archon workflows
+- a workflow uses Codex under the hood only when the workflow or node sets
+  `provider: codex`, or when the repo/global Archon default assistant is Codex
+- many upstream/default workflows are Claude-oriented even though Codex can
+  launch and monitor them
+
 Known Codex-specific lanes in this repo:
 
 - `archon-assist-codex` for general Archon help, debugging, exploration, and
