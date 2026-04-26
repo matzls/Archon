@@ -9,7 +9,7 @@
  */
 
 // =============================================================================
-// Skill Files (23 total)
+// Skill Files (26 total)
 // =============================================================================
 
 import skillMd from '../../../.agents/skills/archon/SKILL.md' with { type: 'text' };
@@ -29,10 +29,13 @@ import cliCommands from '../../../.agents/skills/archon/references/cli-commands.
 import codexCapabilityCrosswalk from '../../../.agents/skills/archon/references/codex-capability-crosswalk.md' with { type: 'text' };
 import configuration from '../../../.agents/skills/archon/references/configuration.md' with { type: 'text' };
 import dagAdvanced from '../../../.agents/skills/archon/references/dag-advanced.md' with { type: 'text' };
+import goodPractices from '../../../.agents/skills/archon/references/good-practices.md' with { type: 'text' };
 import interactiveWorkflows from '../../../.agents/skills/archon/references/interactive-workflows.md' with { type: 'text' };
 import logDebugging from '../../../.agents/skills/archon/references/log-debugging.md' with { type: 'text' };
 import monitoring from '../../../.agents/skills/archon/references/monitoring.md' with { type: 'text' };
+import parameterMatrix from '../../../.agents/skills/archon/references/parameter-matrix.md' with { type: 'text' };
 import repoInit from '../../../.agents/skills/archon/references/repo-init.md' with { type: 'text' };
+import troubleshooting from '../../../.agents/skills/archon/references/troubleshooting.md' with { type: 'text' };
 import variables from '../../../.agents/skills/archon/references/variables.md' with { type: 'text' };
 import workflowDag from '../../../.agents/skills/archon/references/workflow-dag.md' with { type: 'text' };
 
@@ -61,10 +64,13 @@ export const BUNDLED_SKILL_FILES: Record<string, string> = {
   'references/codex-capability-crosswalk.md': codexCapabilityCrosswalk,
   'references/configuration.md': configuration,
   'references/dag-advanced.md': dagAdvanced,
+  'references/good-practices.md': goodPractices,
   'references/interactive-workflows.md': interactiveWorkflows,
   'references/log-debugging.md': logDebugging,
   'references/monitoring.md': monitoring,
+  'references/parameter-matrix.md': parameterMatrix,
   'references/repo-init.md': repoInit,
+  'references/troubleshooting.md': troubleshooting,
   'references/variables.md': variables,
   'references/workflow-dag.md': workflowDag,
 };
