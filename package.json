@@ -17,6 +17,7 @@
     "generate:bundled": "bun run scripts/generate-bundled-defaults.ts",
     "check:bundled": "bun run scripts/generate-bundled-defaults.ts --check",
     "test": "bun --filter '*' --parallel test",
+    "test:e2e:codex-live": "bun run scripts/e2e/codex-live-workflow-smoke.ts",
     "test:watch": "bun --filter @archon/server test:watch",
     "type-check": "bun --filter '*' type-check && bun x tsc --noEmit -p scripts/tsconfig.json",
     "lint": "bun x eslint . --cache",
