@@ -50,6 +50,7 @@ import { parseWorkflow } from '@archon/workflows/loader';
 import { isValidCommandName } from '@archon/workflows/command-validation';
 import { BUNDLED_WORKFLOWS, BUNDLED_COMMANDS, isBinaryBuild } from '@archon/workflows/defaults';
 import { TERMINAL_WORKFLOW_STATUSES } from '@archon/workflows/schemas/workflow-run';
+import type { WorkflowRun } from '@archon/workflows/schemas/workflow-run';
 import { findMarkdownFilesRecursive } from '@archon/core/utils/commands';
 
 /** Lazy-initialized logger (deferred so test mocks can intercept createLogger) */
@@ -1058,6 +1059,95 @@ export function registerApiRoutes(
     return { accepted: true, status: result.status };
   }
 
+  /**
+   * Re-enter the orchestrator after a paused approval gate is resolved, so a
+   * web-dispatched workflow continues (approve) or runs its on_reject prompt
+   * (reject) without the user having to re-run the workflow command. The CLI's
+   * `workflowApproveCommand` / `workflowRejectCommand` already auto-resume via
+   * `workflowRunCommand({ resume: true })`; this is the web-side equivalent.
+   *
+   * Returns `true` when a resume dispatch was initiated, `false` otherwise (no
+   * parent conversation on the run, parent conversation deleted, parent was on
+   * a non-web platform, or dispatch threw). Failures are non-fatal: the gate
+   * decision is recorded regardless; when this returns `false` the response
+   * text instructs the user to re-run the workflow command.
+   *
+   * **Cross-adapter guard**: only web-sourced parents qualify.
+   * `dispatchToOrchestrator` is wired to the web adapter + its lock manager,
+   * so a Slack / Telegram / GitHub / Discord run being approved from the
+   * dashboard must not route through it — the Slack thread would never see
+   * the resumed output. Non-web parents skip auto-resume and the originating
+   * platform's own re-run flow applies.
+   */
+  async function tryAutoResumeAfterGate(
+    run: WorkflowRun,
+    action: 'approve' | 'reject'
+  ): Promise<boolean> {
+    if (!run.parent_conversation_id) return false;
+    // Literal event names per action — greppable for ops tooling. Keeping the
+    // branch explicit rather than templating avoids the earlier 3-segment
+    // `api.workflow_*.dispatched` shape that broke `{domain}.{action}_{state}`.
+    const events =
+      action === 'approve'
+        ? {
+            dispatched: 'api.workflow_approve_auto_resume_dispatched' as const,
+            skippedNoPlatformConv:
+              'api.workflow_approve_auto_resume_skipped_no_platform_conv' as const,
+            skippedNonWebParent: 'api.workflow_approve_auto_resume_skipped_non_web_parent' as const,
+            failed: 'api.workflow_approve_auto_resume_failed' as const,
+          }
+        : {
+            dispatched: 'api.workflow_reject_auto_resume_dispatched' as const,
+            skippedNoPlatformConv:
+              'api.workflow_reject_auto_resume_skipped_no_platform_conv' as const,
+            skippedNonWebParent: 'api.workflow_reject_auto_resume_skipped_non_web_parent' as const,
+            failed: 'api.workflow_reject_auto_resume_failed' as const,
+          };
+    try {
+      const parentConv = await conversationDb.getConversationById(run.parent_conversation_id);
+      const platformConvId = parentConv?.platform_conversation_id;
+      if (!platformConvId) {
+        // parentConv === null is a data-integrity signal (the parent
+        // conversation was deleted while the run was paused) — worth
+        // surfacing at info level so operators notice. Missing
+        // platform_conversation_id on an existing row shouldn't happen and
+        // stays at debug.
+        const logFn =
+          parentConv === null ? getLog().info.bind(getLog()) : getLog().debug.bind(getLog());
+        logFn(
+          {
+            runId: run.id,
+            parentConversationId: run.parent_conversation_id,
+            parentDeleted: parentConv === null,
+          },
+          events.skippedNoPlatformConv
+        );
+        return false;
+      }
+      if (parentConv.platform_type !== 'web') {
+        getLog().debug(
+          {
+            runId: run.id,
+            parentConversationId: run.parent_conversation_id,
+            platformType: parentConv.platform_type,
+          },
+          events.skippedNonWebParent
+        );
+        return false;
+      }
+      const resumeMessage = `/workflow run ${run.workflow_name} ${run.user_message ?? ''}`.trim();
+      await dispatchToOrchestrator(platformConvId, resumeMessage);
+      getLog().info(
+        { runId: run.id, workflowName: run.workflow_name, platformConvId },
+        events.dispatched
+      );
+      return true;
+    } catch (err) {
+      getLog().warn({ err: err as Error, runId: run.id }, events.failed);
+      return false;
+    }
+  }
+
   // GET /api/conversations - List conversations
   registerOpenApiRoute(getConversationsRoute, async c => {
     try {
@@ -1875,10 +1965,14 @@ export function registerApiRoutes(
     const runId = c.req.param('runId') ?? '';
     try {
       const body = (await c.req.json().catch(() => ({}))) as { comment?: string };
+      const run = await workflowDb.getWorkflowRun(runId);
       const result = await workflowOperations.approveWorkflow(runId, body.comment);
+      const autoResumed = run ? await tryAutoResumeAfterGate(run, 'approve') : false;
       return c.json({
         success: true,
-        message: `Workflow approved: ${result.workflowName}. Send a message to continue the workflow.`,
+        message: autoResumed
+          ? `Workflow approved: ${result.workflowName}. Resuming workflow.`
+          : `Workflow approved: ${result.workflowName}. Send a message to continue the workflow.`,
       });
     } catch (error) {
       const actionError = classifyWorkflowActionError(error);
@@ -1895,11 +1989,15 @@ export function registerApiRoutes(
     const runId = c.req.param('runId') ?? '';
     try {
       const body = (await c.req.json().catch(() => ({}))) as { reason?: string };
+      const run = await workflowDb.getWorkflowRun(runId);
       const result = await workflowOperations.rejectWorkflow(runId, body.reason);
       if (!result.cancelled) {
+        const autoResumed = run ? await tryAutoResumeAfterGate(run, 'reject') : false;
         return c.json({
           success: true,
-          message: `Workflow rejected: ${result.workflowName}. On-reject prompt will run on resume.`,
+          message: autoResumed
+            ? `Workflow rejected: ${result.workflowName}. Running on-reject prompt.`
+            : `Workflow rejected: ${result.workflowName}. On-reject prompt will run on resume.`,
         });
       }
       return c.json({

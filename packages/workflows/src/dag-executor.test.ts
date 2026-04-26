@@ -3884,6 +3884,73 @@ describe('executeDagWorkflow -- resume with priorCompletedNodes', () => {
       ).toBe(1);
     });
 
+    it('completes on final iteration with XML-wrapped signal (<COMPLETE>SIGNAL</COMPLETE>)', async () => {
+      let callCount = 0;
+      mockSendQueryDag.mockImplementation(function* () {
+        callCount++;
+        if (callCount < 3) {
+          yield { type: 'assistant', content: `Iteration ${String(callCount)} progress` };
+          yield { type: 'result', sessionId: `loop-session-${String(callCount)}` };
+        } else {
+          yield { type: 'assistant', content: 'All clean! <COMPLETE>ALL_CLEAN</COMPLETE>' };
+          yield { type: 'result', sessionId: `loop-session-${String(callCount)}` };
+        }
+      });
+
+      const mockDeps = createMockDeps();
+      const platform = createMockPlatform();
+      const workflowRun = makeWorkflowRun();
+
+      await executeDagWorkflow(
+        mockDeps,
+        platform,
+        'conv-dag',
+        testDir,
+        {
+          name: 'dag-loop-xml-tag',
+          nodes: [
+            {
+              id: 'fix-and-review',
+              loop: {
+                prompt: 'Fix and review. When done, output <COMPLETE>ALL_CLEAN</COMPLETE>.',
+                until: 'ALL_CLEAN',
+                max_iterations: 3,
+              },
+            },
+          ],
+        },
+        workflowRun,
+        'claude',
+        undefined,
+        join(testDir, 'artifacts'),
+        join(testDir, 'logs'),
+        'main',
+        'docs/',
+        minimalConfig
+      );
+
+      expect(mockSendQueryDag.mock.calls.length).toBe(3);
+      expect(
+        (
+          mockDeps.store.completeWorkflowRun as Mock<
+            (id: string, metadata?: Record<string, unknown>) => Promise<void>
+          >
+        ).mock.calls.length
+      ).toBe(1);
+      expect(
+        (mockDeps.store.failWorkflowRun as Mock<(id: string, error: string) => Promise<void>>).mock
+          .calls.length
+      ).toBe(0);
+
+      const allSentMessages = (
+        platform.sendMessage as Mock<(...args: unknown[]) => Promise<void>>
+      ).mock.calls
+        .map((call: unknown[]) => call[1] as string)
+        .join('');
+      expect(allSentMessages).not.toContain('<COMPLETE>');
+      expect(allSentMessages).not.toContain('</COMPLETE>');
+    });
+
     it('loop node output available to downstream nodes via $nodeId.output', async () => {
       let loopCallCount = 0;
       mockSendQueryDag.mockImplementation(function* (prompt: string) {
