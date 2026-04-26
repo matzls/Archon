@@ -1,106 +1,129 @@
-# Interactive Workflow Guide
+# Interactive Workflows For Codex
 
-Interactive workflows use human-in-the-loop approval gates and interactive loops. When you invoke one, you become a **transparent relay** between the user and the running workflow — not a commentator.
+Use this guide when the workflow is interactive and the user is effectively
+talking to the workflow through Codex.
 
-## Identifying Interactive Workflows
+Interactive workflows in this repo include:
 
-A workflow is interactive if it has `interactive: true` in its YAML definition. Key interactive workflows:
-- `archon-piv-loop` — Plan-Implement-Validate with iterative feedback
-- `archon-interactive-prd` — Guided PRD creation with approval gates
+- `archon-piv-loop-codex`
+- `archon-interactive-prd`
 
-When the user asks to run one of these, follow the protocol below.
+## Core Rule
 
-## Protocol: Running Interactive Workflows
+Be a transparent relay.
 
-### 1. Invoke the workflow
+- show the workflow's latest question or summary directly
+- do not rewrite or "improve" the workflow's wording
+- pass the user's answer back as directly as possible
+- keep operating the run until it pauses again or reaches a terminal state
 
-Run it in the background as usual:
+## Important Boundary
 
-```bash
-archon workflow run <name> "<message>"
-```
+Archon's internal CLI conversation is not the same thing as the current outer
+Codex UI thread.
 
-### 2. Monitor for pause
+- a pause can be real even if the user did not see a new outer-thread message
+- the host must explicitly relay the paused prompt into the current Codex
+  conversation
+- do not assume Archon's stdout or persisted worker messages are visible to the
+  user by themselves
 
-Check `archon workflow status` periodically. When status changes to `paused`, the workflow is waiting for user input.
+## Basic Loop
 
-### 3. Fetch and relay the output — BE TRANSPARENT
+1. Launch or continue the workflow and capture:
+   - run ID
+   - workflow name
+   - working path
+2. Verify the launched run with `archon workflow status --json`.
+3. When the run becomes `paused`, read the latest workflow output.
+4. Relay that output directly in the current Codex conversation.
+5. When the user answers, record the decision with `archon workflow approve` or
+   `archon workflow reject`.
+6. Immediately re-check `archon workflow status --json`.
+7. Continue with explicit `archon workflow resume <run-id>`.
+8. Keep that `workflow resume` process alive while the run is active; use a
+   separate terminal for additional status checks.
+9. Repeat until the run reaches `paused`, `completed`, or `failed`.
 
-When the workflow pauses, immediately read the log file to get the AI's output:
-
-```bash
-# Find the log file
-find ~/.archon/workspaces -name "<run-id>.jsonl" 2>/dev/null
-
-# Extract the last assistant message
-```
-
-Parse the JSONL log for the last `"type":"assistant"` entry and display its `content` field **directly to the user**. Do not summarize, do not add commentary, do not say "the workflow asked..." — just show the output as if the user is talking to the workflow agent directly.
-
-**DO:**
-```
-## What I Understand
-
-You want to add a --json flag to workflow status...
-
-## Questions
-
-1. Should the output include...
-2. Do you want...
-```
-
-**DON'T:**
-```
-The workflow has paused and is asking you several questions. Here's what it found:
-- It discovered that the --json flag is partially implemented
-- It's asking about the output format
-You can respond with...
-```
-
-### 4. Collect user response and resume
-
-When the user responds naturally (answers questions, says "ready", gives feedback), pass their response directly:
+## Commands
 
 ```bash
-archon workflow approve <run-id> "<user's exact response>"
+archon workflow status --json
+archon workflow approve <run-id> "<user response>"
+archon workflow resume <run-id>
+archon workflow reject <run-id> "<reason>"
+# If the rejection path stays resumable:
+archon workflow resume <run-id>
 ```
 
-Do not modify, summarize, or enhance the user's response. Pass it through verbatim.
+## When Paused
 
-### 5. Repeat until workflow completes
+When the workflow is paused:
 
-The workflow will alternate between running and pausing. Each time it pauses:
-- Read the latest output from the log
-- Display it directly
-- Wait for the user's response
-- Resume with their response
+- read the latest assistant output from the run log
+- show it directly
+- wait for the user
+- pass their response through verbatim unless a safety or formatting issue
+  requires intervention
 
-When the workflow finishes (status becomes `completed` or `failed`), report the final result.
+If `archon workflow status --json` already includes the exact paused prompt in
+`approval.message`, use that first. Fall back to the persisted assistant message
+or the run log when you need the exact rendered wording that Archon showed.
 
-## Key Behavior Rules
+Treat the paused fingerprint as:
 
-1. **You are a transparent pipe.** The user should feel like they're talking directly to the workflow agent. Never insert yourself as a middleman with commentary.
+- `approval.nodeId`
+- `approval.iteration`
+- `approval.message`
 
-2. **Show output verbatim.** The workflow agent's questions, findings, and summaries should appear exactly as written — including markdown formatting, code blocks, and structure.
+If the workflow pauses again with a new fingerprint, that is a new human
+checkpoint even if the wording looks similar.
 
-3. **Pass input verbatim.** The user's responses go directly to the workflow via `workflow approve`. Don't rewrite or "improve" their input.
+Do not replace the workflow's structured questions with your own summary.
 
-4. **Don't explain the workflow mechanics.** Don't say "the workflow is now in the explore phase" or "it will pause again after this." The user knows they're in a conversation — let it flow naturally.
+If the paused node is reviewing a mutable artifact, reopen the current artifact
+from disk before you speak for the workflow. For example, a plan-review pause
+should use the latest saved plan rather than a stale earlier read.
 
-5. **Monitor proactively.** Don't wait for the user to ask "what happened?" — check status and relay output as soon as the workflow pauses.
+## When Still Running
 
-## Approval Commands
+Long research or implementation nodes can stay `running` for a while without
+needing user input.
+
+- keep checking status on the monitoring cadence
+- do not treat "still running" by itself as a problem
+- if an attached CLI session is silent for one monitoring interval, poll
+  `archon workflow status --json` immediately instead of waiting on PTY output
+- if activity stops for the stall window, flag a possible stall and say what
+  evidence stopped moving
+
+Important nuance:
+
+- interactive-loop approval metadata can remain present while the run is
+  `running`
+- that does not mean the workflow is paused again
+- only treat the loop as back when the run status itself is `paused`
+
+## Where To Read The Latest Output
+
+Use the per-run JSONL when status alone is not enough:
 
 ```bash
-# Approve with feedback (interactive loops)
-archon workflow approve <run-id> "your feedback or answers here"
-
-# Reject (cancels the workflow)
-archon workflow reject <run-id> "reason for rejection"
+find "${ARCHON_HOME:-$HOME/.archon}/workspaces" -name "<run-id>.jsonl" 2>/dev/null
+tail -n 40 "<log-file>"
 ```
 
-## Troubleshooting
+Read `log-debugging.md` when you need the full trace.
 
-- **Workflow shows `running` for a long time**: The AI is doing research/implementation. Be patient — check again in a few minutes.
-- **Log file not found**: The log is at `~/.archon/workspaces/<owner>/<repo>/logs/<run-id>.jsonl`
-- **User wants to cancel**: Run `archon workflow reject <run-id>` to stop at an approval gate, or `archon workflow abandon <run-id>` to mark the run cancelled without killing any subprocess. To actively terminate a still-live subprocess, use the chat slash command `/workflow cancel <run-id>` on the platform that started it — there is no `archon workflow cancel` CLI subcommand
+Remember: finding the prompt in Archon state is not the final step. Repost it in
+the current Codex conversation so the user can answer without switching
+surfaces.
+
+## Surface Boundaries
+
+- `archon workflow run ...` is the direct CLI surface for this interaction model
+- `archon continue ...` follows the same pause-detection and relay loop
+- `archon chat ...` is not a persistent multi-turn workflow conversation
+- web foreground workflows can resume from natural-language replies in the same thread
+- CLI `workflow approve` and `workflow reject` only record the decision
+- `archon workflow resume <run-id>` is the live runner process after a human checkpoint

@@ -16,6 +16,7 @@ archon workflow list --json
 ```
 
 Use this first when choosing a Codex-safe workflow.
+JSON output includes `workflows` and `errors`; stdout should be parseable JSON.
 
 ### `archon workflow run <name> [message]`
 
@@ -43,6 +44,7 @@ Important:
 
 - default behavior creates an isolated worktree automatically
 - `--branch` and `--no-worktree` conflict
+- `--from` and `--no-worktree` conflict
 - `--resume` and `--branch` conflict
 
 ### `archon workflow status`
@@ -90,9 +92,41 @@ Use for paused workflows that need rejection or rework feedback.
 
 ```bash
 archon workflow resume <run-id>
+archon workflow resume <run-id> "continue with this feedback"
 ```
 
-Use when the run failed and should be resumed from its failure point.
+Use when the run failed and should be resumed from its failure point, or after a
+paused approval/rejection decision has been recorded and the workflow needs a
+live runner again.
+
+### `archon workflow abandon`
+
+```bash
+archon workflow abandon <run-id>
+```
+
+Marks a non-terminal workflow run as cancelled in the database. It does not kill
+an in-flight subprocess; use it for orphan cleanup or intentionally discarding a
+paused run.
+
+### `archon workflow cleanup`
+
+```bash
+archon workflow cleanup
+archon workflow cleanup 30
+```
+
+Deletes old terminal workflow runs from the database. It does not mutate active
+`running` rows.
+
+### `archon workflow event emit`
+
+```bash
+archon workflow event emit --run-id <uuid> --type checkpoint --data '{"step":"plan"}'
+```
+
+Rarely invoked manually. Used from workflow prompts/scripts when a run needs an
+explicit observability event.
 
 ## Validation Commands
 
@@ -132,6 +166,7 @@ Shows active worktree environments.
 archon isolation cleanup
 archon isolation cleanup 14
 archon isolation cleanup --merged
+archon isolation cleanup --merged --include-closed
 ```
 
 ## Other Commands
@@ -144,6 +179,26 @@ archon complete feature-auth --force
 ```
 
 Completes a branch lifecycle by removing the worktree and branch state.
+
+### `archon setup`
+
+```bash
+archon setup
+archon setup --scope project
+archon setup --scope home
+```
+
+Interactive setup for config, providers, and platform credentials.
+
+### `archon continue <branch>`
+
+```bash
+archon continue feat/auth "Continue implementation"
+archon continue feat/auth --workflow archon-piv-loop-codex "Resume guided work"
+```
+
+Continues work on an existing branch with prior context. It still follows the
+same status-polling and relay rules as `workflow run`.
 
 ### `archon version`
 
@@ -170,3 +225,5 @@ Important:
 | `ARCHON_HOME` | override Archon home directory |
 | `LOG_LEVEL` | control Archon process log verbosity |
 | `DATABASE_URL` | use PostgreSQL instead of SQLite |
+| `CODEX_BIN_PATH` | explicit Codex CLI binary path |
+| `CLAUDE_BIN_PATH` | explicit Claude Code binary path |

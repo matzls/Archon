@@ -1,90 +1,150 @@
-# Initializing Archon In A Repository For Codex
+# Initializing Archon in a Repository
 
-Use this when the task is to add `.archon/` to a repository so Codex can create
-or customize Archon commands and workflows there.
+Set up the `.archon/` directory structure in any git repository to enable custom workflows and commands.
 
 ## Directory Structure
 
-Create this in the repository root:
+Create the following in your repository root:
 
-```text
-.archon/
-├── commands/
-├── workflows/
-├── mcp/            # optional; mainly relevant for Claude node-local MCP config
-└── config.yaml     # optional
 ```
-
-Minimum setup:
+.archon/
+├── commands/         # Custom command files (.md)
+├── workflows/        # Workflow definitions (.yaml)
+├── scripts/          # Named scripts for script: nodes (.ts/.js for bun, .py for uv) — optional
+├── mcp/              # MCP server config files (.json) — optional
+├── state/            # Cross-run workflow state — gitignored, never committed
+├── config.yaml       # Repo-specific configuration — optional
+└── .env              # Repo-scoped Archon env (optional; do NOT commit)
+```
 
 ```bash
-mkdir -p .archon/commands .archon/workflows
+mkdir -p .archon/commands .archon/workflows .archon/scripts
 ```
 
-## Minimal Repo Config
+**What each directory is for:**
 
-Create `.archon/config.yaml` only when the repo needs non-default behavior:
+- `commands/` — Reusable prompt templates used by `command:` workflow nodes. Committed to git.
+- `workflows/` — YAML workflow definitions. Committed to git.
+- `scripts/` — Named TypeScript/JavaScript (bun) or Python (uv) scripts referenced by `script:` nodes. Extension determines runtime: `.ts`/`.js` → bun, `.py` → uv. Committed to git.
+- `mcp/` — MCP server JSON configs. Usually checked in with `$ENV_VAR` references; avoid hardcoding secrets. Some teams gitignore this and rely entirely on env expansion.
+- `state/` — Workflow-written cross-run state (e.g. the `repo-triage` dedup log). **Always gitignore** — these are runtime artifacts, not source.
+- `config.yaml` — Repo-specific defaults (assistant, worktree settings, etc.). Committed to git.
+- `.env` — Repo-scoped Archon env (loaded with `override: true` at boot). **Do NOT commit.** This is different from the target repo's top-level `.env` — that file belongs to the target project, and Archon strips its auto-loaded keys from subprocess env before spawning AI to prevent leakage. See **Three-Path Env Model** below.
+
+## Minimal config.yaml
+
+Create `.archon/config.yaml` only if you need to override defaults:
 
 ```yaml
-assistant: codex
+# AI provider for this repo (default: inherited from global config)
+assistant: claude                 # Repo-level key. In ~/.archon/config.yaml, use 'defaultAssistant' instead
 
+# Worktree settings
 worktree:
-  baseBranch: main
-  copyFiles:
+  baseBranch: main                # Branch to create worktrees from (default: auto-detected)
+  copyFiles:                      # Git-ignored files to copy into new worktrees
     - .env
     - .env.local
 
+# Control whether bundled defaults are loaded
 defaults:
-  loadDefaultCommands: true
-  loadDefaultWorkflows: true
+  loadDefaultCommands: true       # Include bundled default commands (default: true)
+  loadDefaultWorkflows: true      # Include bundled default workflows (default: true)
 ```
 
-Notes:
+## How Bundled Defaults Work
 
-- `assistant: codex` makes this repo prefer Codex under Archon
-- `worktree.copyFiles` is only needed when worktrees need copied local files
-- bundled defaults do not need to be copied into the repo to be available
+Archon ships with built-in commands and workflows (like `archon-assist`, `archon-fix-github-issue`). These are loaded at runtime automatically — no files need to be copied into your repo.
 
-## Bundled Default Behavior
+- **To see bundled workflows**: `archon workflow list`
+- **To override a default**: Create a file with the same name in your repo's `.archon/workflows/` or `.archon/commands/`. Repo files take priority.
+- **To disable defaults**: Set `defaults.loadDefaultWorkflows: false` or `defaults.loadDefaultCommands: false` in config.
 
-Archon ships bundled workflows and commands. Repo-local files override bundled
-files with the same name.
+## .gitignore Considerations
 
-- `archon workflow list` shows discovered workflows
-- repo `.archon/workflows/*` overrides bundled workflows with the same name
-- repo `.archon/commands/*` overrides bundled commands with the same name
+Add to your `.gitignore`:
 
-## Optional MCP Directory
+```gitignore
+# Archon runtime artifacts — NEVER commit
+.archon/state/        # Cross-run workflow state, runtime-only
+.archon/.env          # Repo-scoped Archon env (secrets)
 
-Keep `.archon/mcp/` optional in Codex-first guidance.
+# Optional — gitignore if your MCP configs hardcode secrets
+.archon/mcp/
+```
 
-Why:
+`.archon/commands/`, `.archon/workflows/`, and `.archon/scripts/` **should be committed** — they are part of your project's workflow definitions. `.archon/config.yaml` should be committed unless it contains secrets (use `.archon/.env` for those instead).
 
-- Archon supports node-local `mcp:` for Claude workflows
-- Codex does not use `mcp:` as a node-local parity surface
-- Codex MCP configuration belongs in Codex config rather than in workflow YAML
+## Three-Path Env Model
 
-## Global Config Reminder
+Archon loads env from three distinct paths at boot, with different trust levels and precedence:
 
-Global config lives at `~/.archon/config.yaml`.
+| Path | Scope | Trust | Loaded? |
+|------|-------|-------|---------|
+| `~/.archon/.env` | User (home) | Trusted — user owns it | Yes, with `override: true` |
+| `<cwd>/.archon/.env` | Repo (per-project, Archon-owned) | Trusted — user owns it | Yes, with `override: true` (overrides home) |
+| `<cwd>/.env` | Target repo | **Untrusted** — belongs to the project being worked on | **Stripped from `process.env`** before subprocess spawn to prevent secret leakage (see [archon.diy/reference/security/](https://archon.diy/reference/security/#target-repo-env-isolation) for the full trust model) |
 
-If the goal is a Codex-first Archon environment more broadly, that file can use:
+Boot behavior emits observable log lines:
+
+```
+[archon] loaded N keys from ~/.archon/.env
+[archon] loaded M keys from /path/to/repo/.archon/.env
+[archon] stripped K keys from /path/to/repo (ANTHROPIC_API_KEY, OPENAI_API_KEY, ...)
+```
+
+**Where should you put what?**
+
+- **API keys for Archon itself** (`ANTHROPIC_API_KEY`, `CLAUDE_CODE_OAUTH_TOKEN`, `DATABASE_URL`, `SLACK_BOT_TOKEN`, etc.) → `~/.archon/.env` (shared across all repos) or `<cwd>/.archon/.env` (per-repo override).
+- **Target-project env that a workflow needs** (`GH_TOKEN`, `DOTENV_PRIVATE_KEY`, etc.) → see [Per-Project Env Injection](#per-project-env-injection) below.
+- **Target-project env that Archon should NOT touch** → leave it in `<cwd>/.env` where the project already expects it. Archon strips it from subprocess env but doesn't delete the file.
+
+The `archon setup --scope home|project [--force]` wizard writes to the right file for you and produces a timestamped backup on every rewrite.
+
+## Per-Project Env Injection
+
+For env vars a workflow's `bash:` and `script:` subprocesses need (`GH_TOKEN` for `gh` calls, `DATABASE_URL` for a migration script, etc.), use one of the two **managed injection** surfaces — both inject into subprocess env at workflow execution time, after the target-repo `.env` strip:
+
+**Option 1: `.archon/config.yaml` `env:` block** (checked into git; values can be `$REF_NAME` expansions from Archon env):
 
 ```yaml
-defaultAssistant: codex
+env:
+  GH_TOKEN: $GH_TOKEN             # expanded from ~/.archon/.env at runtime
+  BUILD_TARGET: production        # literal value
+```
+
+**Option 2: Web UI Settings → Projects → Env Vars** — per-codebase, stored in the Archon DB, values never returned over the API (only keys are listed). Use this for values that should NOT appear in git.
+
+Both surfaces inject into: Claude/Codex/Pi subprocess env, `bash:` node subprocess env, `script:` node subprocess env, and direct chat messages that run against the codebase. The worktree isolation layer propagates them as well.
+
+> **About keys in the target repo's `<cwd>/.env`**: Archon unconditionally strips the keys auto-loaded from `<cwd>/.env` out of `process.env` at boot (see the Three-Path Env Model above) and the Bun subprocess is invoked with `--no-env-file`, so those values do NOT reach AI / bash / script subprocesses. If a workflow needs a value that currently lives in the target repo's `.env`, surface it through one of the two managed injection options above — don't expect the target `.env` to leak through.
+
+## Global Configuration
+
+The global config at `~/.archon/config.yaml` applies to all repositories. Use `guides/config.md` for interactive config editing, or create it manually:
+
+```yaml
+botName: Archon
+defaultAssistant: claude
+
 assistants:
+  claude:
+    model: sonnet
   codex:
-    model: gpt-5.4
+    model: gpt-5.3-codex
     modelReasoningEffort: medium
-    webSearchMode: live
+
+concurrency:
+  maxConversations: 10
 ```
 
 ## Verification
 
-After initialization:
+After setting up, verify with:
 
 ```bash
-archon workflow list --json
-```
+# Confirm Archon sees your repo
+archon workflow list
 
-The repo should now expose bundled workflows plus any repo-local custom ones.
+# Should show bundled workflows + any custom ones you've added
+```

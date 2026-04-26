@@ -20,8 +20,8 @@ truth table for Codex-safe Archon authoring.
 | `allowed_tools` | supported per-node | ignored | Codex config / MCP config | global-only, not equivalent |
 | `denied_tools` | supported per-node | ignored | Codex config / MCP config | global-only, not equivalent |
 | `modelReasoningEffort` | not the same field | supported for Codex | command/prompt node, workflow YAML, or Archon config | command/prompt node override with workflow/config fallback; loop nodes stay workflow-level |
-| `webSearchMode` | not the same field | supported for Codex | workflow YAML or Archon config | workflow-level override with config fallback |
-| `additionalDirectories` | not the same field | supported for Codex | workflow YAML or Archon config | workflow-level override with config fallback |
+| `webSearchMode` | not the same field | supported for Codex | command/prompt node, workflow YAML, or Archon config | command/prompt node override with workflow/config fallback; loop nodes stay workflow-level |
+| `additionalDirectories` | not the same field | supported for Codex | command/prompt node, workflow YAML, or Archon config | command/prompt node override with workflow/config fallback; loop nodes stay workflow-level |
 
 ## Feature Notes
 
@@ -59,34 +59,28 @@ Loop-node retry is still not valid.
 
 ### `modelReasoningEffort`, `webSearchMode`, and `additionalDirectories`
 
-These are real Codex tuning fields, but they do not all resolve at the same
-scope.
+These are real Codex tuning fields. They resolve at node level for normal
+Codex AI nodes and at workflow/config level for loop nodes.
 
-`modelReasoningEffort` is node-capable for normal Codex AI nodes:
+`command` and `prompt` nodes can override:
 
-- `command` and `prompt` nodes can override `modelReasoningEffort`
-- if a `command` or `prompt` node omits it, execution falls back to workflow
-  `modelReasoningEffort`
-- if the workflow omits it, execution falls back to
-  `config.assistants.codex.modelReasoningEffort`
-- loop nodes do not get node-level reasoning support in this slice; they stay
-  on the workflow/config path
+- `modelReasoningEffort`
+- `webSearchMode`
+- `additionalDirectories`
 
-Current `modelReasoningEffort` precedence for Codex:
+If a `command` or `prompt` node omits one of these fields, execution falls back
+to the workflow-level value. If the workflow omits it, execution falls back to
+`config.assistants.codex.*`, then SDK defaults.
+
+Current precedence for normal Codex `command` and `prompt` nodes:
 
 1. `command` or `prompt` node
 2. workflow YAML
-3. `config.assistants.codex.modelReasoningEffort`
+3. `config.assistants.codex.*`
 4. SDK defaults
 
-`webSearchMode` and `additionalDirectories` remain workflow-level controls:
-
-- if the workflow sets them, execution uses the workflow value
-- if the workflow omits them, execution falls back to
-  `config.assistants.codex.*`
-- normal nodes and loop nodes do not get per-node overrides for either field
-
-Current `webSearchMode` and `additionalDirectories` precedence:
+Loop nodes do not get node-level overrides for these tuning fields in the
+current implementation. Loop-node Codex tuning uses:
 
 1. workflow YAML
 2. `config.assistants.codex.*`

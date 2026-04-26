@@ -236,6 +236,12 @@ If the CLI is working, also run:
 cd <target-repo> && archon workflow run archon-assist "Say hello"
 ```
 
+For a Codex-specific verification lane, use:
+
+```bash
+cd <target-repo> && archon workflow run archon-assist-codex --no-worktree "Say hello from Codex"
+```
+
 ### Troubleshooting
 
 If verification fails:

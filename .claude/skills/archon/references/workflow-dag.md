@@ -58,6 +58,9 @@ Per-node-only (NOT valid at workflow level): `maxBudgetUsd`, `systemPrompt`.
 
 ### Codex-Specific Options
 
+These fields are valid at workflow level and can be overridden on normal
+Codex `command` and `prompt` nodes. Loop nodes use the workflow/config value.
+
 | Field | Type | Description |
 |-------|------|-------------|
 | `modelReasoningEffort` | `'minimal'` \| `'low'` \| `'medium'` \| `'high'` \| `'xhigh'` | Codex reasoning depth. Separate field from Claude's `effort` |
@@ -229,6 +232,9 @@ All node types share these fields:
 | `hooks` | object | — | SDK hooks. Claude only. See `dag-advanced.md` |
 | `mcp` | string | — | MCP config path. Claude only. See `dag-advanced.md` |
 | `skills` | string[] | — | Skill names. Claude only. See `dag-advanced.md` |
+| `modelReasoningEffort` | string | workflow/config | Codex only. Node override for command/prompt nodes |
+| `webSearchMode` | string | workflow/config | Codex only. Node override for command/prompt nodes |
+| `additionalDirectories` | string[] | workflow/config | Codex only. Node override for command/prompt nodes |
 
 ## Dependencies and Parallel Execution
 
@@ -450,7 +456,8 @@ First iteration is always fresh regardless.
 - `retry` — **hard error** at parse time
 - `hooks`, `mcp`, `skills`, `allowed_tools`, `denied_tools`, `output_format` — silently ignored
 - `context: fresh` — ignored (use `loop.fresh_context` instead)
-- `provider`, `model` — accepted but ignored at runtime
+- Codex `modelReasoningEffort`, `webSearchMode`, and `additionalDirectories`
+  use workflow/config values, not per-loop-node overrides
 
 ### Loop Output
 

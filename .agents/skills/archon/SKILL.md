@@ -13,6 +13,7 @@ description: |
   authoring/customization surface for a task.
   NOT for: Direct local implementation when the user wants Codex to do the work here
   without handing off to Archon or without using Archon surfaces.
+argument-hint: "[workflow] [message or issue number]"
 ---
 
 # Archon Host Skill
@@ -34,7 +35,8 @@ This skill is intentionally narrower than the full Archon product surface:
 
 - it is Codex-first
 - it covers workflow operation, debugging, and Archon customization
-- it does not try to duplicate setup/install or broad platform-adapter docs
+- it includes enough setup/config/reference routing to keep Archon handoffs
+  self-contained, while preferring the focused references over live docs
 
 Direct workflow routing comes first.
 
@@ -65,16 +67,41 @@ Choose the smallest surface that matches the user's need:
 | Intent | Action |
 | --- | --- |
 | pick or run a Codex-safe workflow | continue in this file |
+| setup, install, or "how to use Archon" | read `guides/setup.md` |
 | monitor an active workflow | read `references/monitoring.md` |
-| debug a confusing, failed, or stalled run | read `references/log-debugging.md` |
+| debug a confusing, failed, or stalled run | read `references/troubleshooting.md`, then `references/log-debugging.md` if raw logs are needed |
 | relay an interactive workflow cleanly | read `references/interactive-workflows.md` |
 | initialize `.archon/` in a repo | read `references/repo-init.md` |
 | inspect variable substitution | read `references/variables.md` |
+| quick parameter lookup by node type | read `references/parameter-matrix.md` |
+| workflow good practices or anti-patterns | read `references/good-practices.md` |
 | create or edit Archon commands | read `references/authoring-commands.md` |
 | create or edit Archon workflow YAML | read `references/workflow-dag.md` |
 | inspect Archon CLI surfaces | read `references/cli-commands.md` |
 | inspect or modify Archon config | read `references/configuration.md` |
 | inspect Codex vs Claude capability boundaries | read `references/codex-capability-crosswalk.md` |
+
+## Richer Context
+
+The reference pages in this skill are the fast path for routine Archon work.
+When they are incomplete for an edge case, use the full docs at
+`https://archon.diy` as supporting context.
+
+Common docs URLs:
+
+| Topic | URL |
+| --- | --- |
+| Getting started | `https://archon.diy/getting-started/overview/` |
+| Workflow authoring | `https://archon.diy/guides/authoring-workflows/` |
+| Command authoring | `https://archon.diy/guides/authoring-commands/` |
+| Loop, approval, and script nodes | `https://archon.diy/guides/loop-nodes/`, `https://archon.diy/guides/approval-nodes/`, `https://archon.diy/guides/script-nodes/` |
+| Variables | `https://archon.diy/reference/variables/` |
+| CLI | `https://archon.diy/reference/cli/` |
+| Configuration | `https://archon.diy/reference/configuration/` |
+| Troubleshooting | `https://archon.diy/reference/troubleshooting/` |
+
+Do not fetch live docs first by default. Use them when the local skill refs do
+not cover the case or when the user asks where something is documented.
 
 ## Codex Naming Convention
 
@@ -112,6 +139,18 @@ Codex.
 ## Running Workflows
 
 Use explicit workflow names whenever possible.
+
+The live workflow list is authoritative. Common Codex-safe choices:
+
+| User intent | Preferred workflow | Branch pattern |
+| --- | --- | --- |
+| guided Codex Plan-Implement-Validate | `archon-piv-loop-codex` | `piv/{name}` |
+| general Codex help, debugging, exploration | `archon-assist-codex` | `assist/{name}` |
+| user explicitly names another `-codex` workflow | that workflow | match the task |
+| user explicitly wants Claude-oriented assist | `archon-assist` | `assist/{name}` |
+
+Use `archon-assist-codex` as the fallback only after no narrower Codex-safe
+workflow fits.
 
 General Codex assist:
 
