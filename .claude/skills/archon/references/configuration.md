@@ -150,7 +150,8 @@ That means:
 
 - use Archon config for shared defaults across many Codex workflows
 - use workflow YAML when one workflow needs a different execution profile
-- do not expect node-level versions of those fields
+- use node-level versions only on normal Codex `command` or `prompt` nodes;
+  loop nodes use workflow/config-level Codex tuning for these fields
 
 ## Editing Guidance
 

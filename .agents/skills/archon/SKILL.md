@@ -80,6 +80,7 @@ Choose the smallest surface that matches the user's need:
 | inspect Archon CLI surfaces | read `references/cli-commands.md` |
 | inspect or modify Archon config | read `references/configuration.md` |
 | inspect Codex vs Claude capability boundaries | read `references/codex-capability-crosswalk.md` |
+| inspect current Codex workflow maturity and improvement gaps | read `references/codex-workflow-status.md` |
 
 ## Richer Context
 
@@ -123,6 +124,10 @@ Known Codex-specific lanes in this repo:
   one-off questions when no narrower Codex-safe lane fits
 - `archon-piv-loop-codex` for guided Plan-Implement-Validate workflows with
   Codex
+
+For current per-workflow Codex maturity, tuning gaps, and next improvement
+targets, read `references/codex-workflow-status.md`. Treat that file as a
+living status reference, not a permanent capability contract.
 
 If the user asks for a general Archon task and a Codex-specific workflow exists,
 prefer that workflow over the Claude/default variant.
