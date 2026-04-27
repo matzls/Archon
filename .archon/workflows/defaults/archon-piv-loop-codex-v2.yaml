@@ -12,15 +12,15 @@ description: |
   NOT for: PRD creation (use archon-interactive-prd).
   NOT for: Ralph story-based implementation (use archon-ralph-dag).
 
-  Codex/GPT V2 skeleton derived from archon-piv-loop-codex. Slice 1 deliberately
-  preserves the V1 plan path, node topology, session reset behavior, and explicit
-  sentinel contracts while adding only one-slice boundary language:
+  Codex/GPT V2 workflow derived from archon-piv-loop-codex. Slice 2 keeps the
+  one-slice execution model from Slice 1 while introducing the stronger V2 plan
+  template and a coordinated `docs/plans/{slug}_plan.md` contract:
     * Explicit numbered SIGNAL EMISSION CONTRACTs in place of Claude-style CRITICAL framing
     * Hard stop discipline for the implement loop (Phase 4.5 STOP, "SELECT EXACTLY ONE")
     * Per-file staging instead of `git add -A` to prevent task-scope leaks
     * Explicit negative guardrails on the implement loop's COMPLETE signal
     * Tightened refine-plan approval branch (no tool use on approval)
-    * Legacy `.claude/archon/plans/*.plan.md` writer/reader contract remains unchanged
+    * Stronger focused-plan template stored under `docs/plans/{slug}_plan.md`
     * Typed gates, design-doc or slice-map intake, review automation, live E2E evidence
       conventions, and PR handoff remain deferred to later V2 slices
 
@@ -228,12 +228,13 @@ nodes:
       **Original request**: $ARGUMENTS
       **Final exploration summary**: $explore.output
 
-      **V2 Slice 1 boundary**: create exactly one focused implementation plan.
-      Preserve the legacy `.claude/archon/plans/{slug}.plan.md` path contract and
-      explicit sentinel-based progression in this slice. Do not introduce typed
-      phase gates, design-doc or slice-map intake, review automation, live E2E
-      evidence conventions, or PR handoff mechanics into the generated plan unless
-      the user explicitly narrows this run to one of those later V2 slices.
+      **V2 Slice 2 boundary**: create exactly one focused implementation plan.
+      Use the stronger V2 template and the coordinated `docs/plans/{slug}_plan.md`
+      path contract in this slice. Preserve explicit sentinel-based progression and
+      do not introduce typed phase gates, design-doc or slice-map intake, review
+      automation, live E2E evidence conventions, or PR handoff mechanics into the
+      generated plan unless the user explicitly narrows this run to one of those
+      later V2 slices.
 
       **Project detection output** (used ONLY to fill in the informational Validation Commands section of the plan):
       $detect-project.output
@@ -274,10 +275,10 @@ nodes:
       ## Step 2: Determine Plan Location
 
       Generate a kebab-case slug from the feature name.
-      Save to `.claude/archon/plans/{slug}.plan.md`.
+      Save to `docs/plans/{slug}_plan.md`.
 
       ```bash
-      mkdir -p .claude/archon/plans
+      mkdir -p docs/plans
       ```
 
       ## Step 3: Write the Plan
@@ -285,55 +286,93 @@ nodes:
       Use this template. Fill EVERY section with specific, verified information.
 
       ```markdown
-      # Feature: {Title}
+      ---
+      title: "{Title} — Plan"
+      kind: plan
+      status: draft
+      created: {YYYY-MM-DD}
+      updated: {YYYY-MM-DD}
+      origin: {original request or parent PRD}
+      feature: {kebab-case feature slug}
+      slice: focused
+      parent_prd: {docs/prd/<feature>.md or ""}
+      slice_map: {docs/plans/<feature>_slice_map.md or ""}
+      peer_review:
+        planning_status: not_started
+        implementation_status: not_started
+        advisory_sidecar: ""
+        frozen_plan_sidecar: ""
+        implementation_review_artifact: ""
+        max_iterations: 3
+      ---
 
-      ## Summary
-      {1-2 sentences: what changes and why}
+      ## ELI5 Summary
+      - What we're doing: {one-sentence summary}
+      - Why we're doing it: {user-facing reason}
+      - What "done" looks like: {specific, testable end state}
+      - How we'll do it: {short execution shape}
 
-      ## Mission
-      {The core goal in one clear statement}
+      ## Problem Statement
+      {What gap or change this slice resolves, grounded in the explored repo reality}
 
-      ## Success Criteria
-      - [ ] {Specific, testable criterion for this task}
-      - [ ] No regressions introduced in files this task touches
-      - [ ] Code-review (which runs automatically after all implement tasks) surfaces
-            no NEW validator failures attributable to this change (pre-existing repo-wide
-            failures are out of scope for this task)
+      ## Solution Concept
+      - {Core decision 1}
+      - {Core decision 2}
+      - {Scope control or migration rule}
 
-      ## Scope
-      ### In Scope
-      - {What we ARE building}
-      ### Out of Scope
-      - {What we are NOT building — and why}
+      ## Scope / Non-Goals
+      - In scope: {what this slice changes}
+      - In scope: {direct tests/docs/contracts that must stay aligned}
+      - Non-goal: {what this slice explicitly avoids}
 
-      ## Codebase Context
-      ### Key Files
-      | File | Role | Action |
-      |------|------|--------|
-      | `{path}` | {what it does} | CREATE / UPDATE |
+      ## Current Inputs
+      - Request or parent artifact: {request, issue, or PRD path}
+      - Feature boundary: {exact slice or feature scope}
+      - Files expected to change:
+        - `{path}` — {role}
+      - Validation surface:
+        - `{targeted command}` — {what it proves}
+      - Constraints:
+        - {project or runtime constraint}
 
-      ### Patterns to Follow
-      {Actual code snippets from the codebase to mirror}
+      ## Design / Architecture Notes
+      - Pattern to follow: `{source file}:{lines}` — {why it matters}
+      - Data/control flow note: {how the change moves through the workflow}
+      - Risk note: {load-bearing behavior that must stay true}
 
-      ## Architecture
-      - {Decision 1 — with rationale}
-      - {Decision 2 — with rationale}
+      ## Slice Metadata
+      - Slice ID: {focused | S<n> if known}
+      - Planning shape: one slice per run
+      - Base branch / integration branch: {branch name or "inherit current branch"}
+      - Out-of-scope adjacent slices: {list}
 
-      ## Task List
+      ## Plan Status & Controls
+      - Status: Draft
+      - Current phase: Planning
+      - Next checkpoint: human review of this plan
+      - E2E gate: required | not_required | waived
+      - E2E rationale: {why}
+
+      ## Unresolved Items / LBAs
+      - [LBA] {load-bearing assumption to verify before implementation}
+      - [Q] {open question, or "(none)"}
+
+      ## Peer Review Gate
+      - Planning review status: not_started
+      - Frozen-plan review sidecar: {path or "(not created yet)"}
+      - Implementation review status: not_started
+      - Max review/fix iterations: 3
+
+      ## Phased Task Plan
       Execute in order. Each task is atomic and independently verifiable.
 
       ### Task 1: {ACTION} `{file path}`
-      **Action**: CREATE / UPDATE
+      **Action**: CREATE / UPDATE / VERIFY
       **Details**: {Exact changes — specific enough for an agent with no context}
       **Pattern**: Follow `{source file}:{lines}`
       **Validate**: `{command to verify this task}`
 
-      ## Testing Strategy
-      | Test File | Test Cases | Validates |
-      |-----------|-----------|-----------|
-      | `{path}` | {cases} | {what it validates} |
-
-      ## Validation Commands
+      ## Code Validation Commands
       Fill these from the `detect-project` output above. If a command is empty, write
       `(none available — human verification only)` instead of inventing one.
 
@@ -343,6 +382,18 @@ nodes:
       4. Format check: `{FORMAT_CMD, or "none available"}`
       5. Full validation: `{VALIDATE_CMD, or "none available"}`
       6. Project type: `{PROJECT_TYPE}`
+
+      ## Final Live Validation Plan
+      - Runtime behavior changed: yes | no
+      - Planned live proof: {exact command, browser step, or "not required"}
+      - Waiver path if skipped: {explicit rationale or "none"}
+
+      ## Documentation Surface Map
+      | Area | File/Path | Action | Notes |
+      |------|-----------|--------|-------|
+      | Plan | `docs/plans/{slug}_plan.md` | must-edit | Canonical focused implementation plan |
+      | PRD / design doc | `{path}` | review-only | Keep scope and contract language aligned |
+      | Tests / references | `{path}` | review-only | Update only if this slice touches that contract |
 
       ## Risks
       | Risk | Impact | Mitigation |
@@ -362,8 +413,8 @@ nodes:
       ```
       ## Plan Created
 
-      **File**: `.claude/archon/plans/{slug}.plan.md`
-      PLAN_FILE=.claude/archon/plans/{slug}.plan.md
+      **File**: `docs/plans/{slug}_plan.md`
+      PLAN_FILE=docs/plans/{slug}_plan.md
       **Tasks**: {count}
       **Files to change**: {count}
 
@@ -396,8 +447,8 @@ nodes:
         ## Step 1: Find and Read the Plan
 
         Parse the exact `PLAN_FILE=...` line from the create-plan output above and use
-        THAT path for this entire node. Do not search `.claude/archon/plans/` for the
-        newest file.
+        THAT path for this entire node. Do not search the repo for a newer or different
+        plan file.
 
         Read the entire plan file from that exact path. Also read CLAUDE.md for conventions.
 
@@ -560,11 +611,11 @@ nodes:
 
         **User's original request**: $USER_MESSAGE
 
-        **V2 Slice 1 boundary**: implement only the selected task from the current
-        `.claude/archon/plans/*.plan.md` plan. Preserve explicit sentinel-based
-        progression and do not migrate plan paths, add typed gates, create slice
-        maps, add review automation, introduce live E2E evidence conventions, or
-        add PR handoff behavior as part of this loop iteration.
+        **V2 Slice 2 boundary**: implement only the selected task from the exact
+        `PLAN_FILE` focused plan. Preserve explicit sentinel-based progression and do
+        not add typed gates, create slice maps, add review automation, introduce live
+        E2E evidence conventions, or add PR handoff behavior as part of this loop
+        iteration.
 
         The `VALIDATE_CMD`, `TYPECHECK_CMD`, `LINT_CMD`, `TEST_CMD`, `FORMAT_CMD` values
         from detect-project are **informational only**. The implement loop does **NOT**
@@ -816,8 +867,8 @@ nodes:
       ## Step 1: Find and Read the Plan
 
       Parse the exact `PLAN_FILE=...` line from the implementation setup context above
-      and use THAT path for this review. Do not search `.claude/archon/plans/` for the
-      newest file.
+      and use THAT path for this review. Do not search the repo for a newer or different
+      plan file.
 
       ## Step 2: Review All Changes
 
@@ -937,8 +988,8 @@ nodes:
         ## Step 1: Read Context
 
         Parse the exact `PLAN_FILE=...` line from the implementation setup context above
-        and use THAT path for this entire node. Do not search `.claude/archon/plans/`
-        for the newest file.
+        and use THAT path for this entire node. Do not search the repo for a newer or
+        different plan file.
 
         Read the plan file from that exact path and CLAUDE.md for conventions.
 
@@ -1056,12 +1107,11 @@ nodes:
       use THIS as the source of truth for PR title and body. Do NOT search the repo
       for other plan files):
 
-      Parse the `PLAN_FILE=...` line from the implement-setup context below. If for
-      any reason that line is missing, re-derive with:
-      `ls -t .claude/archon/plans/*.plan.md | head -1`
+      Parse the exact `PLAN_FILE=...` line from the implement-setup context below.
+      If that line is missing, stop and report `ERROR: PLAN_FILE missing from implement-setup output`.
 
-      Do NOT read plan files under `docs/plans/` or any other location — those
-      belong to other features and will pollute the PR title/body.
+      Do NOT search for alternate plan files elsewhere in the repo. Use only the
+      exact `PLAN_FILE` path from the implementation setup context.
 
       **Implementation setup context** (contains `PLAN_FILE=...`):
       $implement-setup.output
@@ -1076,8 +1126,8 @@ nodes:
       git diff --stat $(git merge-base HEAD $BASE_BRANCH)..HEAD
       ```
 
-      Read the plan file from the `PLAN_FILE` path you parsed above (NOT any plan in
-      `docs/plans/`). The feature name for the PR title comes from the
+      Read the plan file from the exact `PLAN_FILE` path you parsed above. The feature
+      name for the PR title comes from the
       `# Feature: {Title}` heading of THIS plan file only.
 
       Read progress tracking from `$ARTIFACTS_DIR/progress.txt` for task completion
