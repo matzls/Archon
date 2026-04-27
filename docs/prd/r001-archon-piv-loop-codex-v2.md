@@ -3,9 +3,10 @@ title: Archon PIV Loop Codex V2
 status: accepted
 workflow_handoff_status: handoff_candidate
 created: 2026-04-27
-updated: 2026-04-27
+updated: "2026-04-27"
 source_design: docs/design/codex-piv-v2-workflow-design.md
 source_strategy: docs/design/codex-first-workflow-surface-strategy.md
+plan: "docs/plans/r001-archon-piv-loop-codex-v2-orchestration-plan.md"
 ---
 
 # PRD: Archon PIV Loop Codex V2

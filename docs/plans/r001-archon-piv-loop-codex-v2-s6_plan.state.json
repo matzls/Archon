@@ -1,0 +1,38 @@
+{
+  "$schema": "plan-state-v1",
+  "plan": {
+    "status": "draft",
+    "current_phase": 0,
+    "authoring_state": "unknown",
+    "updated": "2026-04-27T14:33:15.061772+00:00"
+  },
+  "tasks": [
+    {
+      "id": "P0-T1",
+      "phase": 0,
+      "status": "proposed"
+    },
+    {
+      "id": "P0-T2",
+      "phase": 0,
+      "status": "proposed"
+    },
+    {
+      "id": "P1-T1",
+      "phase": 1,
+      "status": "proposed"
+    },
+    {
+      "id": "P1-T2",
+      "phase": 1,
+      "status": "proposed"
+    },
+    {
+      "id": "P2-T1",
+      "phase": 2,
+      "status": "proposed"
+    }
+  ],
+  "task_contracts": {},
+  "unresolved_items": []
+}

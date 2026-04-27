@@ -66,6 +66,7 @@ artifacts/
 .claude/mockups/
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
+docs/plans/*.lock
 e2e-testing-findings-session2.md
 
 # Local workspace

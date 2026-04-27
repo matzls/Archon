@@ -1,0 +1,12 @@
+{
+  "$schema": "plan-state-v1",
+  "plan": {
+    "status": "draft",
+    "current_phase": 0,
+    "authoring_state": "unknown",
+    "updated": "2026-04-27T14:33:14.659387+00:00"
+  },
+  "tasks": [],
+  "task_contracts": {},
+  "unresolved_items": []
+}
