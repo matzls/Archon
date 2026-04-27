@@ -1,0 +1,205 @@
+{
+  "schema_version": "peer-review-v1",
+  "review_id": "peer-review-fbeea570b9ff",
+  "plan_path": "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s4/docs/plans/r001-archon-piv-loop-codex-v2-s4_plan.md",
+  "plan_sha256": "d6bb91b51406845e77bb224bcd0bba8e086423b58fa1da5c8896f602a0083ff8",
+  "mode": "workflow-plan-gate",
+  "sidecar_dir": "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s4/docs/plans/_peer-reviews",
+  "engine": "Claude",
+  "requested_engine": "auto",
+  "origin_runtime": "codex",
+  "engine_policy": "opposite_preferred",
+  "resolved_primary_engine": "claude",
+  "preferred_engine": "claude",
+  "fallback_engine": null,
+  "final_engine": "claude",
+  "reviewer_match": "opposite",
+  "gate_quality": "preferred",
+  "artifact_role": "canonical",
+  "canonical_sidecar_path": "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s4/docs/plans/_peer-reviews/r001-archon-piv-loop-codex-v2-s4_plan-peer-review.json",
+  "fallback_used": false,
+  "fallback_reason": null,
+  "attempt_chain": [
+    {
+      "engine": "claude",
+      "phase": "primary",
+      "attempt": 1,
+      "timeout_seconds": 300,
+      "result": "timeout",
+      "elapsed_seconds": 300.42
+    },
+    {
+      "engine": "claude",
+      "phase": "primary",
+      "attempt": 2,
+      "timeout_seconds": 600,
+      "result": "completed",
+      "elapsed_seconds": 218.756,
+      "returncode": 0
+    }
+  ],
+  "review_round": 4,
+  "max_rounds": 3,
+  "prior_review_id": "peer-review-8d94a2675e20",
+  "caller_disposition_summary": "",
+  "addressed_issues": [],
+  "deferred_issues": [],
+  "recheck_requests": [],
+  "model": "claude-opus-4-6",
+  "verdict": "Sound-with-issues",
+  "stance": null,
+  "issues_count": 2,
+  "ran_at": "2026-04-27T20:15:14.886876+00:00",
+  "raw_review_excerpt": "Round 4/3 review of the S4 focused slice plan. The artifact is well-grounded: P0 is validated with recorded grounding results, LBA1 is resolved with evidence, Phase 1 and Phase 2 tasks name concrete verify commands backed by real repo surfaces (CLI validate, bun test, plan_readiness.py). All load-bearing claims (PRD S4 row scope, Mode B contract, YAML existence, test file surfaces, current YAML deferral of design-doc intake) were verified against the directly inspected files. No freeze blockers remain. Two minor cosmetic inconsistencies (stale Current Phase field, slightly awkward ELI5 phrasing) are suppressed under anti-churn since the state JSON is the source of truth and is correct.\n\nIssues:\n- 1. [NOTE] Plan Status Controls shows stale Current Phase\n- 2. [NOTE] ELI5 resume point phrasing is slightly stale",
+  "error": null,
+  "closure_verification": "No prior-round issues were enumerated in the review packet. The prior review id (peer-review-8d94a2675e20) was referenced but no specific carried issues were provided for verification. Prior-round closure is vacuously satisfied.",
+  "prior_round_closure": [],
+  "rerun_recommendation": "stop",
+  "review": {
+    "mode": "workflow-plan-gate",
+    "summary": "Round 4/3 review of the S4 focused slice plan. The artifact is well-grounded: P0 is validated with recorded grounding results, LBA1 is resolved with evidence, Phase 1 and Phase 2 tasks name concrete verify commands backed by real repo surfaces (CLI validate, bun test, plan_readiness.py). All load-bearing claims (PRD S4 row scope, Mode B contract, YAML existence, test file surfaces, current YAML deferral of design-doc intake) were verified against the directly inspected files. No freeze blockers remain. Two minor cosmetic inconsistencies (stale Current Phase field, slightly awkward ELI5 phrasing) are suppressed under anti-churn since the state JSON is the source of truth and is correct.",
+    "rubric_cards": [
+      {
+        "title": "Claim Anchoring",
+        "anchor": "Plan load-bearing claims vs. inspected repo sources",
+        "claim": "S4 scope matches PRD execution-map row; LBA1 resolved; current YAML defers design-doc intake at Slice 3 boundary; test surfaces exist; CLI validate command exists",
+        "evidence": "PRD lines 340-347 confirm S4 row is 'design-doc and slice-map mode'. YAML lines 252-258 confirm Slice 3 boundary explicitly defers design-doc/slice-map intake. LBA1 evidence matches: archon-piv-loop-codex-v2.yaml exists. executor.test.ts, bundled-defaults.test.ts, loader.test.ts all exist. packages/cli/src/commands/validate.ts confirms CLI validate workflows command exists. State JSON tasks match plan markdown.",
+        "disposition": "present \u2014 all load-bearing claims verified against directly inspected sources"
+      },
+      {
+        "title": "Disposition Matrix",
+        "anchor": "Artifact, conversation, and campaign evidence coverage",
+        "claim": "Artifact fully inspected; no conversation thread was part of this review packet; campaign coverage is slice-only (S4)",
+        "evidence": "Read plan markdown, state JSON, PRD, design doc, workflow YAML, three test files, and CLI validate command. No conversation thread or prior-round issues were provided in the packet. Only S4 was reviewed; S1-S3, S5-S7 are separate slices outside this review.",
+        "disposition": "Artifact: present. Conversation: not applicable. Campaign: slice-only."
+      },
+      {
+        "title": "Coverage Scope",
+        "anchor": "What was and was not reviewed",
+        "claim": "Full review of S4 plan artifact and all directly referenced repo files; did not review umbrella plan, other slice plans, or full test execution",
+        "evidence": "Inspected: plan markdown, plan state JSON, PRD (full), design doc (top 80 lines), V2 workflow YAML (lines 1-320), executor.test.ts (top 60 lines), bundled-defaults.test.ts (top 60 lines), CLI validate.ts (top 60 lines). Not inspected: umbrella orchestration plan, S1/S2/S3 plans, loader.test.ts contents, full design doc body.",
+        "disposition": "Slice-scoped review is complete for freeze-readiness assessment of S4"
+      }
+    ],
+    "disposition_matrix": {
+      "rows": [
+        "artifact",
+        "conversation",
+        "campaign"
+      ],
+      "columns": [
+        "present",
+        "partial",
+        "missing"
+      ],
+      "cells": [
+        [
+          "plan, state JSON, PRD, YAML, tests, CLI all inspected",
+          "\u2014",
+          "\u2014"
+        ],
+        [
+          "\u2014",
+          "\u2014",
+          "no conversation thread in review packet"
+        ],
+        [
+          "\u2014",
+          "S4 slice only",
+          "S1-S3, S5-S7 not reviewed"
+        ]
+      ]
+    },
+    "conversation_evidence": {
+      "used": false,
+      "sources": [],
+      "summary": "No conversation thread or caller narrative was provided in this review packet. Review is based entirely on the current artifact and directly inspected repo files.",
+      "gaps": [
+        "No prior-round issues were enumerated in the packet for verification"
+      ]
+    },
+    "campaign_coverage": {
+      "scope": "slice-only",
+      "covered": [
+        "S4 plan artifact",
+        "S4 state JSON",
+        "PRD execution map row for S4",
+        "V2 workflow YAML (current state)",
+        "Referenced test surfaces (executor, bundled-defaults, CLI validate)"
+      ],
+      "missing": [
+        "S1, S2, S3 slice plans and state",
+        "S5, S6, S7 slice plans",
+        "Umbrella orchestration plan"
+      ],
+      "gaps": [
+        "Only the S4 slice was reviewed; campaign-level sequencing and cross-slice dependency verification were not assessed"
+      ]
+    },
+    "issues": [
+      {
+        "title": "Plan Status Controls shows stale Current Phase",
+        "details": "Plan Status & Controls says 'Current Phase: P0 \u2014 Grounding' but the Phase Summary table and state JSON both show P0 as Validated with P1 as the next active phase. The state JSON (source of truth) is correct.",
+        "suggested_fix": "Update 'Current Phase' in Plan Status & Controls to 'P1 \u2014 Scoped Implementation' on the next substantive edit. Not worth a standalone churn edit.",
+        "severity": "NOTE"
+      },
+      {
+        "title": "ELI5 resume point phrasing is slightly stale",
+        "details": "ELI5 says 'Phase 0 grounding is the approved post-freeze work' but P0 is already validated. The sentence reads as if P0 is still pending. Functionally harmless since the state JSON and Phase Summary are correct.",
+        "suggested_fix": "Rephrase to 'Phase 1 implementation is the next post-freeze work' on the next substantive edit. Not a standalone fix.",
+        "severity": "NOTE"
+      }
+    ],
+    "verification_gaps": [
+      "Full test execution was not performed (bun test, bun run cli validate) \u2014 commands were structurally verified to exist but not run",
+      "loader.test.ts file contents were not inspected beyond confirming file existence",
+      "Design doc body beyond line 80 was not reviewed"
+    ],
+    "recommended_fixes": [
+      "On next substantive plan edit, update Current Phase to P1 and adjust ELI5 resume point phrasing"
+    ],
+    "evidence_sources": [
+      "docs/plans/r001-archon-piv-loop-codex-v2-s4_plan.md (full file)",
+      "docs/plans/r001-archon-piv-loop-codex-v2-s4_plan.state.json (full file)",
+      "docs/prd/r001-archon-piv-loop-codex-v2.md (lines 1-397)",
+      "docs/design/codex-piv-v2-workflow-design.md (lines 1-80)",
+      ".archon/workflows/defaults/archon-piv-loop-codex-v2.yaml (lines 1-320)",
+      "packages/workflows/src/executor.test.ts (lines 1-60)",
+      "packages/workflows/src/defaults/bundled-defaults.test.ts (lines 1-60)",
+      "packages/cli/src/commands/validate.ts (lines 1-60)"
+    ],
+    "error": null,
+    "verdict": "Sound-with-issues",
+    "workflow_compliance": [
+      "Plan has all required sections: ELI5, Problem Statement, Solution Concept, Scope/Non-Goals, Architecture, Decision Options, Plan Status & Controls, Unresolved Items, Phase Summary, Phased Execution, Current Inputs, References, Doc Surface Map, Doc Sync Log",
+      "State JSON matches plan markdown for all task statuses and LBA resolution",
+      "LBA1 is the only blocker and is resolved with concrete evidence",
+      "E2E waiver is present with category and rationale",
+      "All Phase 1 and Phase 2 tasks have concrete verify commands referencing real repo surfaces"
+    ],
+    "technical_reality": [
+      "archon-piv-loop-codex-v2.yaml exists and its current Slice 3 boundary explicitly defers design-doc/slice-map intake \u2014 confirming the plan's gap analysis",
+      "PRD Mode B (section 6.2) defines the exact contract S4 must implement: design doc, slice map, select one slice",
+      "CLI validate workflows command exists in packages/cli/src/commands/validate.ts",
+      "executor.test.ts and bundled-defaults.test.ts exist and test the claimed surfaces",
+      "State JSON snapshot_gate shows clean worktree on the correct slice branch"
+    ],
+    "assumptions_to_verify": [
+      "P1 implementation will modify existing YAML nodes rather than adding new workflow files \u2014 plan says this but implementation may discover a different shape",
+      "Fixture-driven executor test can exercise Mode B intake path in isolation without requiring full runtime \u2014 feasibility depends on mock coverage in executor.test.ts"
+    ],
+    "verification_sufficiency": [
+      "Verify commands for P1-T1 and P1-T2 cover file existence, CLI validation, and test execution \u2014 sufficient for freeze",
+      "P2-T1 uses only plan_readiness.py \u2014 appropriate for a doc-sync phase since heavy proof is already in P1",
+      "P0 verify commands used real rg/sed/ls patterns against actual files \u2014 grounding is concrete"
+    ],
+    "downstream_risks": [
+      "If the YAML update for Mode B requires new nodes or structural changes beyond prompt edits, bundled-defaults.generated.ts will need regeneration (bun run check:bundled) \u2014 not explicitly called out in verify commands but is covered by the existing bundled-defaults test",
+      "If executor.test.ts mock structure doesn't support multi-path workflow execution, the fixture test may need deeper refactoring than the plan anticipates"
+    ],
+    "freeze_recommendation": "Safe to freeze. Carry the remaining WARN/NOTE items as explicit follow-ups or implementation-time checks.",
+    "prior_round_closure": [],
+    "closure_verification": "No prior-round issues were enumerated in the review packet. The prior review id (peer-review-8d94a2675e20) was referenced but no specific carried issues were provided for verification. Prior-round closure is vacuously satisfied.",
+    "rerun_recommendation": "stop"
+  }
+}
