@@ -1,51 +1,51 @@
 {
   "$schema": "plan-state-v1",
   "plan": {
-    "status": "draft",
+    "status": "active",
     "current_phase": 0,
     "authoring_state": "drafted",
-    "updated": "2026-04-27T16:10:59.122594+00:00"
+    "updated": "2026-04-27T16:16:45.610437+00:00"
   },
   "tasks": [
     {
       "id": "P0-T1",
       "phase": 0,
-      "status": "proposed"
+      "status": "approved"
     },
     {
       "id": "P0-T2",
       "phase": 0,
-      "status": "proposed"
+      "status": "approved"
     },
     {
       "id": "P0-T3",
       "phase": 0,
-      "status": "proposed"
+      "status": "approved"
     },
     {
       "id": "P1-T1",
       "phase": 1,
-      "status": "proposed"
+      "status": "approved"
     },
     {
       "id": "P1-T2",
       "phase": 1,
-      "status": "proposed"
+      "status": "approved"
     },
     {
       "id": "P1-T3",
       "phase": 1,
-      "status": "proposed"
+      "status": "approved"
     },
     {
       "id": "P2-T1",
       "phase": 2,
-      "status": "proposed"
+      "status": "approved"
     },
     {
       "id": "P2-T2",
       "phase": 2,
-      "status": "proposed"
+      "status": "approved"
     }
   ],
   "task_contracts": {},
@@ -63,5 +63,26 @@
       "summary": "Resolve the PRD `plan:` backlink handoff before freezing this focused S1 plan.",
       "answer": "Default path confirmed: keep the PRD `plan:` backlink on the umbrella plan while this focused slice remains an implementation target, and make the slice relationship explicit through the PRD Execution Map Plan column plus this plan's `Planning shape: umbrella + slices` and `Feature PRD section(s)` fields. `frontmatter_link_sync.py --check` is clean after metadata sync, and `plan_readiness.py` now marks P0 through P2 as ready without changing the PRD backlink. No readiness-rule change or slice-backlink handoff is needed for S1 freeze unless later governance changes invalidate umbrella-backed slice plans."
     }
-  ]
+  ],
+  "snapshot_gate": {
+    "branch": "dev",
+    "checked_at": "2026-04-27T16:16:45+00:00",
+    "default_branch": "dev",
+    "dirty_before_snapshot": true,
+    "lane_branch": "dev",
+    "lane_decision_basis": "deterministic",
+    "lane_decision_reason": "repo_dirty_before_implementation",
+    "lane_type": "branch",
+    "lane_worktree_path": null,
+    "next_command": "git checkout -b r001-archon-piv-loop-codex-v2-s1-plan",
+    "plan_path": "docs/plans/r001-archon-piv-loop-codex-v2-s1_plan.md",
+    "reason": "running_on_default_branch",
+    "snapshot_commit_message": null,
+    "snapshot_commit_sha": null,
+    "snapshot_created_at": null,
+    "status": "missing",
+    "worktree_count": 1,
+    "worktree_present": false,
+    "worktree_required": true
+  }
 }

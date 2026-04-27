@@ -1,6 +1,6 @@
 ---
 title: Archon PIV Loop Codex V2
-status: accepted
+status: "planned"
 workflow_handoff_status: handoff_candidate
 created: 2026-04-27
 updated: "2026-04-27"
