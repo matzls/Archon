@@ -3,7 +3,7 @@ title: "Archon PIV Loop Codex V2 S2 — V2 plan template and coordinated plan-pa
 kind: plan
 status: draft
 created: 2026-04-27
-updated: 2026-04-27
+updated: "2026-04-27"
 origin_prd: "docs/prd/r001-archon-piv-loop-codex-v2.md"
 origin: ""
 version: "0.1"
@@ -128,24 +128,33 @@ Rules:
 - [ ] P1-T1: Implement the smallest load-bearing `S2` surface
   - Test Impact: update
   - Commands to Run:
-    - modify only the code and docs required to land `S2`
+    - update `.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml` once Slice 1 lands so the `create-plan` prompt uses the V2 focused-plan template instead of the lighter V1 template block
+    - in the same workflow file, migrate the plan-path contract in one pass across the plan writer and every downstream reader: `create-plan`, `refine-plan`, `implement-setup`, `code-review`, `fix-feedback`, and `compose-finalize`
+    - keep the migration coordinated: do not leave V2 writing a new path while any V2 reader still searches only `.claude/archon/plans/*.plan.md`
     - keep neighboring execution-map rows untouched unless the PRD contract proves coupling
   - Exit Criteria:
-    - V2 plan template and coordinated plan-path contract
+    - `.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml` defines the V2 focused-plan template in `create-plan`, including the design-note sections required for this slice: `ELI5 Summary`, `Problem Statement`, `Solution Concept`, `Current Inputs`, `Slice Metadata`, `Plan Status & Controls`, `Peer Review Gate`, `Documentation Surface Map`, and `Risks`
+    - the same workflow file uses one coordinated V2 plan path for both the writer and every downstream reader in `refine-plan`, `implement-setup`, `code-review`, `fix-feedback`, and `compose-finalize`
+    - no V2 node still hard-codes `.claude/archon/plans/*.plan.md` or searches a competing plan location after the coordinated migration
     - the implementation boundary still matches `Execution Map row`
   - Verify Commands:
-    - run the focused repo-local validation for the touched surface
+    - `rg -n "## ELI5 Summary|## Problem Statement|## Solution Concept|## Current Inputs|## Slice Metadata|## Plan Status & Controls|## Peer Review Gate|## Documentation Surface Map|## Risks" .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml`
+    - `rg -n "Save to |mkdir -p |ls -t .*plan\\.md|PLAN_FILE=|No plan file found" .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml`
+    - `bash -lc 'if rg -n "\\.claude/archon/plans" .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml; then echo "legacy V1 plan path still present in v2 workflow"; exit 1; fi'`
 
 - [ ] P1-T2: Add or update focused validation for the touched surface
   - Test Impact: add
   - Commands to Run:
-    - update the nearest existing test surface or add a small focused test where coverage is missing
-    - capture the validation evidence needed for freeze and post-freeze review
+    - extend `packages/workflows/src/defaults/bundled-defaults.test.ts` with string-based assertions against `BUNDLED_WORKFLOWS['archon-piv-loop-codex-v2']`
+    - assert the bundled V2 workflow contains the strengthened template headings and the coordinated plan-path writer/reader contract for `create-plan`, `refine-plan`, `implement-setup`, `code-review`, `fix-feedback`, and `compose-finalize`
+    - keep the proof surface focused on plan fixture/output inspection plus downstream reader validation; do not add unrelated workflow-behavior coverage in this slice
   - Exit Criteria:
-    - the load-bearing behavior of `S2` has direct validation coverage
+    - `packages/workflows/src/defaults/bundled-defaults.test.ts` fails if the V2 workflow loses any required focused-plan template heading named by this slice
+    - `packages/workflows/src/defaults/bundled-defaults.test.ts` fails if any V2 node regresses to the legacy `.claude/archon/plans/*.plan.md` contract or leaves the writer/reader contract inconsistent across the lane
     - validation proves the slice without depending on unrelated later-slice work
   - Verify Commands:
-    - run the focused test command chosen during P0 grounding
+    - `bun test packages/workflows/src/defaults/bundled-defaults.test.ts`
+    - `rg -n "archon-piv-loop-codex-v2|ELI5 Summary|Problem Statement|PLAN_FILE|legacy V1 plan path|compose-finalize" packages/workflows/src/defaults/bundled-defaults.test.ts`
 
 ### Phase 2 — Validation And Doc Sync
 
@@ -166,7 +175,8 @@ Rules:
 - Planning shape: umbrella + slices
 - Feature PRD section(s): `Execution Map row`
 - Specs / contracts (if any):
-  - use the active design/spec docs directly implicated by `S2` during P0 grounding
+  - `docs/design/codex-piv-v2-workflow-design.md` — defines the V2 template section set and the coordinated plan-path migration rule for Slice 2
+  - `.archon/workflows/defaults/archon-piv-loop-codex.yaml` — current V1 writer/reader contract whose plan-path behavior Slice 2 replaces in the V2 lane
 - Goals:
   - deliver `S2` without widening into later slices
   - keep the focused plan, code, and docs aligned to the same execution-map row
@@ -178,9 +188,9 @@ Rules:
   - keep changes scoped to the smallest load-bearing surface
 - Testing (only if code changes):
   - Test posture: `unit=happy-path`, `integration=critical-only`
-  - Test suite status: use the nearest existing repo-local validation surface for `S2`
-  - Primary test command(s): record the focused command selected during P0 grounding and keep it tied to the touched surface
-  - Test locations: the nearest existing tests for the code touched by `S2`
+  - Test suite status: existing repo-local validation surface identified
+  - Primary test command(s): `bun test packages/workflows/src/defaults/bundled-defaults.test.ts`
+  - Test locations: `packages/workflows/src/defaults/bundled-defaults.test.ts`
   - Waivers: if code changes are not required after grounding, record the exact rationale in the plan update
 - Owner/Stakeholders: Mase
 - Definition of Done: `S2` lands exactly within the PRD row boundary and is proven with focused validation evidence.
@@ -220,3 +230,4 @@ Explicit exclusions (handled outside the PIV loop closeout): Project Brief, Feat
 
 ## Doc Sync Log
 - 2026-04-27: Seeded focused slice draft from the PRD execution map so the orchestrator can refine from a concrete boundary instead of a blank template.
+- 2026-04-27: Refined `P1` with concrete V2 workflow/template surfaces, coordinated plan-path reader coverage, and runnable verification commands tied to the bundled-defaults test surface.
