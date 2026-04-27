@@ -866,8 +866,11 @@ nodes:
       ```bash
       git add <specific-fixed-files>    # NOT git add -A
       git diff --cached --stat           # confirm only changed-file fixes are staged
-      git commit -m "fix: address review findings in this branch's changes" 2>/dev/null || true
+      git commit -m "fix: address review findings in this branch's changes"
       ```
+
+      If that commit fails, stop and report the failure. Do not continue to Step 6
+      with staged or uncommitted review-fix changes.
 
       If none of the changed files have issues, skip this step and proceed to Step 6.
 
