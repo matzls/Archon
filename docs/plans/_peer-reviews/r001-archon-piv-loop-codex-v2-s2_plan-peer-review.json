@@ -1,0 +1,231 @@
+{
+  "schema_version": "peer-review-v1",
+  "review_id": "peer-review-6dd5979de931",
+  "plan_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/r001-archon-piv-loop-codex-v2-s2_plan.md",
+  "plan_sha256": "f0f29bdab51d5ebfe57065c31400d53dae5f2edd1731a87612cb07af097dfd01",
+  "mode": "workflow-plan-gate",
+  "sidecar_dir": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/_peer-reviews",
+  "engine": "Claude",
+  "requested_engine": "opposite",
+  "origin_runtime": "codex",
+  "engine_policy": "opposite_preferred",
+  "resolved_primary_engine": "claude",
+  "preferred_engine": "claude",
+  "fallback_engine": null,
+  "final_engine": "claude",
+  "reviewer_match": "opposite",
+  "gate_quality": "preferred",
+  "artifact_role": "canonical",
+  "canonical_sidecar_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/_peer-reviews/r001-archon-piv-loop-codex-v2-s2_plan-peer-review.json",
+  "fallback_used": false,
+  "fallback_reason": null,
+  "attempt_chain": [
+    {
+      "engine": "claude",
+      "phase": "primary",
+      "attempt": 1,
+      "timeout_seconds": 300,
+      "result": "completed",
+      "elapsed_seconds": 206.775,
+      "returncode": 0
+    }
+  ],
+  "review_round": 2,
+  "max_rounds": 3,
+  "prior_review_id": "peer-review-6bd7f708e776",
+  "caller_disposition_summary": "Verified and addressed the two prior BLOCK findings only: P1 now names the concrete V2 workflow/template surfaces, the coordinated writer/reader path contract, and runnable verify commands tied to the template headings and bundled downstream-reader test surface. WARN-only items were intentionally left out of this refine pass.",
+  "addressed_issues": [
+    "P1 verify commands are prose placeholders, not runnable commands",
+    "P1-T1 exit criteria restates the scope label instead of naming deliverables"
+  ],
+  "deferred_issues": [],
+  "recheck_requests": [
+    "P1 verify commands are prose placeholders, not runnable commands",
+    "P1-T1 exit criteria restates the scope label instead of naming deliverables"
+  ],
+  "model": "claude-opus-4-6",
+  "verdict": "Sound-with-issues",
+  "stance": null,
+  "issues_count": 2,
+  "ran_at": "2026-04-27T17:13:28.226984+00:00",
+  "raw_review_excerpt": "Round 2 review of the S2 focused slice plan. Both prior-round BLOCK findings (prose-only verify commands and scope-label exit criteria) are resolved in the current artifact. P1-T1 now names nine concrete V2 template headings and six coordinated reader nodes with runnable rg/bash/bun verify commands. P1-T2 ties validation to the bundled-defaults test file with both a bun test invocation and a grep proof surface. Code-reality checks confirm the V1 plan-path convention (.claude/archon/plans/*.plan.md) is present across all six named nodes in the V1 yaml, and the bundled-defaults test file exists with compatible assertion patterns. The V2 yaml does not exist yet, consistent with the plan's explicit S1 dependency. No freeze blockers remain.\n\nIssues:\n- 1. [NOTE] P0-T2 verify command is trivially self-matching\n- 2. [NOTE] P1-T1 legacy-path check silently passes when V2 yaml is absent",
+  "error": null,
+  "closure_verification": "Both prior-round BLOCK findings are fully resolved in the current artifact. P1-T1 exit criteria moved from a scope restatement to nine named template headings and six named reader nodes. P1-T1 and P1-T2 verify commands moved from prose placeholders to runnable rg, bash, and bun test commands tied to specific repo files. No prior-round issues remain open.",
+  "prior_round_closure": [
+    {
+      "title": "P1 verify commands are prose placeholders, not runnable commands",
+      "severity": "BLOCK",
+      "caller_claim": "Refined P1 with runnable verification commands tied to the bundled-defaults test surface",
+      "verification_status": "resolved",
+      "verification_notes": "P1-T1 now has three runnable verify commands: an rg for template headings, an rg for plan-path patterns, and a bash guard against legacy V1 path presence. P1-T2 has bun test plus an rg proof surface. All reference specific files and produce meaningful pass/fail signals."
+    },
+    {
+      "title": "P1-T1 exit criteria restates the scope label instead of naming deliverables",
+      "severity": "BLOCK",
+      "caller_claim": "P1-T1 exit criteria now names the concrete V2 workflow/template surfaces and coordinated writer/reader path contract",
+      "verification_status": "resolved",
+      "verification_notes": "P1-T1 exit criteria now lists nine specific template headings (ELI5 Summary through Risks), names all six downstream reader nodes, and requires one coordinated V2 plan path with no legacy V1 hard-coding remaining."
+    }
+  ],
+  "rerun_recommendation": "stop",
+  "review": {
+    "mode": "workflow-plan-gate",
+    "summary": "Round 2 review of the S2 focused slice plan. Both prior-round BLOCK findings (prose-only verify commands and scope-label exit criteria) are resolved in the current artifact. P1-T1 now names nine concrete V2 template headings and six coordinated reader nodes with runnable rg/bash/bun verify commands. P1-T2 ties validation to the bundled-defaults test file with both a bun test invocation and a grep proof surface. Code-reality checks confirm the V1 plan-path convention (.claude/archon/plans/*.plan.md) is present across all six named nodes in the V1 yaml, and the bundled-defaults test file exists with compatible assertion patterns. The V2 yaml does not exist yet, consistent with the plan's explicit S1 dependency. No freeze blockers remain.",
+    "rubric_cards": [
+      {
+        "title": "Claim anchoring",
+        "anchor": "P1-T1 exit criteria, P1-T1 verify commands, P1-T2 exit criteria",
+        "claim": "P1-T1 names nine template headings, six downstream reader nodes, a coordinated plan-path contract, and three runnable verify commands. P1-T2 names the bundled-defaults test file and two complementary verify commands (bun test + rg).",
+        "evidence": "V1 yaml (archon-piv-loop-codex.yaml) encodes .claude/archon/plans/*.plan.md in create-plan (line 265), refine-plan (line 384), implement-setup (line 459), code-review (line 785), fix-feedback (line 900), and compose-finalize (line 1021). Design doc section 7.3 lists the recommended V2 template headings that match the plan's exit criteria list. bundled-defaults.test.ts exists with string-assertion patterns against BUNDLED_WORKFLOWS that match the planned test additions.",
+        "disposition": "present \u2014 all load-bearing claims trace to inspected repo artifacts"
+      },
+      {
+        "title": "Disposition matrix",
+        "anchor": "artifact/conversation/campaign coverage",
+        "claim": "Artifact evidence is present for exit criteria, verify commands, and code-reality alignment. Conversation evidence is used only as caller claims for prior-round closure, verified against the artifact. Campaign coverage is slice-only (S2); S1 dependency is acknowledged but not independently verified.",
+        "evidence": "Plan artifact inspected in full. V1 yaml, design doc, PRD execution map, and bundled-defaults test file all inspected directly. Prior-round claims verified against current artifact text.",
+        "disposition": "present for artifact; partial for conversation (caller claims verified); slice-only for campaign"
+      },
+      {
+        "title": "Coverage scope",
+        "anchor": "S2 slice plan only",
+        "claim": "This review covers the S2 focused slice plan, the directly implicated V1 yaml, design doc Slice 2 guidance, PRD execution map S2 row, and bundled-defaults test file. It does not cover the umbrella plan, S1 plan, other slice plans, or the full campaign status.",
+        "evidence": "Files inspected: r001-archon-piv-loop-codex-v2-s2_plan.md, archon-piv-loop-codex.yaml, codex-piv-v2-workflow-design.md, r001-archon-piv-loop-codex-v2.md, bundled-defaults.test.ts.",
+        "disposition": "slice-only coverage; umbrella and other slices not assessed"
+      }
+    ],
+    "disposition_matrix": {
+      "rows": [
+        "artifact",
+        "conversation",
+        "campaign"
+      ],
+      "columns": [
+        "present",
+        "partial",
+        "missing"
+      ],
+      "cells": [
+        [
+          "exit criteria, verify commands, code-reality alignment",
+          "P0 verify commands are trivially self-matching",
+          "none"
+        ],
+        [
+          "prior-round claims verified against artifact",
+          "no independent thread evidence beyond caller packet",
+          "none"
+        ],
+        [
+          "S2 scope and PRD row alignment confirmed",
+          "S1 dependency acknowledged but not independently verified",
+          "umbrella plan and other slices not assessed"
+        ]
+      ]
+    },
+    "conversation_evidence": {
+      "used": true,
+      "sources": [
+        "prior-round caller packet (review id peer-review-6bd7f708e776)"
+      ],
+      "summary": "Caller claimed two prior BLOCKs were addressed: prose verify commands replaced with runnable commands, and scope-label exit criteria replaced with concrete deliverable names. Both claims verified as resolved against the current artifact.",
+      "gaps": [
+        "No independent conversation thread was available beyond the caller's disposition summary and claimed fixes."
+      ]
+    },
+    "campaign_coverage": {
+      "scope": "slice-only",
+      "covered": [
+        "S2 plan artifact",
+        "PRD execution map S2 row",
+        "Design doc Slice 2 guidance",
+        "V1 yaml plan-path contract across all six named nodes",
+        "bundled-defaults.test.ts assertion patterns"
+      ],
+      "missing": [
+        "Umbrella plan status",
+        "S1 plan and implementation status",
+        "Other slice plans (S3\u2013S7)"
+      ],
+      "gaps": [
+        "S1 completion is a prerequisite for S2 implementation but was not independently verified \u2014 the plan's own wording gates this correctly"
+      ]
+    },
+    "issues": [
+      {
+        "title": "P0-T2 verify command is trivially self-matching",
+        "details": "rg -n 'S2|Execution Map row' docs will match the S2 plan's own prose, making it a non-discriminating grounding check. P0 is a grounding phase, not the freeze-decisive surface.",
+        "suggested_fix": "Optional: tighten to grep only the PRD file or specific contract docs rather than the entire docs/ tree.",
+        "severity": "NOTE"
+      },
+      {
+        "title": "P1-T1 legacy-path check silently passes when V2 yaml is absent",
+        "details": "The bash -lc 'if rg ... .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml; then exit 1; fi' command exits 0 when the file does not exist (rg exits 2, if-branch is false). This means the verify command is vacuously true before S1 creates the V2 yaml. The plan's own task wording gates S2 after S1, so this is not a freeze blocker.",
+        "suggested_fix": "Optional: add a file-existence guard (test -f ... || { echo 'V2 yaml not yet created'; exit 0; }) for clarity.",
+        "severity": "NOTE"
+      }
+    ],
+    "verification_gaps": [
+      "S1 completion status was not independently verified; the plan's own task wording is the only gate preventing premature S2 execution",
+      "plan_readiness.py script existence could not be confirmed due to permission constraints on the .codex path"
+    ],
+    "recommended_fixes": [],
+    "evidence_sources": [
+      "docs/plans/r001-archon-piv-loop-codex-v2-s2_plan.md (plan artifact, full read)",
+      "docs/prd/r001-archon-piv-loop-codex-v2.md (PRD, lines 1\u2013397)",
+      "docs/design/codex-piv-v2-workflow-design.md (design doc, lines 1\u2013540)",
+      "packages/workflows/src/defaults/bundled-defaults.test.ts (full read, 147 lines)",
+      ".archon/workflows/defaults/archon-piv-loop-codex.yaml (V1 yaml, full read, lines 1\u20131063)"
+    ],
+    "error": null,
+    "verdict": "Sound-with-issues",
+    "workflow_compliance": [
+      "Plan status is draft, consistent with pre-freeze review",
+      "Phase summary and phased execution plan are present and consistent",
+      "Unresolved items section exists with no blockers listed",
+      "Current Inputs section is present with test posture, commands, and waivers",
+      "Doc Surface Map is present with must-edit and review-only classifications",
+      "E2E gate is correctly waived as internal_tooling with rationale"
+    ],
+    "technical_reality": [
+      "V1 yaml encodes .claude/archon/plans/*.plan.md in all six nodes named by the plan (create-plan, refine-plan, implement-setup, code-review, fix-feedback, compose-finalize) \u2014 migration scope claim is accurate",
+      "Design doc section 7.3 lists the same V2 template headings referenced in P1-T1 exit criteria (ELI5 Summary through Risks)",
+      "bundled-defaults.test.ts uses string-based assertions against BUNDLED_WORKFLOWS entries \u2014 the planned test additions are pattern-consistent",
+      "V2 yaml does not yet exist, matching the plan's explicit 'once Slice 1 lands' sequencing",
+      "The V1 plan template (lines 275-339) is materially lighter than the V2 template the plan proposes, confirming the upgrade scope is real"
+    ],
+    "assumptions_to_verify": [
+      "S1 must create archon-piv-loop-codex-v2.yaml before S2 can execute P1-T1",
+      "The bundled-defaults generator (scripts/generate-bundled-defaults.ts) must be re-run after V2 yaml changes for the test assertions to work against BUNDLED_WORKFLOWS"
+    ],
+    "verification_sufficiency": [
+      "P1-T1 verify commands are runnable and discriminating for the template headings and plan-path contract",
+      "P1-T2 verify commands combine a real test run (bun test) with a grep proof surface \u2014 sufficient for the claimed coverage",
+      "P0 verify commands are weaker but P0 is grounding, not implementation \u2014 acceptable at NOTE level",
+      "P2-T1 uses plan_readiness.py which could not be confirmed to exist, but is a standard workflow script referenced elsewhere in the plan system"
+    ],
+    "downstream_risks": [
+      "If S1 does not create the V2 yaml with a compatible structure, S2 verify commands will need adjustment",
+      "If the bundled-defaults generator is not re-run after V2 yaml creation, the test assertions in P1-T2 will fail against stale bundle content"
+    ],
+    "freeze_recommendation": "Safe to freeze. Carry the remaining WARN/NOTE items as explicit follow-ups or implementation-time checks.",
+    "prior_round_closure": [
+      {
+        "title": "P1 verify commands are prose placeholders, not runnable commands",
+        "severity": "BLOCK",
+        "caller_claim": "Refined P1 with runnable verification commands tied to the bundled-defaults test surface",
+        "verification_status": "resolved",
+        "verification_notes": "P1-T1 now has three runnable verify commands: an rg for template headings, an rg for plan-path patterns, and a bash guard against legacy V1 path presence. P1-T2 has bun test plus an rg proof surface. All reference specific files and produce meaningful pass/fail signals."
+      },
+      {
+        "title": "P1-T1 exit criteria restates the scope label instead of naming deliverables",
+        "severity": "BLOCK",
+        "caller_claim": "P1-T1 exit criteria now names the concrete V2 workflow/template surfaces and coordinated writer/reader path contract",
+        "verification_status": "resolved",
+        "verification_notes": "P1-T1 exit criteria now lists nine specific template headings (ELI5 Summary through Risks), names all six downstream reader nodes, and requires one coordinated V2 plan path with no legacy V1 hard-coding remaining."
+      }
+    ],
+    "closure_verification": "Both prior-round BLOCK findings are fully resolved in the current artifact. P1-T1 exit criteria moved from a scope restatement to nine named template headings and six named reader nodes. P1-T1 and P1-T2 verify commands moved from prose placeholders to runnable rg, bash, and bun test commands tied to specific repo files. No prior-round issues remain open.",
+    "rerun_recommendation": "stop"
+  }
+}
