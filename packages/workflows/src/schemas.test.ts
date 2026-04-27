@@ -752,15 +752,15 @@ describe('SCRIPT_NODE_AI_FIELDS', () => {
 // ---------------------------------------------------------------------------
 
 describe('LOOP_NODE_AI_FIELDS', () => {
-  test('excludes model and provider (loop nodes support them)', () => {
+  test('excludes model, provider, and output_format (loop nodes support them)', () => {
     expect(LOOP_NODE_AI_FIELDS).not.toContain('model');
     expect(LOOP_NODE_AI_FIELDS).not.toContain('provider');
+    expect(LOOP_NODE_AI_FIELDS).not.toContain('output_format');
   });
 
-  test('contains all other AI-specific fields from BASH_NODE_AI_FIELDS', () => {
+  test('contains unsupported AI-specific fields from BASH_NODE_AI_FIELDS', () => {
     const expectedFields = [
       'context',
-      'output_format',
       'allowed_tools',
       'denied_tools',
       'hooks',
@@ -777,5 +777,77 @@ describe('LOOP_NODE_AI_FIELDS', () => {
     for (const field of expectedFields) {
       expect(LOOP_NODE_AI_FIELDS).toContain(field);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// dagNodeSchema — LoopNode typed decision gates
+// ---------------------------------------------------------------------------
+
+describe('dagNodeSchema — LoopNode typed decision gates', () => {
+  test('preserves output_format and decision_gate on loop nodes', () => {
+    const result = dagNodeSchema.safeParse({
+      id: 'phase-gate',
+      output_format: {
+        type: 'object',
+        properties: {
+          decision: { type: 'string', enum: ['continue', 'advance'] },
+        },
+        required: ['decision'],
+      },
+      loop: {
+        prompt: 'Decide whether to continue or advance.',
+        until: 'PLAN_READY',
+        max_iterations: 3,
+        decision_gate: {
+          gate_kind: 'phase_decision',
+          decisions: [
+            { id: 'continue', resume_reason: 'loop_feedback' },
+            { id: 'advance', transition_intent: 'phase_advance' },
+          ],
+        },
+      },
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success && 'loop' in result.data) {
+      expect(result.data.output_format).toBeDefined();
+      expect(result.data.loop.decision_gate?.decisions).toHaveLength(2);
+    }
+  });
+
+  test('rejects duplicate decision_gate decision ids', () => {
+    const result = dagNodeSchema.safeParse({
+      id: 'phase-gate',
+      loop: {
+        prompt: 'Decide.',
+        until: 'PLAN_READY',
+        max_iterations: 3,
+        decision_gate: {
+          decisions: [
+            { id: 'advance', transition_intent: 'phase_advance' },
+            { id: 'advance', resume_reason: 'loop_feedback' },
+          ],
+        },
+      },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  test('requires each decision_gate decision to carry intent metadata', () => {
+    const result = dagNodeSchema.safeParse({
+      id: 'phase-gate',
+      loop: {
+        prompt: 'Decide.',
+        until: 'PLAN_READY',
+        max_iterations: 3,
+        decision_gate: {
+          decisions: [{ id: 'continue' }],
+        },
+      },
+    });
+
+    expect(result.success).toBe(false);
   });
 });

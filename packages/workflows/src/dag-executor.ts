@@ -1856,6 +1856,7 @@ async function executeScriptNode(
 function buildLoopNodeOptions(
   provider: string,
   model: string | undefined,
+  node: LoopNode,
   config: WorkflowConfig,
   workflowLevelOptions?: WorkflowLevelOptions
 ): SendQueryOptions {
@@ -1864,16 +1865,28 @@ function buildLoopNodeOptions(
   if (config.envVars && Object.keys(config.envVars).length > 0) {
     options.env = config.envVars;
   }
+  if (node.output_format) {
+    options.outputFormat = { type: 'json_schema', schema: node.output_format };
+  }
   options.assistantConfig = config.assistants[provider] ?? {};
-  // Pass workflow-level options as nodeConfig so providers can apply them
-  if (workflowLevelOptions) {
-    options.nodeConfig = {
-      effort: workflowLevelOptions.effort,
-      thinking: workflowLevelOptions.thinking,
-      sandbox: workflowLevelOptions.sandbox,
-      betas: workflowLevelOptions.betas,
-      fallbackModel: workflowLevelOptions.fallbackModel,
-    };
+
+  // Pass workflow-level options and loop structured-output config so providers can apply them.
+  const nodeConfig: NodeConfig = {
+    ...(workflowLevelOptions?.effort !== undefined ? { effort: workflowLevelOptions.effort } : {}),
+    ...(workflowLevelOptions?.thinking !== undefined
+      ? { thinking: workflowLevelOptions.thinking }
+      : {}),
+    ...(workflowLevelOptions?.sandbox !== undefined
+      ? { sandbox: workflowLevelOptions.sandbox }
+      : {}),
+    ...(workflowLevelOptions?.betas !== undefined ? { betas: workflowLevelOptions.betas } : {}),
+    ...(workflowLevelOptions?.fallbackModel !== undefined
+      ? { fallbackModel: workflowLevelOptions.fallbackModel }
+      : {}),
+    ...(node.output_format !== undefined ? { output_format: node.output_format } : {}),
+  };
+  if (Object.keys(nodeConfig).length > 0) {
+    options.nodeConfig = nodeConfig;
   }
 
   // Codex-only tuning — workflow > config precedence (loop nodes don't carry
@@ -1906,6 +1919,15 @@ function buildLoopNodeOptions(
 interface LoopProgressSnapshot {
   gitHead?: string;
   completedTaskCount?: number;
+}
+
+type LoopDecisionGate = NonNullable<LoopNode['loop']['decision_gate']>;
+
+interface LoopDecisionGateMatch {
+  id: string;
+  shouldComplete: boolean;
+  resumeReason?: string;
+  transitionIntent?: string;
 }
 
 async function resolveLoopProgressFile(
@@ -1998,6 +2020,42 @@ function didLoopProgressAdvance(
   return false;
 }
 
+function asStructuredOutputRecord(value: unknown): Record<string, unknown> | undefined {
+  if (typeof value === 'string') {
+    try {
+      return asStructuredOutputRecord(JSON.parse(value) as unknown);
+    } catch {
+      return undefined;
+    }
+  }
+  if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return undefined;
+}
+
+function matchLoopDecisionGate(
+  structuredOutput: unknown,
+  decisionGate: LoopDecisionGate | undefined
+): LoopDecisionGateMatch | undefined {
+  if (!decisionGate) return undefined;
+  const output = asStructuredOutputRecord(structuredOutput);
+  const decisionId = output?.decision;
+  if (typeof decisionId !== 'string') return undefined;
+
+  const decision = decisionGate.decisions.find(candidate => candidate.id === decisionId);
+  if (!decision) return undefined;
+
+  return {
+    id: decision.id,
+    shouldComplete: decision.transition_intent !== undefined,
+    ...(decision.resume_reason !== undefined ? { resumeReason: decision.resume_reason } : {}),
+    ...(decision.transition_intent !== undefined
+      ? { transitionIntent: decision.transition_intent }
+      : {}),
+  };
+}
+
 /**
  * Execute a loop node — runs prompt repeatedly until completion signal or max iterations.
  *
@@ -2088,6 +2146,7 @@ async function executeLoopNode(
   const resolvedOptions = buildLoopNodeOptions(
     workflowProvider,
     workflowModel,
+    node,
     config,
     workflowLevelOptions
   );
@@ -2175,6 +2234,7 @@ async function executeLoopNode(
     // Stream AI response for this iteration
     let fullOutput = ''; // raw, for signal detection
     let cleanOutput = ''; // stripped, for platform display
+    let iterationStructuredOutput: unknown;
     const approvalSnapshotChunks: MessageChunk[] = [];
     let iterationIdleTimedOut = false;
     let stopDuringIteration: NonRunningWorkflowStatus | undefined;
@@ -2299,6 +2359,7 @@ async function executeLoopNode(
           if (msg.numTurns !== undefined) {
             loopTotalNumTurns = (loopTotalNumTurns ?? 0) + msg.numTurns;
           }
+          if (msg.structuredOutput !== undefined) iterationStructuredOutput = msg.structuredOutput;
           // Fail the iteration loudly on SDK error results. Previously we broke
           // silently, producing empty output and continuing to the next iteration —
           // which made `error_during_execution` on resumed interactive loops look
@@ -2441,6 +2502,41 @@ async function executeLoopNode(
       );
     }
 
+    let structuredDecision: LoopDecisionGateMatch | undefined;
+    if (resolvedOptions.outputFormat) {
+      if (iterationStructuredOutput !== undefined) {
+        try {
+          cleanOutput =
+            typeof iterationStructuredOutput === 'string'
+              ? iterationStructuredOutput
+              : JSON.stringify(iterationStructuredOutput);
+        } catch (serializeErr) {
+          const err = serializeErr as Error;
+          await persistLoopNodeFailed(
+            `Loop '${node.id}' iteration ${String(i)} failed: failed to serialize structured_output to JSON: ${err.message}`
+          );
+          return {
+            state: 'failed',
+            output: '',
+            error: `Loop iteration ${String(i)} failed: failed to serialize structured_output to JSON: ${err.message}`,
+            costUsd: loopTotalCostUsd,
+          };
+        }
+        structuredDecision = matchLoopDecisionGate(iterationStructuredOutput, loop.decision_gate);
+      } else {
+        getLog().warn(
+          { nodeId: node.id, workflowRunId: workflowRun.id, iteration: i },
+          'loop_node.structured_output_missing'
+        );
+        await safeSendMessage(
+          platform,
+          conversationId,
+          `Warning: Loop node '${node.id}' requested output_format but the provider did not return structured output. Falling back to sentinel completion detection.`,
+          msgContext
+        );
+      }
+    }
+
     // Batch mode: send accumulated output
     if (platform.getStreamingMode() === 'batch' && cleanOutput) {
       await safeSendMessage(platform, conversationId, cleanOutput, msgContext);
@@ -2487,7 +2583,10 @@ async function executeLoopNode(
     }
 
     const duration = Date.now() - iterationStart;
-    const completionDetected = signalDetected || bashComplete;
+    const fallbackCompletionDetected = signalDetected || bashComplete;
+    const completionDetected = structuredDecision
+      ? structuredDecision.shouldComplete
+      : fallbackCompletionDetected;
 
     // Emit iteration completed
     getWorkflowEventEmitter().emit({
@@ -2503,7 +2602,24 @@ async function executeLoopNode(
         workflow_run_id: workflowRun.id,
         event_type: 'loop_iteration_completed',
         step_name: node.id,
-        data: { iteration: i, duration, completionDetected, nodeId: node.id },
+        data: {
+          iteration: i,
+          duration,
+          completionDetected,
+          nodeId: node.id,
+          ...(structuredDecision
+            ? {
+                decision: structuredDecision.id,
+                decision_source: 'structured_output',
+                ...(structuredDecision.resumeReason
+                  ? { resume_reason: structuredDecision.resumeReason }
+                  : {}),
+                ...(structuredDecision.transitionIntent
+                  ? { transition_intent: structuredDecision.transitionIntent }
+                  : {}),
+              }
+            : {}),
+        },
       })
       .catch((err: Error) => {
         logEventStoreError(err, i);

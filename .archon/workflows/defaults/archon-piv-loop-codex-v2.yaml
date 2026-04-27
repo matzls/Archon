@@ -21,8 +21,9 @@ description: |
     * Explicit negative guardrails on the implement loop's COMPLETE signal
     * Tightened refine-plan approval branch (no tool use on approval)
     * Stronger focused-plan template stored under `docs/plans/{slug}_plan.md`
-    * Typed gates, design-doc or slice-map intake, review automation, live E2E evidence
-      conventions, and PR handoff remain deferred to later V2 slices
+    * Slice 3 pilots typed gates on the phase-transition loops while design-doc
+      or slice-map intake, review automation, live E2E evidence conventions, and
+      PR handoff remain deferred to later V2 slices
 
   Interactive PIV loop workflow — the foundational AI coding methodology:
   1. EXPLORE: Iterative conversation with human to understand the problem (arbitrary rounds)
@@ -45,6 +46,14 @@ nodes:
   # ═══════════════════════════════════════════════════════════════
 
   - id: explore
+    output_format:
+      type: object
+      properties:
+        decision:
+          type: string
+          enum: [continue, advance]
+      required: [decision]
+      additionalProperties: false
     loop:
       prompt: |
         # PIV Loop — Exploration
@@ -187,9 +196,21 @@ nodes:
         If ANY condition is false, DO NOT emit the tag. Continue the conversation
         instead. When you reference this contract in your own output, write "the
         PLAN_READY signal" (no angle brackets) so you do not trigger it accidentally.
+
+        **TYPED DECISION CONTRACT** — set structured `decision` to `advance` only
+        when the PLAN_READY signal contract is satisfied. Otherwise set structured
+        `decision` to `continue`. The PLAN_READY signal remains the sentinel
+        fallback while the typed loop gate is being piloted.
       until: PLAN_READY
       max_iterations: 15
       interactive: true
+      decision_gate:
+        gate_kind: phase_decision
+        decisions:
+          - id: continue
+            resume_reason: loop_feedback
+          - id: advance
+            transition_intent: phase_advance
       complete_on_user_input:
         - ready
         - create the plan
@@ -228,13 +249,13 @@ nodes:
       **Original request**: $ARGUMENTS
       **Final exploration summary**: $explore.output
 
-      **V2 Slice 2 boundary**: create exactly one focused implementation plan.
+      **V2 Slice 3 boundary**: create exactly one focused implementation plan.
       Use the stronger V2 template and the coordinated `docs/plans/{slug}_plan.md`
-      path contract in this slice. Preserve explicit sentinel-based progression and
-      do not introduce typed phase gates, design-doc or slice-map intake, review
-      automation, live E2E evidence conventions, or PR handoff mechanics into the
-      generated plan unless the user explicitly narrows this run to one of those
-      later V2 slices.
+      path contract in this slice. The workflow may use typed phase gates for its
+      own cross-phase transitions, but do not introduce design-doc or slice-map
+      intake, review automation, live E2E evidence conventions, or PR handoff
+      mechanics into the generated plan unless the user explicitly narrows this
+      run to one of those later V2 slices.
 
       **Project detection output** (used ONLY to fill in the informational Validation Commands section of the plan):
       $detect-project.output
@@ -432,6 +453,14 @@ nodes:
 
   - id: refine-plan
     depends_on: [create-plan]
+    output_format:
+      type: object
+      properties:
+        decision:
+          type: string
+          enum: [continue, advance]
+      required: [decision]
+      additionalProperties: false
     loop:
       prompt: |
         # PIV Loop — Plan Refinement
@@ -484,6 +513,11 @@ nodes:
         If ANY condition is false, DO NOT emit the tag. When referencing this contract
         in your output, write "the PLAN_APPROVED signal" (no angle brackets).
 
+        **TYPED DECISION CONTRACT** — set structured `decision` to `advance` only
+        when the PLAN_APPROVED signal contract is satisfied. Otherwise set structured
+        `decision` to `continue`. The PLAN_APPROVED signal remains the sentinel
+        fallback while the typed loop gate is being piloted.
+
         ## Step 3: Show Changes
 
         ```
@@ -502,6 +536,13 @@ nodes:
       until: PLAN_APPROVED
       max_iterations: 10
       interactive: true
+      decision_gate:
+        gate_kind: phase_decision
+        decisions:
+          - id: continue
+            resume_reason: loop_feedback
+          - id: advance
+            transition_intent: phase_advance
       complete_on_user_input:
         - approved
         - looks good
@@ -611,11 +652,10 @@ nodes:
 
         **User's original request**: $USER_MESSAGE
 
-        **V2 Slice 2 boundary**: implement only the selected task from the exact
-        `PLAN_FILE` focused plan. Preserve explicit sentinel-based progression and do
-        not add typed gates, create slice maps, add review automation, introduce live
-        E2E evidence conventions, or add PR handoff behavior as part of this loop
-        iteration.
+        **V2 Slice 3 boundary**: implement only the selected task from the exact
+        `PLAN_FILE` focused plan. This implement task loop remains sentinel-based on
+        COMPLETE; do not create slice maps, add review automation, introduce live E2E
+        evidence conventions, or add PR handoff behavior as part of this loop iteration.
 
         The `VALIDATE_CMD`, `TYPECHECK_CMD`, `LINT_CMD`, `TEST_CMD`, `FORMAT_CMD` values
         from detect-project are **informational only**. The implement loop does **NOT**
@@ -967,6 +1007,14 @@ nodes:
 
   - id: fix-feedback
     depends_on: [code-review, implement-setup, detect-project]
+    output_format:
+      type: object
+      properties:
+        decision:
+          type: string
+          enum: [continue, advance]
+      required: [decision]
+      additionalProperties: false
     loop:
       prompt: |
         # PIV Loop — Address Validation Feedback
@@ -1012,6 +1060,11 @@ nodes:
 
         If ANY condition is false, DO NOT emit the tag. When referencing this contract
         in your output, write "the VALIDATED signal" (no angle brackets).
+
+        **TYPED DECISION CONTRACT** — set structured `decision` to `advance` only
+        when the VALIDATED signal contract is satisfied. Otherwise set structured
+        `decision` to `continue`. The VALIDATED signal remains the sentinel fallback
+        while the typed loop gate is being piloted.
 
         **If the user provided specific feedback:**
         1. Read the relevant files
@@ -1079,6 +1132,13 @@ nodes:
       until: VALIDATED
       max_iterations: 10
       interactive: true
+      decision_gate:
+        gate_kind: phase_decision
+        decisions:
+          - id: continue
+            resume_reason: loop_feedback
+          - id: advance
+            transition_intent: phase_advance
       complete_on_user_input:
         - approved
         - looks good
