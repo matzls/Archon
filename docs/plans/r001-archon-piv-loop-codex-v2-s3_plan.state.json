@@ -1,38 +1,74 @@
 {
   "$schema": "plan-state-v1",
   "plan": {
-    "status": "draft",
+    "status": "active",
     "current_phase": 0,
-    "authoring_state": "unknown",
-    "updated": "2026-04-27T14:33:14.862248+00:00"
+    "authoring_state": "drafted",
+    "updated": "2026-04-27T18:11:57.352521+00:00"
   },
   "tasks": [
     {
       "id": "P0-T1",
       "phase": 0,
-      "status": "proposed"
+      "status": "approved"
     },
     {
       "id": "P0-T2",
       "phase": 0,
-      "status": "proposed"
+      "status": "approved"
+    },
+    {
+      "id": "P0-T3",
+      "phase": 0,
+      "status": "approved"
     },
     {
       "id": "P1-T1",
       "phase": 1,
-      "status": "proposed"
+      "status": "approved"
     },
     {
       "id": "P1-T2",
       "phase": 1,
-      "status": "proposed"
+      "status": "approved"
+    },
+    {
+      "id": "P1-T3",
+      "phase": 1,
+      "status": "approved"
     },
     {
       "id": "P2-T1",
       "phase": 2,
-      "status": "proposed"
+      "status": "approved"
+    },
+    {
+      "id": "P2-T2",
+      "phase": 2,
+      "status": "approved"
     }
   ],
   "task_contracts": {},
-  "unresolved_items": []
+  "unresolved_items": [],
+  "snapshot_gate": {
+    "branch": "dev",
+    "checked_at": "2026-04-27T18:11:57+00:00",
+    "default_branch": "dev",
+    "dirty_before_snapshot": true,
+    "lane_branch": "dev",
+    "lane_decision_basis": "deterministic",
+    "lane_decision_reason": "repo_dirty_before_implementation",
+    "lane_type": "branch",
+    "lane_worktree_path": null,
+    "next_command": "git checkout -b r001-archon-piv-loop-codex-v2-s3-plan",
+    "plan_path": "docs/plans/r001-archon-piv-loop-codex-v2-s3_plan.md",
+    "reason": "running_on_default_branch",
+    "snapshot_commit_message": null,
+    "snapshot_commit_sha": null,
+    "snapshot_created_at": null,
+    "status": "missing",
+    "worktree_count": 1,
+    "worktree_present": false,
+    "worktree_required": true
+  }
 }
