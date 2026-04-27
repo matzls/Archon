@@ -1,38 +1,69 @@
 {
   "$schema": "plan-state-v1",
   "plan": {
-    "status": "draft",
+    "status": "accepted",
     "current_phase": 0,
-    "authoring_state": "unknown",
-    "updated": "2026-04-27T14:33:14.795670+00:00"
+    "authoring_state": "drafted",
+    "updated": "2026-04-27T17:28:16.216089+00:00"
   },
   "tasks": [
     {
       "id": "P0-T1",
       "phase": 0,
-      "status": "proposed"
+      "status": "done",
+      "last_sha": "2a520a4c8498bccce72d66871cdbbf800e094d33",
+      "last_transition": "2026-04-27T17:19:34.059435+00:00"
     },
     {
       "id": "P0-T2",
       "phase": 0,
-      "status": "proposed"
+      "status": "done",
+      "last_sha": "2a520a4c8498bccce72d66871cdbbf800e094d33",
+      "last_transition": "2026-04-27T17:20:39.928562+00:00"
     },
     {
       "id": "P1-T1",
       "phase": 1,
-      "status": "proposed"
+      "status": "done",
+      "last_sha": "2a520a4c8498bccce72d66871cdbbf800e094d33",
+      "last_transition": "2026-04-27T17:22:37.035264+00:00"
     },
     {
       "id": "P1-T2",
       "phase": 1,
-      "status": "proposed"
+      "status": "done",
+      "last_sha": "2a520a4c8498bccce72d66871cdbbf800e094d33",
+      "last_transition": "2026-04-27T17:23:55.006457+00:00"
     },
     {
       "id": "P2-T1",
       "phase": 2,
-      "status": "proposed"
+      "status": "done",
+      "last_sha": "2a520a4c8498bccce72d66871cdbbf800e094d33",
+      "last_transition": "2026-04-27T17:24:59.296586+00:00"
     }
   ],
   "task_contracts": {},
-  "unresolved_items": []
+  "unresolved_items": [],
+  "snapshot_gate": {
+    "branch": "slice/r001-archon-piv-loop-codex-v2/s2",
+    "checked_at": "2026-04-27T17:16:23+00:00",
+    "default_branch": "dev",
+    "dirty_before_snapshot": false,
+    "lane_branch": "slice/r001-archon-piv-loop-codex-v2/s2",
+    "lane_decision_basis": "deterministic",
+    "lane_decision_reason": "clean_feature_lane_before_implementation",
+    "lane_type": "worktree",
+    "lane_worktree_path": "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s2",
+    "next_command": null,
+    "plan_path": "docs/plans/r001-archon-piv-loop-codex-v2-s2_plan.md",
+    "reason": "snapshot_commit_created",
+    "snapshot_commit_message": "chore(workflow): snapshot before implementing r001-archon-piv-loop-codex-v2-s2-plan\n\nPlan: docs/plans/r001-archon-piv-loop-codex-v2-s2_plan.md\nFeature: r001-archon-piv-loop-codex-v2-s2-plan\nPurpose: rollback anchor before implementation\nLane: branch=slice/r001-archon-piv-loop-codex-v2/s2 worktree=/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s2\n",
+    "snapshot_commit_sha": "2a520a4c8498bccce72d66871cdbbf800e094d33",
+    "snapshot_created_at": "2026-04-27T17:16:23+00:00",
+    "status": "current",
+    "worktree_count": 2,
+    "worktree_present": true,
+    "worktree_required": false
+  }
 }
