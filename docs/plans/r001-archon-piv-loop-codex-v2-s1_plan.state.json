@@ -4,7 +4,7 @@
     "status": "active",
     "current_phase": 0,
     "authoring_state": "drafted",
-    "updated": "2026-04-27T16:16:45.610437+00:00"
+    "updated": "2026-04-27T16:27:42.587661+00:00"
   },
   "tasks": [
     {
@@ -66,7 +66,7 @@
   ],
   "snapshot_gate": {
     "branch": "dev",
-    "checked_at": "2026-04-27T16:16:45+00:00",
+    "checked_at": "2026-04-27T16:27:42+00:00",
     "default_branch": "dev",
     "dirty_before_snapshot": true,
     "lane_branch": "dev",
