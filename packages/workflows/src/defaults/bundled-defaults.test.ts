@@ -119,6 +119,10 @@ describe('bundled-defaults', () => {
       const content = BUNDLED_WORKFLOWS['archon-piv-loop-codex-v2'];
       expect(content).toContain('name: archon-piv-loop-codex-v2');
       expect(content).toContain('.claude/archon/plans/{slug}.plan.md');
+      expect(content).toContain('PLAN_FILE=.claude/archon/plans/{slug}.plan.md');
+      expect(content).toContain('ERROR: PLAN_FILE missing from create-plan output');
+      expect(content).not.toContain('PLAN_FILE=$(ls -t .claude/archon/plans/*.plan.md 2>/dev/null | head -1)');
+      expect(content).not.toContain('`git checkout -- <file>` BEFORE staging');
       expect(content).toContain('PLAN_READY');
       expect(content).toContain('PLAN_APPROVED');
       expect(content).toContain('COMPLETE');

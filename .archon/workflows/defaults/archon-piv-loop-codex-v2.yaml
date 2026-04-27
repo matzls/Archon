@@ -363,6 +363,7 @@ nodes:
       ## Plan Created
 
       **File**: `.claude/archon/plans/{slug}.plan.md`
+      PLAN_FILE=.claude/archon/plans/{slug}.plan.md
       **Tasks**: {count}
       **Files to change**: {count}
 
@@ -387,16 +388,18 @@ nodes:
         The user is reviewing the implementation plan and providing feedback.
 
         **User's feedback** (empty on first iteration): "$LOOP_USER_INPUT"
+        **Create-plan output**:
+        $create-plan.output
 
         ---
 
         ## Step 1: Find and Read the Plan
 
-        ```bash
-        ls -t .claude/archon/plans/*.plan.md 2>/dev/null | head -1
-        ```
+        Parse the exact `PLAN_FILE=...` line from the create-plan output above and use
+        THAT path for this entire node. Do not search `.claude/archon/plans/` for the
+        newest file.
 
-        Read the entire plan file. Also read CLAUDE.md for conventions.
+        Read the entire plan file from that exact path. Also read CLAUDE.md for conventions.
 
         ## Step 2: Process Feedback
 
@@ -464,14 +467,24 @@ nodes:
   # ═══════════════════════════════════════════════════════════════
 
   - id: implement-setup
-    depends_on: [refine-plan, detect-project]
+    depends_on: [refine-plan, create-plan, detect-project]
     bash: |
       set -e
 
-      PLAN_FILE=$(ls -t .claude/archon/plans/*.plan.md 2>/dev/null | head -1)
+      CREATE_PLAN_OUTPUT=$(cat <<'EOF'
+      $create-plan.output
+      EOF
+      )
+
+      PLAN_FILE=$(printf '%s\n' "$CREATE_PLAN_OUTPUT" | sed -n 's/^PLAN_FILE=//p' | tail -1)
 
       if [ -z "$PLAN_FILE" ]; then
-        echo "ERROR: No plan file found in .claude/archon/plans/"
+        echo "ERROR: PLAN_FILE missing from create-plan output"
+        exit 1
+      fi
+
+      if [ ! -f "$PLAN_FILE" ]; then
+        echo "ERROR: Plan file not found at $PLAN_FILE"
         exit 1
       fi
 
@@ -675,9 +688,9 @@ nodes:
         ```
 
         If you see files outside the scope of the current task (e.g. changes you made while
-        exploring or testing for Task N+1), revert those extra changes with
-        `git checkout -- <file>` BEFORE staging. Do NOT use `git add -A`. Stage explicitly
-        by file path:
+        exploring or testing for Task N+1), leave them unstaged and stage ONLY the files
+        that belong to the current task. Do NOT discard local changes automatically. Do
+        NOT use `git add -A`. Stage explicitly by file path:
 
         ```bash
         git add <file1> <file2>  # only the files from THIS task
@@ -780,7 +793,7 @@ nodes:
   # ═══════════════════════════════════════════════════════════════
 
   - id: code-review
-    depends_on: [implement, detect-project]
+    depends_on: [implement, implement-setup, detect-project]
     context: fresh
     prompt: |
       # PIV Loop — Automated Code Review
@@ -792,6 +805,9 @@ nodes:
       **Project detection** (validation commands for this repo):
       $detect-project.output
 
+      **Implementation setup context** (contains `PLAN_FILE=...`):
+      $implement-setup.output
+
       Parse `VALIDATE_CMD`, `TYPECHECK_CMD`, `LINT_CMD`, `TEST_CMD`, `FORMAT_CMD` from
       the detect-project output above. Use them in Step 4 below.
 
@@ -799,9 +815,9 @@ nodes:
 
       ## Step 1: Find and Read the Plan
 
-      ```bash
-      ls -t .claude/archon/plans/*.plan.md 2>/dev/null | head -1
-      ```
+      Parse the exact `PLAN_FILE=...` line from the implementation setup context above
+      and use THAT path for this review. Do not search `.claude/archon/plans/` for the
+      newest file.
 
       ## Step 2: Review All Changes
 
@@ -896,7 +912,7 @@ nodes:
   # ═══════════════════════════════════════════════════════════════
 
   - id: fix-feedback
-    depends_on: [code-review, detect-project]
+    depends_on: [code-review, implement-setup, detect-project]
     loop:
       prompt: |
         # PIV Loop — Address Validation Feedback
@@ -908,17 +924,20 @@ nodes:
         **Project detection** (validation commands for this repo):
         $detect-project.output
 
+        **Implementation setup context** (contains `PLAN_FILE=...`):
+        $implement-setup.output
+
         Parse `VALIDATE_CMD` etc. from the detect-project output for Step 3 below.
 
         ---
 
         ## Step 1: Read Context
 
-        ```bash
-        ls -t .claude/archon/plans/*.plan.md 2>/dev/null | head -1
-        ```
+        Parse the exact `PLAN_FILE=...` line from the implementation setup context above
+        and use THAT path for this entire node. Do not search `.claude/archon/plans/`
+        for the newest file.
 
-        Read the plan file and CLAUDE.md for conventions.
+        Read the plan file from that exact path and CLAUDE.md for conventions.
 
         ## Step 2: Process Feedback
 
