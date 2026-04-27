@@ -123,7 +123,7 @@ nodes:
             Instructions for the AI...
           # Optional: model, allowed_tools, denied_tools, output_format, context, idle_timeout
 
-          # --- bash node (shell script, no AI, stdout = $<nodeId>.output) ---
+          # --- bash node (shell script, no AI, stdout becomes that node's output) ---
           bash: |
             #!/bin/bash
             set -e
@@ -132,11 +132,11 @@ nodes:
           # --- command node (references a .archon/commands/ file) ---
           command: command-name
 
-          # --- script node (TypeScript via bun, or Python via uv — no AI, stdout = $<nodeId>.output) ---
+          # --- script node (TypeScript via bun, or Python via uv — no AI, stdout becomes node output) ---
           # Use for deterministic data transforms the shell would mangle (JSON parsing, etc.)
           script: |
             // JSON is valid JS expression syntax — assign directly (String.raw breaks on backticks)
-            const data = $other-node.output;
+            const data = UPSTREAM_NODE_OUTPUT_JSON;
             console.log(JSON.stringify({ count: data.items.length }));
           runtime: bun                       # required: 'bun' (.ts/.js) or 'uv' (.py)
           # deps: [requests]                 # uv only
@@ -154,11 +154,11 @@ nodes:
           # --- approval node (human gate — pauses workflow) ---
           approval:
             message: "Review the plan above. Approve to continue."
-            # capture_response: true         # store reviewer comment as $<nodeId>.output
+            # capture_response: true         # store reviewer comment as this node's output
 
           # Common options for all node types:
           depends_on: [other-node-id]       # DAG edges
-          when: "$<other-node>.output == 'value'"  # conditional execution
+          when: "CONCRETE_NODE_OUTPUT == 'value'"  # replace with a concrete upstream output condition
           trigger_rule: all_success          # all_success | one_success | all_done
           timeout: 120000                    # ms, for bash and script nodes
       ```
@@ -166,8 +166,8 @@ nodes:
       ## Variable Reference
       - `$ARGUMENTS` — user's input text
       - `$ARTIFACTS_DIR` — pre-created directory for workflow artifacts
-      - `$<nodeId>.output` — stdout from a bash/script node or AI response from a prompt node
-      - `$<nodeId>.output.field` — JSON field from a node with output_format
+      - Concrete node output reference — stdout from a bash/script node or AI response from a prompt node
+      - Concrete node output field reference — JSON field from a node with output_format
       - `$BASE_BRANCH` — base git branch
 
       ## Rules
@@ -178,10 +178,10 @@ nodes:
       5. Use `bash` nodes for deterministic shell operations (file checks, git commands, installs)
       6. Use `script` nodes for typed data transforms (TypeScript JSON parsing, Python with deps)
          — stdout is captured as output, stderr is forwarded as a warning.
-         $nodeId.output is NOT shell-quoted in script bodies.
-         - **TypeScript/bun**: assign directly — `const data = $nodeId.output;`
+         Node output references are NOT shell-quoted in script bodies.
+         - **TypeScript/bun**: assign directly — `const data = CONCRETE_NODE_OUTPUT_JSON;`
            (JSON is valid JS expression syntax; avoid String.raw — it breaks on backticks)
-         - **Python/uv**: use json.loads — `import json; data = json.loads("""$nodeId.output""")`
+         - **Python/uv**: use json.loads — `import json; data = json.loads("""CONCRETE_NODE_OUTPUT_JSON_STRING""")`
          Never interpolate into shell syntax.
       7. Use `prompt` nodes for AI reasoning tasks
       8. Use `approval` nodes to pause for human review at risky gates (plan→execute boundary, destructive actions)

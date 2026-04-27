@@ -1,0 +1,4 @@
+interface:
+  display_name: "My Dash Workflow Builder Codex"
+  short_description: "Build Codex-safe Archon workflows"
+  default_prompt: "Use $my-dash-workflow-builder-codex to design or review a Codex-safe Archon workflow."
