@@ -4,18 +4,22 @@
     "status": "active",
     "current_phase": 0,
     "authoring_state": "drafted",
-    "updated": "2026-04-27T19:59:12.800957+00:00"
+    "updated": "2026-04-27T20:04:59.113508+00:00"
   },
   "tasks": [
     {
       "id": "P0-T1",
       "phase": 0,
-      "status": "approved"
+      "status": "validated",
+      "last_sha": "f415b487a735c77f417a5381f4512c0471ebf865",
+      "last_transition": "2026-04-27T20:02:52.847986+00:00"
     },
     {
       "id": "P0-T2",
       "phase": 0,
-      "status": "approved"
+      "status": "validated",
+      "last_sha": "f415b487a735c77f417a5381f4512c0471ebf865",
+      "last_transition": "2026-04-27T20:03:03.986816+00:00"
     },
     {
       "id": "P1-T1",
@@ -38,7 +42,7 @@
     {
       "id": "LBA1",
       "kind": "lba",
-      "checked": false,
+      "checked": true,
       "section": "blockers",
       "blocks_phases": [
         1,
@@ -46,28 +50,28 @@
       ],
       "summary": "S1 must have landed the V2 workflow skeleton so `archon-piv-loop-codex-v2.yaml` exists and can be extended before S4 implementation begins.",
       "verify": "`test -f .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml` passes in the S4 execution lane before P1 starts.",
-      "evidence": "`.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml` exists in the execution lane used for S4."
+      "evidence": "`.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml` exists in the execution lane used for S4; verified by `ls .archon/workflows/defaults | rg 'archon-piv-loop-codex-v2' || true` returning `archon-piv-loop-codex-v2.yaml` on 2026-04-27."
     }
   ],
   "snapshot_gate": {
-    "branch": "dev",
-    "checked_at": "2026-04-27T19:59:12+00:00",
+    "branch": "slice/r001-archon-piv-loop-codex-v2/s4",
+    "checked_at": "2026-04-27T19:59:13+00:00",
     "default_branch": "dev",
-    "dirty_before_snapshot": true,
-    "lane_branch": "dev",
+    "dirty_before_snapshot": false,
+    "lane_branch": "slice/r001-archon-piv-loop-codex-v2/s4",
     "lane_decision_basis": "deterministic",
-    "lane_decision_reason": "repo_dirty_before_implementation",
-    "lane_type": "branch",
-    "lane_worktree_path": null,
-    "next_command": "git checkout -b r001-archon-piv-loop-codex-v2-s4-plan",
+    "lane_decision_reason": "clean_feature_lane_before_implementation",
+    "lane_type": "worktree",
+    "lane_worktree_path": "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s4",
+    "next_command": null,
     "plan_path": "docs/plans/r001-archon-piv-loop-codex-v2-s4_plan.md",
-    "reason": "running_on_default_branch",
-    "snapshot_commit_message": null,
-    "snapshot_commit_sha": null,
-    "snapshot_created_at": null,
-    "status": "missing",
-    "worktree_count": 1,
-    "worktree_present": false,
-    "worktree_required": true
+    "reason": "snapshot_commit_created",
+    "snapshot_commit_message": "chore(workflow): snapshot before implementing r001-archon-piv-loop-codex-v2-s4-plan\n\nPlan: docs/plans/r001-archon-piv-loop-codex-v2-s4_plan.md\nFeature: r001-archon-piv-loop-codex-v2-s4-plan\nPurpose: rollback anchor before implementation\nLane: branch=slice/r001-archon-piv-loop-codex-v2/s4 worktree=/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s4\n",
+    "snapshot_commit_sha": "f415b487a735c77f417a5381f4512c0471ebf865",
+    "snapshot_created_at": "2026-04-27T19:59:13+00:00",
+    "status": "current",
+    "worktree_count": 2,
+    "worktree_present": true,
+    "worktree_required": false
   }
 }

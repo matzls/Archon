@@ -33,3 +33,8 @@ Plan: `docs/plans/r001-archon-piv-loop-codex-v2-s1_plan.md`
 - Plan: `docs/plans/r001-archon-piv-loop-codex-v2-s3_plan.md`
 - Loop-node typed gates need both runtime `output_format` forwarding and a `loop.decision_gate` contract; otherwise sentinel detection remains the compatibility proof surface.
 - When Bun cannot write its default temp/cache path in a sandboxed worktree, rerun focused proof commands with a writable temp/cache and `--backend=copyfile` before treating dependency resolution failures as code regressions.
+
+## 2026-04-27 — r001-archon-piv-loop-codex-v2-s4
+
+- Plan: `docs/plans/r001-archon-piv-loop-codex-v2-s4_plan.md`
+- LBA resolution must update the plan state sidecar via `state_manager.py --action set_unresolved`; markdown-only evidence is not enough for deterministic readiness gates.

@@ -1,7 +1,7 @@
 ---
 title: "Archon PIV Loop Codex V2 S4 — design-doc and slice-map mode — Plan"
 kind: plan
-status: draft
+status: active
 created: 2026-04-27
 updated: "2026-04-27"
 origin_prd: "docs/prd/r001-archon-piv-loop-codex-v2.md"
@@ -15,7 +15,7 @@ version: "0.2"
 - Why we're doing it: the orchestrator needs a concrete slice draft so planning and freeze can converge on the named boundary instead of starting from a blank template.
 - What "done" looks like: the repo ships `S4` exactly within `Execution Map row` plus the Execution Map note: design-doc and slice-map mode and proves it with focused validation.
 - How we'll do it: ground the current repo truth, lock the slice contract and docs, implement the smallest load-bearing surface, then validate and sync the affected docs.
-- Next step / resume point: run `refine_all` on this seeded slice and only add more scope if current repo evidence proves it is required.
+- Next step / resume point: Phase 0 grounding is the approved post-freeze work; after it is validated, freeze only the next concrete `S4` tasks needed to update the existing V2 workflow YAML and focused tests.
 
 ### Optional Mental Model
 
@@ -56,7 +56,7 @@ flowchart LR
 **Choice:** [x] A1  [ ] A2
 
 ## Plan Status & Controls
-- Plan Status: Draft (as of 2026-04-27)
+- Plan Status: Active (as of 2026-04-27)
 - Current Phase: P0 — Grounding
 - Last Updated: 2026-04-27
 - Last Reviewed: 2026-04-27
@@ -85,9 +85,9 @@ Rules:
 - Default scope is phases `P1+` unless explicitly tagged.
 
 ### Blockers (must resolve before freeze)
-- [ ] [LBA] LBA1 (Blocks: P1 freeze, P2 freeze) — S1 must have landed the V2 workflow skeleton so `archon-piv-loop-codex-v2.yaml` exists and can be extended before S4 implementation begins.
+- [x] [LBA] LBA1 (Blocks: P1 freeze, P2 freeze) — S1 must have landed the V2 workflow skeleton so `archon-piv-loop-codex-v2.yaml` exists and can be extended before S4 implementation begins.
   - Verify: `test -f .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml` passes in the S4 execution lane before P1 starts.
-  - Evidence: `.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml` exists in the execution lane used for S4.
+  - Evidence: `.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml` exists in the execution lane used for S4; verified by `ls .archon/workflows/defaults | rg 'archon-piv-loop-codex-v2' || true` returning `archon-piv-loop-codex-v2.yaml` on 2026-04-27.
 
 ### FYI / Later (does not block freeze)
 - (none)
@@ -95,7 +95,7 @@ Rules:
 
 | Phase | Phase Status | Tasks (ID: Title — Status) |
 |------:|--------------|----------------------------|
-| P0 | Proposed | - P0-T1: Ground the current slice boundary against repo reality — proposed<br>- P0-T2: Lock the slice contract and doc surface — proposed |
+| P0 | Validated | - P0-T1: Ground the current slice boundary against repo reality — validated<br>- P0-T2: Lock the slice contract and doc surface — validated |
 | P1 | Proposed | - P1-T1: Implement the smallest load-bearing `S4` surface — proposed<br>- P1-T2: Add or update focused validation for the touched surface — proposed |
 | P2 | Proposed | - P2-T1: Reconcile docs and prove final slice evidence — proposed |
 
@@ -103,7 +103,7 @@ Rules:
 
 ### Phase 0 — Grounding And Contract Lock
 
-- [ ] P0-T1: Ground the current slice boundary against repo reality
+- [x] **Validated** P0-T1: Ground the current slice boundary against repo reality
   - Test Impact: N/A
   - Commands to Run:
     - inspect `docs/prd/r001-archon-piv-loop-codex-v2.md` and `docs/design/codex-piv-v2-workflow-design.md` for the `S4` Mode B contract: large-request intake, design doc creation or refresh, slice-map creation, and exactly-one-slice selection before the normal one-slice lane
@@ -119,8 +119,15 @@ Rules:
     - `ls .archon/workflows/defaults | rg 'archon-piv-loop-codex-v2' || true`
     - `rg -n "executeWorkflow|discoverWorkflows|BUNDLED_WORKFLOWS" packages/workflows/src/executor.test.ts packages/workflows/src/loader.test.ts packages/workflows/src/defaults/bundled-defaults.test.ts`
     - `python3 "${CODEX_HOME:-$HOME/.codex}/skills/.shared/workflow/scripts/plan_readiness.py" --plan-path docs/plans/r001-archon-piv-loop-codex-v2-s4_plan.md --format markdown`
+  - Grounding Results:
+    - `S4` contract: PRD Mode B requires large-request or PRD intake to create or refresh a design doc when load-bearing, create a slice map, select exactly one slice, create a focused slice plan, and continue through the normal one-slice lane.
+    - PRD execution-map row: `S4` is `design-doc and slice-map mode`; expected main output is large-request intake that creates design/slice artifacts and selects one slice; primary proof is a workflow run against a fixture request producing expected artifacts.
+    - Current workflow YAML: `.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml` exists and is the Phase 1 implementation surface.
+    - Current YAML gap: the V2 workflow still labels the active boundary as Slice 3 and explicitly defers design-doc or slice-map intake in the `create-plan` and implementation-loop prompts, so `S4` should update that existing workflow rather than create a new workflow.
+    - Test surfaces: `packages/workflows/src/executor.test.ts` is the fixture-driven workflow proof surface for `executeWorkflow`; `packages/workflows/src/defaults/bundled-defaults.test.ts` is the bundled-default regression surface for the V2 YAML contract; `packages/workflows/src/loader.test.ts` is a supporting discovery/defaults surface only if the YAML or default loading contract changes.
+    - Adjacent scope kept out: S5 live E2E evidence, S6 planning/implementation review gates, and S7 PR review handoff remain separate slices.
 
-- [ ] P0-T2: Lock the slice contract and doc surface
+- [x] **Validated** P0-T2: Lock the slice contract and doc surface
   - Test Impact: N/A
   - Commands to Run:
     - update this focused plan after the grounding pass with the exact workflow YAML and validation surfaces for `S4`
@@ -131,6 +138,12 @@ Rules:
     - no first-pass scope gap remains inside `Execution Map row`
   - Verify Commands:
     - `rg -n "P1-T1|P1-T2|workflow run against fixture request|executeWorkflow|bundled-defaults|validate workflows archon-piv-loop-codex-v2" docs/plans/r001-archon-piv-loop-codex-v2-s4_plan.md`
+  - Locked Contract:
+    - Workflow YAML to modify in Phase 1: `.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml`.
+    - Required code proof: `bun run cli validate workflows archon-piv-loop-codex-v2 --json`.
+    - Required test proof: `bun test packages/workflows/src/executor.test.ts packages/workflows/src/loader.test.ts packages/workflows/src/defaults/bundled-defaults.test.ts`.
+    - Required fixture behavior: a large request or PRD intake path creates or refreshes a design doc, creates a slice map, selects exactly one slice, and then returns to the normal one-slice lane.
+    - Required doc sync: keep this focused plan aligned; use the PRD row and `docs/design/codex-piv-v2-workflow-design.md` as review-only contract anchors unless Phase 1 discovers concrete drift.
 
 ### Phase 1 — Scoped Implementation
 
@@ -236,3 +249,4 @@ Explicit exclusions (handled outside the PIV loop closeout): Project Brief, Feat
 
 ## Doc Sync Log
 - 2026-04-27: Seeded focused slice draft from the PRD execution map so the orchestrator can refine from a concrete boundary instead of a blank template.
+- 2026-04-27: Completed Phase 0 grounding. Verified the existing V2 workflow YAML, resolved `LBA1`, recorded the current Slice 3 deferral gap, and locked the Phase 1 S4 implementation and validation surfaces.
