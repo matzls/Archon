@@ -1127,8 +1127,10 @@ nodes:
       ```
 
       Read the plan file from the exact `PLAN_FILE` path you parsed above. The feature
-      name for the PR title comes from the
-      `# Feature: {Title}` heading of THIS plan file only.
+      name for the PR title comes from the YAML frontmatter `title` field of THIS
+      plan file only. If that title ends with ` — Plan`, strip that suffix for the
+      PR title and feature label. Do not invent a title from any other heading,
+      filename, or repo metadata.
 
       Read progress tracking from `$ARTIFACTS_DIR/progress.txt` for task completion
       context.
