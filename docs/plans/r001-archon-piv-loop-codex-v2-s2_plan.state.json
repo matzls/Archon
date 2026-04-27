@@ -4,7 +4,7 @@
     "status": "active",
     "current_phase": 0,
     "authoring_state": "drafted",
-    "updated": "2026-04-27T17:24:07.803820+00:00"
+    "updated": "2026-04-27T17:24:59.296708+00:00"
   },
   "tasks": [
     {
@@ -38,9 +38,9 @@
     {
       "id": "P2-T1",
       "phase": 2,
-      "status": "in_progress",
+      "status": "done",
       "last_sha": "2a520a4c8498bccce72d66871cdbbf800e094d33",
-      "last_transition": "2026-04-27T17:24:07.803712+00:00"
+      "last_transition": "2026-04-27T17:24:59.296586+00:00"
     }
   ],
   "task_contracts": {},

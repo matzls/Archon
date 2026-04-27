@@ -57,10 +57,10 @@ flowchart LR
 
 ## Plan Status & Controls
 - Plan Status: Draft (as of 2026-04-27)
-- Current Phase: P2 — Validation And Doc Sync
+- Current Phase: Complete — Ready For Validation
 - Last Updated: 2026-04-27
 - Last Reviewed: 2026-04-27
-- Next Checkpoint: run `P2-T1` to reconcile the touched docs, state, and final slice evidence
+- Next Checkpoint: run `$workflow-validate docs/plans/r001-archon-piv-loop-codex-v2-s2_plan.md mode=fast`
 - E2E Gate: not_required
 - E2E Waiver Category: internal_tooling
 - E2E Waiver Rationale: This seeded slice targets contract, workflow, or internal runtime surfaces. Focused repo-local validation is the required proof shape before any broader end-to-end coverage is considered.
@@ -95,7 +95,7 @@ Rules:
 |------:|--------------|----------------------------|
 | P0 | Done | - P0-T1: Ground the current slice boundary against repo reality — done<br>- P0-T2: Lock the slice contract and doc surface — done |
 | P1 | Done | - P1-T1: Implement the smallest load-bearing `S2` surface — done<br>- P1-T2: Add or update focused validation for the touched surface — done |
-| P2 | Proposed | - P2-T1: Reconcile docs and prove final slice evidence — proposed |
+| P2 | Done | - P2-T1: Reconcile docs and prove final slice evidence — done |
 
 ## 6) Phased Execution Plan
 
@@ -158,7 +158,7 @@ Rules:
 
 ### Phase 2 — Validation And Doc Sync
 
-- [ ] P2-T1: Reconcile docs and prove final slice evidence
+- [x] P2-T1: Reconcile docs and prove final slice evidence
   - Test Impact: N/A
   - Commands to Run:
     - sync the touched docs, plan state, and validation evidence after implementation
@@ -258,3 +258,4 @@ Explicit exclusions (handled outside the PIV loop closeout): Project Brief, Feat
 - 2026-04-27: Locked the slice contract to the V2 workflow YAML, bundled generated workflow output, bundled-defaults test, PRD row S2, and the V2 design doc; explicitly kept V1 and later-slice features out of scope.
 - 2026-04-27: Landed the Slice 2 V2 workflow source update in `.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml`, replacing the legacy plan-path contract with `docs/plans/{slug}_plan.md` and embedding the stronger focused-plan template headings required by this slice.
 - 2026-04-27: Updated `packages/workflows/src/defaults/bundled-defaults.test.ts`, regenerated `packages/workflows/src/defaults/bundled-defaults.generated.ts`, and passed `bun test packages/workflows/src/defaults/bundled-defaults.test.ts` after installing worktree dependencies required for `@archon/paths` module resolution.
+- 2026-04-27: Closed the slice with synced plan/task status, final readiness confirmation, and an implementation report bundle covering the V2 YAML migration, bundled output refresh, and focused bundled-defaults proof.
