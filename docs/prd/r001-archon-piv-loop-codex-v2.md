@@ -337,17 +337,17 @@ Stop rule:
 - report exact evidence and next command
 ```
 
-## 12. Execution Map
+## Execution Map
 
-| Slice | Scope | Expected Main Output | Primary Proof |
-| --- | --- | --- | --- |
-| S1 | V2 workflow skeleton from V1, keeping V1 plan-path behavior and explicit sentinel contracts while deferring typed gates, design-doc intake, review automation, live evidence conventions, and PR handoff to later slices | new `archon-piv-loop-codex-v2` default workflow with minimal contract lift | workflow validation, bundle drift check, targeted default-workflow tests |
-| S2 | V2 plan template and coordinated plan-path contract | stronger focused plan template and path contract across the lane | plan fixture/output inspection plus downstream reader validation |
-| S3 | typed phase-gate support where runtime permits | verified structured or sentinel-based phase advancement rules | runtime/schema tests or explicit sentinel fallback proof |
-| S4 | design-doc and slice-map mode | large-request intake that creates design/slice artifacts and selects one slice | workflow run against fixture request producing expected artifacts |
-| S5 | live E2E evidence convention | enforced final live validation contract and evidence path | real CLI/API/browser smoke evidence under run artifacts |
-| S6 | planning and implementation review gates | review checkpoints and bounded fix/review loop behavior | review sidecar fixtures and gate behavior tests |
-| S7 | PR or PR-review handoff | structured PR-ready or PR-review handoff after slice completion | generated PR payload or handoff packet with branch/base/evidence fields |
+| Slice | Scope | Plan | Expected Main Output | Primary Proof |
+| --- | --- | --- | --- | --- |
+| S1 | V2 workflow skeleton from V1, keeping V1 plan-path behavior and explicit sentinel contracts while deferring typed gates, design-doc intake, review automation, live evidence conventions, and PR handoff to later slices | `docs/plans/r001-archon-piv-loop-codex-v2-s1_plan.md` | new `archon-piv-loop-codex-v2` default workflow with minimal contract lift | workflow validation, bundle drift check, targeted default-workflow tests |
+| S2 | V2 plan template and coordinated plan-path contract | `docs/plans/r001-archon-piv-loop-codex-v2-s2_plan.md` | stronger focused plan template and path contract across the lane | plan fixture/output inspection plus downstream reader validation |
+| S3 | typed phase-gate support where runtime permits | `docs/plans/r001-archon-piv-loop-codex-v2-s3_plan.md` | verified structured or sentinel-based phase advancement rules | runtime/schema tests or explicit sentinel fallback proof |
+| S4 | design-doc and slice-map mode | `docs/plans/r001-archon-piv-loop-codex-v2-s4_plan.md` | large-request intake that creates design/slice artifacts and selects one slice | workflow run against fixture request producing expected artifacts |
+| S5 | live E2E evidence convention | `docs/plans/r001-archon-piv-loop-codex-v2-s5_plan.md` | enforced final live validation contract and evidence path | real CLI/API/browser smoke evidence under run artifacts |
+| S6 | planning and implementation review gates | `docs/plans/r001-archon-piv-loop-codex-v2-s6_plan.md` | review checkpoints and bounded fix/review loop behavior | review sidecar fixtures and gate behavior tests |
+| S7 | PR or PR-review handoff | `docs/plans/r001-archon-piv-loop-codex-v2-s7_plan.md` | structured PR-ready or PR-review handoff after slice completion | generated PR payload or handoff packet with branch/base/evidence fields |
 
 The orchestrator may split or merge these slices if intake discovers a smaller
 safer shape, but it must keep S1 bounded and must not collapse the whole feature

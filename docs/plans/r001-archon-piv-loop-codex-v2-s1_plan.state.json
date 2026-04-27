@@ -4,7 +4,7 @@
     "status": "draft",
     "current_phase": 0,
     "authoring_state": "drafted",
-    "updated": "2026-04-27T14:58:47.578265+00:00"
+    "updated": "2026-04-27T16:10:59.122594+00:00"
   },
   "tasks": [
     {
@@ -53,7 +53,7 @@
     {
       "id": "Q1",
       "kind": "q",
-      "checked": false,
+      "checked": true,
       "section": "blockers",
       "blocks_phases": [
         0,
@@ -61,7 +61,7 @@
         2
       ],
       "summary": "Resolve the PRD `plan:` backlink handoff before freezing this focused S1 plan.",
-      "answer": "Default path: keep the PRD `plan:` pointer on the umbrella plan while this slice is still a draft, then run `frontmatter_link_sync.py` during `phase_freeze` or `freeze_all confirm=true` to repoint the backlink to this slice plan once S1 becomes the active frozen plan. Only fall back to a readiness-rule change if that handoff would violate umbrella governance. Use P0-T3 to dry-run the sync and keep this blocker open until the handoff path is verified."
+      "answer": "Default path confirmed: keep the PRD `plan:` backlink on the umbrella plan while this focused slice remains an implementation target, and make the slice relationship explicit through the PRD Execution Map Plan column plus this plan's `Planning shape: umbrella + slices` and `Feature PRD section(s)` fields. `frontmatter_link_sync.py --check` is clean after metadata sync, and `plan_readiness.py` now marks P0 through P2 as ready without changing the PRD backlink. No readiness-rule change or slice-backlink handoff is needed for S1 freeze unless later governance changes invalidate umbrella-backed slice plans."
     }
   ]
 }

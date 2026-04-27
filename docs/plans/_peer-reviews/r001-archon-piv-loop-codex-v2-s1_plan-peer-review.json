@@ -1,8 +1,8 @@
 {
   "schema_version": "peer-review-v1",
-  "review_id": "peer-review-b6a555fbe1a4",
+  "review_id": "peer-review-4565d719f917",
   "plan_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/r001-archon-piv-loop-codex-v2-s1_plan.md",
-  "plan_sha256": "999c5bd63d8ae1e86f760fc8f4d707b0304ea3807cc1dacc7dd39eeed1da7fd3",
+  "plan_sha256": "bcf911b2f39b0fc8746008fe271ed1855f37b6111ce10b230d06597dccd8b0e8",
   "mode": "workflow-plan-gate",
   "sidecar_dir": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/_peer-reviews",
   "engine": "Claude",
@@ -26,7 +26,7 @@
       "attempt": 1,
       "timeout_seconds": 300,
       "result": "completed",
-      "elapsed_seconds": 214.894,
+      "elapsed_seconds": 236.409,
       "returncode": 0
     }
   ],
@@ -38,39 +38,39 @@
   "deferred_issues": [],
   "recheck_requests": [],
   "model": "claude-opus-4-6",
-  "verdict": "Sound-with-issues",
+  "verdict": "Sound",
   "stance": null,
-  "issues_count": 1,
-  "ran_at": "2026-04-27T15:08:36.123082+00:00",
-  "raw_review_excerpt": "The S1 slice plan is well-grounded against the PRD execution map row, the V1 workflow YAML, the bundled-defaults generator/test surface, and the CLI validate command. All load-bearing claims about sentinel tokens (PLAN_READY, PLAN_APPROVED, COMPLETE, VALIDATED), the `.claude/archon/plans/*.plan.md` writer/reader contract, and the proof commands (validate workflows, check:bundled, bundled-defaults.test.ts) are verified against the current repo. The plan correctly self-gates on Q1 (PRD backlink handoff) with a concrete resolution path via frontmatter_link_sync.py. One minor state-hygiene note: the Doc Sync Log records a frontmatter_link_sync dry-run as already performed, but P0-T3 remains in proposed status in the state.json sidecar, suggesting premature log entry or missing state sync. No freeze blockers found.\n\nIssues:\n- 1. [NOTE] Doc Sync Log entry #3 predates P0-T3 execution",
+  "issues_count": 0,
+  "ran_at": "2026-04-27T16:15:59.608618+00:00",
+  "raw_review_excerpt": "Refresh S1 plan-gate review after PRD Execution Map lineage fix. All load-bearing claims verified against inspected repo artifacts: V1 YAML node topology and sentinel contracts, PRD backlink model (umbrella holds `plan:`, Execution Map Plan column names this slice), package.json scripts, bundled-defaults test surface, CLI validate-workflows subcommand, and state JSON alignment. The single blocker (Q1 \u2014 PRD backlink handoff) is resolved with concrete repo evidence. No freeze BLOCKs found. Two NOTE-level observations recorded as assumptions to verify during P0 execution.",
   "error": null,
-  "closure_verification": "Round 1/3 with no prior review ID. No carried issues to verify. All findings are first-round observations against the current artifact.",
+  "closure_verification": "Round 1 of 3, no prior review packet. No prior-round issues to close.",
   "prior_round_closure": [],
   "rerun_recommendation": "stop",
   "review": {
     "mode": "workflow-plan-gate",
-    "summary": "The S1 slice plan is well-grounded against the PRD execution map row, the V1 workflow YAML, the bundled-defaults generator/test surface, and the CLI validate command. All load-bearing claims about sentinel tokens (PLAN_READY, PLAN_APPROVED, COMPLETE, VALIDATED), the `.claude/archon/plans/*.plan.md` writer/reader contract, and the proof commands (validate workflows, check:bundled, bundled-defaults.test.ts) are verified against the current repo. The plan correctly self-gates on Q1 (PRD backlink handoff) with a concrete resolution path via frontmatter_link_sync.py. One minor state-hygiene note: the Doc Sync Log records a frontmatter_link_sync dry-run as already performed, but P0-T3 remains in proposed status in the state.json sidecar, suggesting premature log entry or missing state sync. No freeze blockers found.",
+    "summary": "Refresh S1 plan-gate review after PRD Execution Map lineage fix. All load-bearing claims verified against inspected repo artifacts: V1 YAML node topology and sentinel contracts, PRD backlink model (umbrella holds `plan:`, Execution Map Plan column names this slice), package.json scripts, bundled-defaults test surface, CLI validate-workflows subcommand, and state JSON alignment. The single blocker (Q1 \u2014 PRD backlink handoff) is resolved with concrete repo evidence. No freeze BLOCKs found. Two NOTE-level observations recorded as assumptions to verify during P0 execution.",
     "rubric_cards": [
       {
-        "title": "Claim Anchoring",
-        "anchor": "Plan sections 6, Current Inputs, References vs. repo artifacts",
-        "claim": "Every load-bearing claim in the plan (sentinel tokens, plan-path contract, proof commands, PRD scope boundary, generated-vs-manual file distinction) maps to a directly inspected repo source.",
-        "evidence": "V1 YAML confirms PLAN_READY/PLAN_APPROVED/COMPLETE/VALIDATED sentinels and .claude/archon/plans/ path (archon-piv-loop-codex.yaml:173-185, 265-266, 459, 753). PRD Execution Map row S1 (line 344) matches plan in-scope description verbatim. package.json confirms generate:bundled (line 17) and check:bundled (line 18). CLI validate.ts confirms validate workflows command with --json flag (line 82-86). bundled-defaults.test.ts confirms bundle-completeness drift assertions (lines 36-71). PRD frontmatter plan: field (line 9) confirms current umbrella pointer, matching the plan's stated mismatch.",
-        "disposition": "present \u2014 all load-bearing claims trace to inspected repo sources"
+        "title": "Claim anchoring",
+        "anchor": "Plan sections 2, 6, Current Inputs vs. inspected V1 YAML, PRD frontmatter, package.json, CLI validate.ts, bundled-defaults.test.ts, orchestration-plan.md, state.json",
+        "claim": "Every load-bearing claim in the plan (V1 session-reset contract, sentinel family, plan-path contract, PRD backlink model, proof-command availability, umbrella plan_role) traces to a directly inspected repo artifact.",
+        "evidence": "V1 YAML: context:fresh on create-plan (L215), code-review (L766), compose-finalize (L1007); fresh_context:true on implement (L755); finalize as script:github-pr (L1113); sentinels PLAN_READY/PLAN_APPROVED/COMPLETE/VALIDATED confirmed. PRD frontmatter L9 plan: points to umbrella. Umbrella plan L8 plan_role:umbrella. PRD Execution Map L344 names this S1 plan. package.json L17-18 generate:bundled/check:bundled. CLI validate.ts exports validateWorkflowsCommand(cwd, name?, json?). bundled-defaults.test.ts L29-71 bundle-completeness assertions. State JSON Q1 checked:true with answer.",
+        "disposition": "present \u2014 all load-bearing claims grounded in inspected artifacts"
       },
       {
-        "title": "Disposition Matrix",
-        "anchor": "Artifact text, repo files, conversation context, campaign scope",
-        "claim": "The artifact is self-consistent and grounded; conversation evidence was not used (round 1, no prior review); campaign coverage is slice-only.",
-        "evidence": "Artifact inspected in full (323 lines). State.json sidecar inspected (67 lines, 8 tasks, 1 unresolved Q1). PRD frontmatter, execution map, design doc slice 1 section, V1 workflow, test file, generator script, package.json, CLI validate command, umbrella plan, and workflow README all directly inspected. No conversation/thread evidence was needed or available. Only S1 slice and its directly implicated artifacts were assessed; S2-S7 plans, orchestration plan freeze posture, and full PRD beyond row S1 were not reviewed.",
-        "disposition": "present \u2014 artifact grounded; conversation N/A; campaign slice-only"
+        "title": "Disposition matrix",
+        "anchor": "Full artifact + referenced code files",
+        "claim": "Artifact evidence is present and sufficient. Conversation evidence is not used. Campaign coverage is slice-only by design.",
+        "evidence": "Artifact: plan markdown, state JSON, V1 YAML, PRD, umbrella plan, package.json, CLI validate.ts, bundled-defaults.test.ts all inspected. Conversation: no prior-round packet claims to verify (round 1/3, prior review id None). Campaign: only S1 inspected; S2\u2013S7 are explicitly deferred and out of scope for this review.",
+        "disposition": "present for artifact; not-applicable for conversation; slice-only for campaign"
       },
       {
-        "title": "Coverage Scope",
-        "anchor": "S1 plan scope vs. full campaign",
-        "claim": "This review covers the S1 slice plan and its directly referenced repo artifacts. It does not cover the full V2 campaign (S2-S7), the umbrella orchestration plan's own freeze readiness, or the PRD beyond the S1 execution map row.",
-        "evidence": "Reviewed: S1 plan, S1 state.json, PRD lines 1-25 and 340-355, design doc lines 490-540, V1 workflow (full), bundled-defaults.test.ts (100 lines), generate-bundled-defaults.ts (60 lines), package.json (58 lines), validate.ts (160 lines), umbrella plan (40 lines), workflow README (30 lines). Not reviewed: S2-S7 slice plans (do not yet exist per umbrella ledger), orchestration plan freeze gates, PRD sections outside execution map row S1, broader repo validation health.",
-        "disposition": "slice-only \u2014 explicitly scoped to S1 and its direct references"
+        "title": "Coverage scope",
+        "anchor": "Review scope declaration",
+        "claim": "This review covered the S1 plan artifact, its state JSON sidecar, and the directly referenced repo files needed to verify freeze readiness. It did not cover S2\u2013S7 plans, the full PRD beyond the Execution Map and frontmatter, or runtime execution of the proof commands.",
+        "evidence": "Files inspected: r001-archon-piv-loop-codex-v2-s1_plan.md, .state.json, archon-piv-loop-codex.yaml (full), r001-archon-piv-loop-codex-v2.md (frontmatter + Execution Map), orchestration-plan.md (first 45 lines), bundled-defaults.test.ts (100 lines), generate-bundled-defaults.ts (50 lines), package.json (50 lines), cli.ts (80 lines), validate.ts (160 lines).",
+        "disposition": "slice-only \u2014 S1 freeze-readiness scope; S2\u2013S7 not inspected"
       }
     ],
     "disposition_matrix": {
@@ -86,125 +86,107 @@
       ],
       "cells": [
         [
-          "plan text, state.json, all referenced repo files inspected",
-          "Doc Sync Log entry #3 vs P0-T3 state minor inconsistency",
-          "(none)"
+          "plan, state JSON, V1 YAML, PRD, umbrella, package.json, CLI, tests all verified",
+          "hardcoded sed line-ranges in P0-T1 may drift (cosmetic)",
+          "none"
         ],
         [
-          "(N/A \u2014 round 1, no prior thread)",
-          "(N/A)",
-          "(N/A)"
+          "n/a (round 1, no prior packet)",
+          "n/a",
+          "n/a"
         ],
         [
-          "S1 slice plan + direct references",
-          "(N/A)",
-          "S2-S7 plans, umbrella freeze posture, full PRD beyond S1 row"
+          "S1 slice fully reviewed",
+          "",
+          "S2\u2013S7 not in scope"
         ]
       ]
     },
     "conversation_evidence": {
       "used": false,
       "sources": [],
-      "summary": "Round 1 with no prior review ID. No conversation or thread evidence was available or needed. All claims were verified directly against the current artifact and inspected repo files.",
-      "gaps": [
-        "No prior review round to cross-reference"
-      ]
+      "summary": "Round 1 of 3 with no prior review packet. No conversation or prior-round claims to verify.",
+      "gaps": []
     },
     "campaign_coverage": {
       "scope": "slice-only",
       "covered": [
-        "S1 slice plan (full text)",
-        "S1 state.json sidecar",
-        "PRD execution map row S1 and frontmatter",
-        "Design doc slice 1 section",
+        "S1 plan artifact",
+        "S1 state JSON sidecar",
         "V1 workflow YAML (full)",
-        "bundled-defaults.test.ts (bundle-completeness assertions)",
-        "generate-bundled-defaults.ts (generator contract)",
-        "package.json (script targets)",
-        "CLI validate.ts (validate workflows command)",
-        "Umbrella orchestration plan (ledger and role)",
-        "V1 workflow README"
+        "PRD frontmatter and Execution Map",
+        "Umbrella orchestration plan",
+        "package.json scripts",
+        "CLI validate subcommand source",
+        "bundled-defaults test surface",
+        "generate-bundled-defaults script"
       ],
       "missing": [
-        "S2-S7 slice plans (not yet created per umbrella ledger)",
-        "Orchestration plan freeze readiness and governance posture",
-        "PRD sections beyond S1 execution map row",
-        "Broader repo validation health (lint, typecheck, full test suite)"
+        "S2\u2013S7 plan artifacts (not yet created, explicitly deferred)",
+        "Full PRD body beyond Execution Map",
+        "Runtime execution of proof commands"
       ],
       "gaps": [
-        "Only the S1 slice and its directly referenced artifacts were assessed; campaign-level sequencing, cross-slice coupling risk, and umbrella governance were not reviewed"
+        "Doc Sync Log claims about frontmatter_link_sync.py and plan_readiness.py output are stated in the plan but not independently observed \u2014 scheduled for P0-T3 verification"
       ]
     },
-    "issues": [
-      {
-        "title": "Doc Sync Log entry #3 predates P0-T3 execution",
-        "details": "The Doc Sync Log (line 322) records that frontmatter_link_sync.py --check was run and its output captured ('still wants to rewrite both this slice plan and the PRD'). However, P0-T3 in the state.json sidecar remains in proposed status, and P0-T3's exit criteria require recording this result. Either the log entry was written before the task was formally started/completed, or the state.json was not synced after the dry-run. This is a state-hygiene gap, not a correctness or feasibility issue.",
-        "suggested_fix": "When P0-T3 is formally executed, update the state.json sidecar to reflect in_progress or done status, or defer the Doc Sync Log entry until P0-T3 is actually executed within the workflow. No plan text change is required \u2014 this resolves naturally during normal P0 execution.",
-        "severity": "NOTE"
-      }
-    ],
+    "issues": [],
     "verification_gaps": [
-      "bundled-defaults.generated.ts was not inspected (it is generated output and will only exist after P1-T2 runs generate:bundled)",
-      "The actual runtime behavior of bun run cli validate workflows was not tested end-to-end (command structure verified from source only)",
-      "Cross-slice coupling risk between S1 and S2 (plan-path contract migration) was not deeply analyzed beyond the plan's stated deferral"
+      "The plan's Doc Sync Log asserts frontmatter_link_sync.py --check is clean and plan_readiness.py marks P0\u2013P2 ready, but these are self-reported outcomes not independently observed in this review. The plan correctly schedules their re-verification under P0-T3 verify commands.",
+      "Proof commands (bun run cli validate workflows, bun run check:bundled, bun test) are confirmed to exist as code paths but have not been executed against the not-yet-created v2 workflow."
     ],
-    "recommended_fixes": [
-      "Sync P0-T3 state with Doc Sync Log when the task is formally executed (natural resolution during P0 execution, no plan edit needed)"
-    ],
+    "recommended_fixes": [],
     "evidence_sources": [
-      "docs/plans/r001-archon-piv-loop-codex-v2-s1_plan.md (full, 323 lines)",
+      "docs/plans/r001-archon-piv-loop-codex-v2-s1_plan.md (full, 364 lines)",
       "docs/plans/r001-archon-piv-loop-codex-v2-s1_plan.state.json (full, 67 lines)",
-      "docs/prd/r001-archon-piv-loop-codex-v2.md (lines 1-25, 340-355)",
-      "docs/design/codex-piv-v2-workflow-design.md (lines 490-540)",
-      "docs/plans/r001-archon-piv-loop-codex-v2-orchestration-plan.md (lines 1-40)",
-      ".archon/workflows/defaults/archon-piv-loop-codex.yaml (full, 1116 lines)",
-      ".archon/workflows/defaults/archon-piv-loop-codex.README.md (lines 1-30)",
-      "packages/workflows/src/defaults/bundled-defaults.test.ts (lines 1-100)",
-      "scripts/generate-bundled-defaults.ts (lines 1-60)",
-      "package.json (full, 58 lines)",
-      "packages/cli/src/commands/validate.ts (lines 1-160)",
-      "packages/cli/src/cli.ts (lines 1-130)"
+      "docs/prd/r001-archon-piv-loop-codex-v2.md (lines 1\u201320 frontmatter, lines 330\u2013389 Execution Map)",
+      "docs/plans/r001-archon-piv-loop-codex-v2-orchestration-plan.md (lines 1\u201345)",
+      "/.archon/workflows/defaults/archon-piv-loop-codex.yaml (full, 1116 lines)",
+      "packages/workflows/src/defaults/bundled-defaults.test.ts (lines 1\u2013100)",
+      "scripts/generate-bundled-defaults.ts (lines 1\u201350)",
+      "package.json (lines 1\u201350)",
+      "packages/cli/src/cli.ts (lines 1\u201380)",
+      "packages/cli/src/commands/validate.ts (lines 1\u2013160)"
     ],
     "error": null,
-    "verdict": "Sound-with-issues",
+    "verdict": "Sound",
     "workflow_compliance": [
-      "Plan status is draft with version 0.1 \u2014 appropriate for a pre-freeze seeded slice",
-      "State.json sidecar exists and matches plan task structure (8 tasks across 3 phases, all proposed)",
-      "Q1 blocker is properly registered in both plan markdown and state.json with concrete resolution path",
-      "E2E gate correctly waived as internal_tooling with appropriate rationale",
-      "Phase sequencing (P0 grounding \u2192 P1 implementation \u2192 P2 validation) follows standard workflow-plan structure",
-      "Exit criteria are present and testable for every task",
-      "Verify commands are present for every task and reference real repo commands"
+      "Plan status is draft, appropriate for pre-freeze gate review",
+      "State JSON aligns with plan markdown (8 tasks, Q1 resolved, all tasks proposed)",
+      "Frontmatter includes origin_prd and origin fields tracing to PRD and umbrella plan",
+      "E2E gate waiver is justified (internal_tooling, contract/workflow surfaces)",
+      "Unresolved Items section has one resolved blocker (Q1) with repo-grounded answer, no open blockers remain",
+      "Phase summary and phased execution plan are consistent",
+      "Documentation checklist covers all touched surfaces"
     ],
     "technical_reality": [
-      "PLAN_READY, PLAN_APPROVED, COMPLETE, VALIDATED sentinels confirmed in V1 YAML (lines 173, 411, 753, 915)",
-      "`.claude/archon/plans/*.plan.md` writer/reader contract confirmed in V1 YAML (lines 265-266, 384, 459, 785)",
-      "bun run generate:bundled and bun run check:bundled confirmed in package.json (lines 17-18)",
-      "bun run cli validate workflows <name> --json confirmed in CLI source (validate.ts:82-86, cli.ts:105)",
-      "bundled-defaults.test.ts bundle-completeness assertions will auto-detect the new workflow once the YAML exists on disk (lines 44-49)",
-      "PRD plan: backlink currently points to umbrella plan (PRD line 9), matching the plan's stated mismatch",
-      "Design doc Slice 1 description (lines 507-516) aligns with plan scope"
+      "V1 YAML confirms all session-reset claims: create-plan (context:fresh L215), code-review (context:fresh L766), compose-finalize (context:fresh L1007), implement (fresh_context:true L755), finalize (script:github-pr L1113)",
+      "All four sentinels (PLAN_READY, PLAN_APPROVED, COMPLETE, VALIDATED) confirmed in V1 YAML",
+      "Legacy plan-path .claude/archon/plans/{slug}.plan.md confirmed in V1 YAML create-plan prompt (L265)",
+      "PRD plan: backlink points to umbrella plan (PRD L9), umbrella has plan_role:umbrella (orchestration-plan L8)",
+      "PRD Execution Map row S1 names this focused slice plan (PRD L344)",
+      "package.json confirms generate:bundled (L17) and check:bundled (L18)",
+      "CLI validate.ts exports validateWorkflowsCommand accepting name filter and json flag (L82-86)",
+      "bundled-defaults.test.ts has bundle-completeness assertions that auto-detect new .yaml files in .archon/workflows/defaults/ (L44-49)"
     ],
     "assumptions_to_verify": [
-      "The V1 workflow YAML can be copied and renamed without structural changes that break the validator (low risk \u2014 validator operates on parsed YAML)",
-      "frontmatter_link_sync.py --check will produce the expected rewrite suggestion when run against this slice plan (recorded in Doc Sync Log but not independently verified in this review)",
-      "Existing bundle-completeness test assertions are sufficient canary for the new workflow without requiring additional test infrastructure"
+      "frontmatter_link_sync.py --check is clean (stated in Doc Sync Log, re-verified in P0-T3)",
+      "plan_readiness.py marks P0\u2013P2 ready with umbrella backlink preserved (stated in Doc Sync Log, re-verified in P0-T3)",
+      "bun run cli validate workflows archon-piv-loop-codex-v2 --json will work once the v2 YAML exists (CLI path confirmed, but workflow doesn't exist yet)"
     ],
     "verification_sufficiency": [
-      "All three proof commands (validate workflows, check:bundled, bundled-defaults.test.ts) are confirmed real and appropriate for the slice scope",
-      "P0 grounding tasks have verify commands that check the plan itself for required content \u2014 appropriate for a documentation/contract-lock phase",
-      "P1 implementation tasks have verify commands that exercise the actual runtime surfaces (workflow validation, bundle drift, test execution)",
-      "P2 validation tasks aggregate the same proof commands plus plan_readiness.py \u2014 appropriate for a closeout phase",
-      "No verification gap exists for the core slice contract (workflow existence, bundle parity, sentinel preservation)"
+      "All load-bearing claims traced to inspected artifacts \u2014 no unanchored assertions remain",
+      "Proof commands verified as real code paths in the CLI and package.json",
+      "State JSON and plan markdown are internally consistent",
+      "No blocked or unresolvable items remain"
     ],
     "downstream_risks": [
-      "S2 plan-path migration depends on S1 keeping the legacy .claude/archon/plans/ contract \u2014 if S1 accidentally migrates, S2 scope changes",
-      "If the bundled-defaults generator or test surface changes between plan freeze and execution, proof commands may need adjustment",
-      "The PRD backlink handoff (Q1) must be resolved before freeze \u2014 if forgotten, plan_readiness or freeze_all will reject the plan"
+      "If frontmatter_link_sync.py or plan_readiness.py behavior changes before P0-T3 runs, the lineage model may need re-verification",
+      "The v2 workflow YAML doesn't exist yet \u2014 P1-T1 is the creation step, so proof commands can only run after P1"
     ],
-    "freeze_recommendation": "Safe to freeze. Carry the remaining WARN/NOTE items as explicit follow-ups or implementation-time checks.",
+    "freeze_recommendation": "Safe to freeze. No blocker-level issues were identified.",
     "prior_round_closure": [],
-    "closure_verification": "Round 1/3 with no prior review ID. No carried issues to verify. All findings are first-round observations against the current artifact.",
+    "closure_verification": "Round 1 of 3, no prior review packet. No prior-round issues to close.",
     "rerun_recommendation": "stop"
   }
 }
