@@ -115,6 +115,24 @@ describe('bundled-defaults', () => {
       expect(content).not.toContain('sed -i "s/SPRINT_COUNT_PLACEHOLDER/$SPRINT_COUNT/"');
     });
 
+    it('archon-piv-loop-codex-v2 should preserve Slice 1 workflow contracts', () => {
+      const content = BUNDLED_WORKFLOWS['archon-piv-loop-codex-v2'];
+      expect(content).toContain('name: archon-piv-loop-codex-v2');
+      expect(content).toContain('.claude/archon/plans/{slug}.plan.md');
+      expect(content).toContain('PLAN_FILE=.claude/archon/plans/{slug}.plan.md');
+      expect(content).toContain('ERROR: PLAN_FILE missing from create-plan output');
+      expect(content).not.toContain('PLAN_FILE=$(ls -t .claude/archon/plans/*.plan.md 2>/dev/null | head -1)');
+      expect(content).not.toContain('`git checkout -- <file>` BEFORE staging');
+      expect(content).toContain('PLAN_READY');
+      expect(content).toContain('PLAN_APPROVED');
+      expect(content).toContain('COMPLETE');
+      expect(content).toContain('VALIDATED');
+      expect(content).toContain('context: fresh');
+      expect(content).toContain('fresh_context: true');
+      expect(content).toContain('Typed gates, design-doc or slice-map intake');
+      expect(content).toContain('PR handoff remain deferred to later V2 slices');
+    });
+
     it('should have valid YAML structure', () => {
       for (const content of Object.values(BUNDLED_WORKFLOWS)) {
         expect(content).toContain('name:');
