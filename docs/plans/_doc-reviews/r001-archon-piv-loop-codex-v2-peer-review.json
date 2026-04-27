@@ -1,8 +1,8 @@
 {
   "schema_version": "peer-review-v1",
-  "review_id": "peer-review-226358d18429",
-  "plan_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/prd/archon-piv-loop-codex-v2.prd.md",
-  "plan_sha256": "f6897c8b4073bc547538fcc1f93469259980a58ff75dd3c92293181b86e06d2b",
+  "review_id": "peer-review-bcd3416e20e1",
+  "plan_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/prd/r001-archon-piv-loop-codex-v2.md",
+  "plan_sha256": "deb007dff6a2e5178aa0c62128147b26a24fa9a763308ead2dd9043a44b4feba",
   "mode": "artifact-review",
   "sidecar_dir": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/_doc-reviews",
   "engine": "Claude",
@@ -16,7 +16,7 @@
   "reviewer_match": "opposite",
   "gate_quality": "preferred",
   "artifact_role": "canonical",
-  "canonical_sidecar_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/_doc-reviews/archon-piv-loop-codex-v2.prd-peer-review.json",
+  "canonical_sidecar_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/_doc-reviews/r001-archon-piv-loop-codex-v2-peer-review.json",
   "fallback_used": false,
   "fallback_reason": null,
   "attempt_chain": [
@@ -26,72 +26,63 @@
       "attempt": 1,
       "timeout_seconds": 300,
       "result": "completed",
-      "elapsed_seconds": 139.52,
+      "elapsed_seconds": 193.031,
       "returncode": 0
     }
   ],
   "review_round": 2,
   "max_rounds": 3,
-  "prior_review_id": "peer-review-56fd3eadce36",
-  "caller_disposition_summary": "Addressed both round-1 findings: added durable PRD/slice-map feedback-loop acceptance criterion and tightened S1 Execution Map scope to keep V1 plan-path and sentinel contracts while deferring typed gates, design-doc intake, review automation, live evidence conventions, and PR handoff.",
+  "prior_review_id": "peer-review-3466ce93b2ab",
+  "caller_disposition_summary": "Verified with run_claude_peer_review.py --check-only that the canonical sidecar now matches docs/prd/r001-archon-piv-loop-codex-v2.md and has current plan_path, canonical_sidecar_path, and plan_sha256 metadata.",
   "addressed_issues": [
-    "Missing AC for durable feedback loop to PRD and slice map",
-    "Execution Map S1 description is vaguer than Slice Defaults"
+    "Sidecar internal plan_path, canonical_sidecar_path, and plan_sha256 reference pre-rename artifact"
   ],
   "deferred_issues": [],
   "recheck_requests": [
-    "Missing AC for durable feedback loop to PRD and slice map",
-    "Execution Map S1 description is vaguer than Slice Defaults"
+    "Sidecar internal plan_path, canonical_sidecar_path, and plan_sha256 reference pre-rename artifact"
   ],
   "model": "claude-opus-4-6",
-  "verdict": "Sound",
+  "verdict": "Sound-with-issues",
   "stance": null,
-  "issues_count": 0,
-  "ran_at": "2026-04-27T14:18:32.044742+00:00",
-  "raw_review_excerpt": "Both round-1 findings are resolved by direct artifact inspection. The feedback-loop AC now appears as the final acceptance criterion in Section 8, closely matching the round-1 suggested fix. The S1 Execution Map row now explicitly echoes the Section 6.6 Slice Defaults boundaries. The PRD is well-structured for umbrella-plus-slices orchestrator handoff: clear tier positioning, concrete ACs, honest open questions, grounded constraints, and an actionable operator handoff prompt. No new material issues found.",
+  "issues_count": 1,
+  "ran_at": "2026-04-27T14:27:38.933991+00:00",
+  "raw_review_excerpt": "The r001 PRD is structurally sound and handoff-ready. The prior-round WARN about stale sidecar metadata is resolved at the field level: plan_path and canonical_sidecar_path now reference r001 paths, and plan_sha256 has been updated. However, the sidecar was partial-mutated \u2014 top-level metadata was corrected while embedded review text (raw_review_excerpt, review.issues, review.technical_reality) still describes the pre-rename state as current. This creates an internal self-contradiction within the sidecar file. The orchestrator should consume top-level fields and Section 11 paths, so this is non-blocking for handoff. All upstream references (design docs, V1 YAML, skill SKILL.md) are confirmed present on disk.\n\nIssues:\n- 1. [NOTE] Sidecar partial mutation leaves internal self-contradiction",
   "error": null,
-  "closure_verification": "Both round-1 issues verified as resolved by direct artifact inspection. The feedback-loop AC (Section 8, final criterion) matches the round-1 suggested fix. The S1 Execution Map row (Section 12) now explicitly echoes all Section 6.6 Slice Defaults boundaries. No new material issues found. PRD is handoff-ready for umbrella-plus-slices orchestrator intake.",
+  "closure_verification": "The prior-round WARN is resolved at the metadata field level that matters for orchestrator handoff. plan_path and canonical_sidecar_path both reference r001 paths. plan_sha256 has been updated. Section 11 handoff paths are correct. The PRD remains handoff_candidate with status: accepted. The only residual is a cosmetic self-contradiction between corrected top-level metadata and stale embedded review text \u2014 this is a NOTE, not a handoff blocker. The --check-only pass is caller-asserted and consistent with observed file state but was not independently reproduced.",
   "prior_round_closure": [
     {
-      "title": "Missing AC for durable feedback loop to PRD and slice map",
+      "title": "Sidecar internal plan_path, canonical_sidecar_path, and plan_sha256 reference pre-rename artifact",
       "severity": "WARN",
-      "caller_claim": "Added AC covering durable feedback from completed slices to PRD and slice map",
+      "caller_claim": "Verified with run_claude_peer_review.py --check-only that the canonical sidecar now matches docs/prd/r001-archon-piv-loop-codex-v2.md and has current plan_path, canonical_sidecar_path, and plan_sha256 metadata",
       "verification_status": "resolved",
-      "verification_notes": "Section 8 now includes final AC: 'Given a completed V2 slice resolves an assumption, changes scope, or lands a requirement, when that slice closes out, then durable feedback is recorded in both this PRD and the campaign slice map.' This directly satisfies the round-1 finding and anchors design doc \u00a76 and \u00a78.2 contracts."
-    },
-    {
-      "title": "Execution Map S1 description is vaguer than Slice Defaults",
-      "severity": "NOTE",
-      "caller_claim": "Tightened S1 Execution Map scope to reference Section 6.6 boundaries explicitly",
-      "verification_status": "resolved",
-      "verification_notes": "Section 12 S1 row now reads: 'V2 workflow skeleton from V1, keeping V1 plan-path behavior and explicit sentinel contracts while deferring typed gates, design-doc intake, review automation, live evidence conventions, and PR handoff to later slices.' This echoes all six Section 6.6 boundaries and eliminates the vagueness flagged in round 1."
+      "verification_notes": "Direct file inspection confirms: sidecar plan_path now reads /Users/mase/Codebase/Personal-Projects/Archon/docs/prd/r001-archon-piv-loop-codex-v2.md (r001 path, corrected). canonical_sidecar_path now reads the r001 sidecar path (corrected). plan_sha256 has been updated (deb007d\u2026), consistent with re-hashing, but cannot be independently verified without shell access. The metadata fields the orchestrator reads are correct. Residual: the embedded review text within the same sidecar still describes the pre-rename state as current, creating an internal self-contradiction (captured as a separate NOTE)."
     }
   ],
   "rerun_recommendation": "stop",
   "review": {
     "mode": "artifact-review",
-    "summary": "Both round-1 findings are resolved by direct artifact inspection. The feedback-loop AC now appears as the final acceptance criterion in Section 8, closely matching the round-1 suggested fix. The S1 Execution Map row now explicitly echoes the Section 6.6 Slice Defaults boundaries. The PRD is well-structured for umbrella-plus-slices orchestrator handoff: clear tier positioning, concrete ACs, honest open questions, grounded constraints, and an actionable operator handoff prompt. No new material issues found.",
+    "summary": "The r001 PRD is structurally sound and handoff-ready. The prior-round WARN about stale sidecar metadata is resolved at the field level: plan_path and canonical_sidecar_path now reference r001 paths, and plan_sha256 has been updated. However, the sidecar was partial-mutated \u2014 top-level metadata was corrected while embedded review text (raw_review_excerpt, review.issues, review.technical_reality) still describes the pre-rename state as current. This creates an internal self-contradiction within the sidecar file. The orchestrator should consume top-level fields and Section 11 paths, so this is non-blocking for handoff. All upstream references (design docs, V1 YAML, skill SKILL.md) are confirmed present on disk.",
     "rubric_cards": [
       {
         "title": "Claim anchoring",
-        "anchor": "Sections 2, 3, 5, 6, 8, 9, 10, 12, 15",
-        "claim": "PRD claims V1 is too light, local heavy is too heavy, V2 fills a verified middle tier. Claims V2 starts from V1 YAML. Slice defaults and execution map claim specific S1 boundaries.",
-        "evidence": "V1 YAML confirmed: no frontmatter, no plan status, plans at .claude/archon/plans/. Design doc \u00a77 lists V1 template gaps. Strategy doc \u00a78.1 confirms V1 as reference Codex workflow. Skill SKILL.md names V2 preparation. S1 Execution Map row now references keeping V1 plan-path, sentinel contracts, and deferring typed gates/design-doc intake/review automation/live evidence/PR handoff \u2014 matches \u00a76.6 exactly. All load-bearing claims trace to inspected sources.",
-        "disposition": "present \u2014 all load-bearing claims verified against V1 YAML, design doc, strategy doc, skill reference, and internal cross-section consistency"
+        "anchor": "Sections 2, 6.3, 9, 10, 11, 15; frontmatter source_design / source_strategy; sidecar top-level metadata",
+        "claim": "PRD references two design docs, V1 YAML, a skill surface, and positions V2 as the middle tier. Handoff section uses r001 paths for PRD and sidecar. Sidecar top-level plan_path and canonical_sidecar_path now use r001 paths.",
+        "evidence": "V1 YAML at .archon/workflows/defaults/archon-piv-loop-codex.yaml confirmed present. Design doc at docs/design/codex-piv-v2-workflow-design.md confirmed present. Strategy doc at docs/design/codex-first-workflow-surface-strategy.md confirmed present. Skill SKILL.md at .agents/skills/my-dash-workflow-builder-codex/ confirmed present. PRD Section 11 handoff paths all use r001. Sidecar plan_path = r001 path, canonical_sidecar_path = r001 path. plan_sha256 has been updated but cannot be independently verified without shell access.",
+        "disposition": "present \u2014 all load-bearing artifact and metadata claims verified against inspected files; r001 paths confirmed in both PRD and sidecar top-level fields"
       },
       {
         "title": "Disposition matrix",
-        "anchor": "Full artifact",
-        "claim": "PRD covers tier model, operating modes, artifact contract, integration branch, review/validation gates, slice defaults, execution map, ACs (including feedback loop), constraints, and handoff prompt.",
-        "evidence": "Sections 1\u201315 verified. Tier model matches design doc \u00a73. Operating modes match \u00a74. Artifact model matches \u00a76. Integration branch matches \u00a75. Review gates match \u00a78. Validation model matches \u00a79. Implementation basis matches \u00a711 and skill reference. Feedback-loop AC added in Section 8 satisfies design doc \u00a76/\u00a78.2 contract. S1 Execution Map tightened to echo \u00a76.6.",
-        "disposition": "present \u2014 the PRD faithfully distills both design docs and now covers all identified gaps from round 1"
+        "anchor": "Full artifact text, frontmatter, Section 11, sidecar JSON top-level and embedded review fields",
+        "claim": "PRD covers tier model, operating modes, artifact contract, integration branch, review/validation gates, slice defaults, execution map, ACs, constraints, risks, and handoff prompt with r001 paths. Sidecar metadata corrected; embedded review text remains stale.",
+        "evidence": "Sections 1\u201315 present and internally consistent. Frontmatter retains status: accepted, workflow_handoff_status: handoff_candidate. Sidecar plan_path and canonical_sidecar_path reference r001 paths. Sidecar raw_review_excerpt (line 50) and review.technical_reality still describe pre-rename paths as current \u2014 contradicts the corrected top-level metadata within the same file.",
+        "disposition": "present \u2014 PRD is handoff-ready; sidecar metadata is corrected but internal review text is stale-by-design"
       },
       {
         "title": "Coverage scope",
-        "anchor": "Sections 6.6, 8, 11, 12",
-        "claim": "Closure review covered the full PRD artifact, verified both prior-round issues, and confirmed handoff readiness.",
-        "evidence": "Files inspected: archon-piv-loop-codex.yaml, codex-piv-v2-workflow-design.md, codex-first-workflow-surface-strategy.md, my-dash-workflow-builder-codex/SKILL.md, archon-piv-loop-codex-v2.prd-peer-review.json (round-1 sidecar). Not inspected: bundled-defaults.ts, validator.ts, dag-executor.ts, loop schema \u2014 these are post-implementation evidence surfaces, not PRD authoring inputs.",
-        "disposition": "present \u2014 full artifact reviewed, prior-round closure verified, repo coverage sufficient for PRD-level review"
+        "anchor": "Repo files inspected",
+        "claim": "Review covered the full PRD artifact text, verified the sidecar top-level metadata correction, checked all upstream references, and identified the partial-mutation residual.",
+        "evidence": "Files inspected: (1) docs/prd/r001-archon-piv-loop-codex-v2.md full text, (2) docs/plans/_doc-reviews/r001-archon-piv-loop-codex-v2-peer-review.json full content, (3) docs/design/codex-piv-v2-workflow-design.md header, (4) docs/design/codex-first-workflow-surface-strategy.md header, (5) .archon/workflows/defaults/archon-piv-loop-codex.yaml header, (6) .agents/skills/my-dash-workflow-builder-codex/SKILL.md header. Not inspected: run_claude_peer_review.py source, workflow_campaign_driver consumer code.",
+        "disposition": "present \u2014 full artifact and sidecar reviewed with 6 repo files inspected; unable to run --check-only independently"
       }
     ],
     "disposition_matrix": {
@@ -107,108 +98,115 @@
       ],
       "cells": [
         [
-          "tier model, modes, ACs (including feedback loop), slice defaults, execution map (tightened S1), constraints, integration branch, review gates, risks, handoff prompt",
+          "tier model, modes, ACs, slice defaults, execution map, constraints, risks, handoff prompt with r001 paths, frontmatter handoff_candidate",
           "none",
           "none"
         ],
         [
-          "prior-round sidecar used to verify claimed fixes",
-          "not applicable",
-          "not applicable"
+          "prior-round caller claims verified: sidecar metadata fields corrected to r001 paths",
+          "plan_sha256 correctness is caller-asserted, not independently verified",
+          "check-only pass is caller-claimed, not independently reproduced"
         ],
         [
-          "PRD artifact complete and internally consistent; round-1 sidecar verified",
-          "no slice plans, umbrella plan, or implementation artifacts yet (expected at this stage)",
-          "no validator run or bundle drift check (post-implementation evidence)"
+          "PRD artifact complete; sidecar exists with corrected top-level metadata; design docs confirmed",
+          "sidecar embedded review text contradicts its own corrected metadata (partial mutation residual)",
+          "no umbrella plan or slice plans yet (expected at this stage)"
         ]
       ]
     },
     "conversation_evidence": {
       "used": true,
       "sources": [
-        "docs/plans/_doc-reviews/archon-piv-loop-codex-v2.prd-peer-review.json (round-1 review sidecar)"
+        "Prior-round caller disposition: 'Verified with run_claude_peer_review.py --check-only that the canonical sidecar now matches docs/prd/r001-archon-piv-loop-codex-v2.md and has current plan_path, canonical_sidecar_path, and plan_sha256 metadata'",
+        "Prior-round addressed issues: 'Sidecar internal plan_path, canonical_sidecar_path, and plan_sha256 reference pre-rename artifact'",
+        "Prior-round re-check request: same WARN issue"
       ],
-      "summary": "Round-1 sidecar used to identify the two carried issues and verify the caller's claimed fixes against the current artifact text. Both fixes confirmed by direct artifact inspection.",
+      "summary": "Caller claims that sidecar metadata fields were corrected to r001 paths and check-only now passes. Direct file inspection confirms plan_path and canonical_sidecar_path are updated to r001 paths. plan_sha256 has changed but cannot be independently hash-verified. check-only pass cannot be independently reproduced without running the script.",
       "gaps": [
-        "No additional conversation thread beyond the round-1 sidecar and caller disposition summary"
+        "No conversation thread beyond the prior-round packet was available",
+        "Cannot independently run run_claude_peer_review.py --check-only to confirm the claimed pass"
       ]
     },
     "campaign_coverage": {
       "scope": "slice-only",
       "covered": [
         "PRD artifact text (all 15 sections)",
-        "V1 workflow YAML (archon-piv-loop-codex.yaml)",
-        "V2 design doc (codex-piv-v2-workflow-design.md)",
-        "Codex-first workflow surface strategy doc",
-        "my-dash-workflow-builder-codex SKILL.md",
-        "Round-1 peer review sidecar"
+        "PRD frontmatter fields",
+        "Peer review sidecar JSON (full content \u2014 top-level metadata and embedded review)",
+        "V1 workflow YAML header",
+        "V2 design doc header",
+        "Codex-first strategy doc header",
+        "Skill SKILL.md header"
       ],
       "missing": [
         "No umbrella plan or slice plans exist yet (expected at this stage)",
         "No implementation artifacts exist yet"
       ],
       "gaps": [
-        "AC1 (workflow validator reports valid) and AC2 (bundled-defaults drift check) require post-implementation evidence",
-        "Typed phase-gate runtime support (S3 dependency) not verified against loop schema \u2014 deferred to S3 execution"
+        "Cannot run run_claude_peer_review.py --check-only to reproduce the caller's claimed pass",
+        "Orchestrator consumer code (workflow_campaign_driver) not available in this repo for direct verification",
+        "plan_sha256 correctness cannot be verified without shell hash computation"
       ]
     },
-    "issues": [],
-    "verification_gaps": [
-      "AC1 and AC2 require running workflow validator and bundled-defaults drift check after V2 YAML exists \u2014 post-implementation evidence, not a PRD authoring gap",
-      "Typed phase-gate runtime support (S3 dependency) not verified against dag-executor.ts or loop schema \u2014 correctly deferred to S3 execution",
-      "Codex red lines compliance cannot be verified until V2 YAML exists \u2014 inherently post-implementation",
-      "$ARTIFACTS_DIR/e2e-reports/ path usability to be confirmed in S5 execution"
+    "issues": [
+      {
+        "title": "Sidecar partial mutation leaves internal self-contradiction",
+        "details": "The sidecar's top-level metadata fields (plan_path, canonical_sidecar_path, plan_sha256) were updated to r001, but the embedded review content (raw_review_excerpt at line 50, review.issues at line 152, review.technical_reality at line 187) still describes the pre-rename paths as the current state. For example, review.technical_reality says 'Sidecar internal plan_path still reads .../archon-piv-loop-codex-v2.prd.md (absolute path, pre-rename)' while the actual plan_path field now reads the r001 path. The file contradicts itself.",
+        "suggested_fix": "This is a documentation-level inconsistency, not a handoff blocker. If the sidecar is treated as historical provenance from round 1, add a top-level annotation field (e.g. metadata_updated_post_review: true) to signal that the metadata was corrected after the review text was written. Alternatively, if a clean sidecar matters, regenerate via a fresh review pass at the r001 path.",
+        "severity": "NOTE"
+      }
     ],
-    "recommended_fixes": [],
+    "verification_gaps": [
+      "plan_sha256 was updated but cannot be independently verified against the current PRD content \u2014 no shell/hash computation available in this review lane",
+      "run_claude_peer_review.py --check-only was not independently run; the claimed pass is based on caller assertion and consistent-with file inspection, not reproduction",
+      "Orchestrator consumer code for sidecar intake is outside this repo \u2014 cannot verify whether the embedded review text contradiction would cause downstream confusion"
+    ],
+    "recommended_fixes": [
+      "Consider adding a top-level annotation field to the sidecar (e.g. metadata_updated_post_review: true) to clearly signal that top-level metadata was patched after the embedded review was written, preventing future readers from trusting the review text's path claims as current"
+    ],
     "evidence_sources": [
-      "archon-piv-loop-codex.yaml (V1 workflow YAML, inspected in full)",
-      "docs/design/codex-piv-v2-workflow-design.md (V2 design doc, inspected in full)",
-      "docs/design/codex-first-workflow-surface-strategy.md (strategy doc, inspected in full)",
-      ".agents/skills/my-dash-workflow-builder-codex/SKILL.md (skill contract, inspected lines 1\u201380)",
-      "docs/plans/_doc-reviews/archon-piv-loop-codex-v2.prd-peer-review.json (round-1 sidecar, inspected in full)"
+      "docs/prd/r001-archon-piv-loop-codex-v2.md (full text inspected, confirmed on disk at r001 path)",
+      "docs/plans/_doc-reviews/r001-archon-piv-loop-codex-v2-peer-review.json (full content inspected; plan_path and canonical_sidecar_path now reference r001 paths; embedded review text still references pre-rename paths)",
+      "docs/design/codex-piv-v2-workflow-design.md (header inspected, confirmed present)",
+      "docs/design/codex-first-workflow-surface-strategy.md (header inspected, confirmed present)",
+      ".archon/workflows/defaults/archon-piv-loop-codex.yaml (header inspected, confirmed V1 workflow exists)",
+      ".agents/skills/my-dash-workflow-builder-codex/SKILL.md (header inspected, confirms V2 preparation reference)"
     ],
     "error": null,
-    "verdict": "Sound",
-    "core_challenge": "Creating a truthful middle-tier Codex workflow that borrows the local heavy system's planning and validation discipline without becoming a disguised campaign orchestrator or importing unsupported runtime assumptions.",
+    "verdict": "Sound-with-issues",
+    "core_challenge": "Confirming that the prior-round WARN about stale sidecar metadata is resolved and the PRD is ready for orchestrator handoff with internally consistent r001 references.",
     "assumptions_to_verify": [
-      "V1's .claude/archon/plans/ path convention will remain stable through S1 \u2014 confirmed by Section 6.6 and design doc \u00a712 Slice 1",
-      "Archon's loop schema does not yet support structured loop decisions \u2014 stated in PRD Section 9 and design doc \u00a712 Slice 3, not verified against loop.ts",
-      "$ARTIFACTS_DIR/e2e-reports/ path will be usable for run-scoped evidence \u2014 proposed in design doc \u00a76 and PRD Section 6.3, to be verified in S5",
-      "Archon's workflow validator and bundled-defaults infrastructure can accommodate a new default workflow \u2014 implied by AC1 and AC2, testable once S1 lands"
+      "The plan_sha256 in the sidecar actually matches the current PRD content \u2014 caller-asserted, consistent with field update, but not hash-verified",
+      "The orchestrator intake resolves the PRD path from Section 11, not from the sidecar's embedded review.technical_reality text \u2014 if the latter is parsed, the stale path reference could confuse downstream tooling",
+      "run_claude_peer_review.py --check-only validates top-level sidecar metadata fields against the actual PRD on disk, not embedded review text"
     ],
     "technical_reality": [
-      "V1 YAML is ~1116 lines with 9 nodes using string-based completion signals via <promise> tags \u2014 confirmed by inspection",
-      "V1 stores plans at .claude/archon/plans/{slug}.plan.md \u2014 confirmed in create-plan node prompt",
-      "V1 uses fresh_context: true for stateless per-task implement iterations \u2014 confirmed",
-      "Codex red lines prohibit per-node hooks, mcp, skills, agents, allowed_tools, denied_tools, and Claude-only fields \u2014 confirmed in SKILL.md",
-      "Design doc recommends 7 slices in the same order as the PRD \u2014 confirmed"
+      "PRD file exists at docs/prd/r001-archon-piv-loop-codex-v2.md with status: accepted, workflow_handoff_status: handoff_candidate",
+      "Sidecar file exists at docs/plans/_doc-reviews/r001-archon-piv-loop-codex-v2-peer-review.json",
+      "Sidecar plan_path now reads the r001 absolute path (corrected from pre-rename)",
+      "Sidecar canonical_sidecar_path now reads the r001 absolute path (corrected from pre-rename)",
+      "Sidecar plan_sha256 has been updated (value: deb007d\u2026) \u2014 hash correctness not independently verified",
+      "Sidecar embedded review text (raw_review_excerpt, review.issues, review.technical_reality) still describes pre-rename paths as current \u2014 internal contradiction with corrected top-level metadata",
+      "V1 workflow YAML, both design docs, and the skill SKILL.md all confirmed present at the paths referenced by the PRD",
+      "Section 11 handoff paths all correctly reference r001 filenames"
     ],
     "spec_gaps": [
-      "The PRD does not specify what happens when a V2 run discovers that the selected slice is no longer independent after implementation starts \u2014 low risk given one-slice-per-run constraint",
-      "The PRD does not specify whether the operator handoff prompt's integration-branch field should be a required input or auto-detected \u2014 non-blocking for S1 which starts from dev"
+      "The PRD does not specify how peer review sidecars should be handled across renames \u2014 whether metadata should be patched, the sidecar regenerated, or preserved as fully historical with annotation"
     ],
     "downstream_risks": [
-      "S3 typed-gate work could stall if loop.ts schema is harder to extend than assumed \u2014 PRD mitigates this by defaulting to sentinel contracts",
-      "Plan-path migration in S2 is genuinely load-bearing: V1 YAML has at least 5 nodes that reference .claude/archon/plans/ \u2014 a partial migration would break the workflow",
-      "If the one-slice boundary is not enforced tightly in the workflow YAML, V2 could drift into being a hidden campaign orchestrator"
+      "If any tooling parses the sidecar's embedded review.technical_reality or review.issues text to extract path claims, it would find stale pre-rename paths that contradict the corrected top-level metadata",
+      "If plan_sha256 is validated at intake and the hash does not match the current PRD, the mismatch would be flagged \u2014 this risk is mitigated if the caller correctly recomputed the hash"
     ],
     "prior_round_closure": [
       {
-        "title": "Missing AC for durable feedback loop to PRD and slice map",
+        "title": "Sidecar internal plan_path, canonical_sidecar_path, and plan_sha256 reference pre-rename artifact",
         "severity": "WARN",
-        "caller_claim": "Added AC covering durable feedback from completed slices to PRD and slice map",
+        "caller_claim": "Verified with run_claude_peer_review.py --check-only that the canonical sidecar now matches docs/prd/r001-archon-piv-loop-codex-v2.md and has current plan_path, canonical_sidecar_path, and plan_sha256 metadata",
         "verification_status": "resolved",
-        "verification_notes": "Section 8 now includes final AC: 'Given a completed V2 slice resolves an assumption, changes scope, or lands a requirement, when that slice closes out, then durable feedback is recorded in both this PRD and the campaign slice map.' This directly satisfies the round-1 finding and anchors design doc \u00a76 and \u00a78.2 contracts."
-      },
-      {
-        "title": "Execution Map S1 description is vaguer than Slice Defaults",
-        "severity": "NOTE",
-        "caller_claim": "Tightened S1 Execution Map scope to reference Section 6.6 boundaries explicitly",
-        "verification_status": "resolved",
-        "verification_notes": "Section 12 S1 row now reads: 'V2 workflow skeleton from V1, keeping V1 plan-path behavior and explicit sentinel contracts while deferring typed gates, design-doc intake, review automation, live evidence conventions, and PR handoff to later slices.' This echoes all six Section 6.6 boundaries and eliminates the vagueness flagged in round 1."
+        "verification_notes": "Direct file inspection confirms: sidecar plan_path now reads /Users/mase/Codebase/Personal-Projects/Archon/docs/prd/r001-archon-piv-loop-codex-v2.md (r001 path, corrected). canonical_sidecar_path now reads the r001 sidecar path (corrected). plan_sha256 has been updated (deb007d\u2026), consistent with re-hashing, but cannot be independently verified without shell access. The metadata fields the orchestrator reads are correct. Residual: the embedded review text within the same sidecar still describes the pre-rename state as current, creating an internal self-contradiction (captured as a separate NOTE)."
       }
     ],
-    "closure_verification": "Both round-1 issues verified as resolved by direct artifact inspection. The feedback-loop AC (Section 8, final criterion) matches the round-1 suggested fix. The S1 Execution Map row (Section 12) now explicitly echoes all Section 6.6 Slice Defaults boundaries. No new material issues found. PRD is handoff-ready for umbrella-plus-slices orchestrator intake.",
+    "closure_verification": "The prior-round WARN is resolved at the metadata field level that matters for orchestrator handoff. plan_path and canonical_sidecar_path both reference r001 paths. plan_sha256 has been updated. Section 11 handoff paths are correct. The PRD remains handoff_candidate with status: accepted. The only residual is a cosmetic self-contradiction between corrected top-level metadata and stale embedded review text \u2014 this is a NOTE, not a handoff blocker. The --check-only pass is caller-asserted and consistent with observed file state but was not independently reproduced.",
     "rerun_recommendation": "stop"
   }
 }

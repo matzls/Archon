@@ -308,7 +308,7 @@ not be frozen into one implementation plan.
 
 ### Latest PRD Peer Review
 
-`docs/plans/_doc-reviews/archon-piv-loop-codex-v2.prd-peer-review.json`
+`docs/plans/_doc-reviews/r001-archon-piv-loop-codex-v2-peer-review.json`
 
 ### Operator Handoff Prompt
 
@@ -316,8 +316,8 @@ not be frozen into one implementation plan.
 Use $my-codex-workflow-orchestrator for this feature.
 
 Accepted handoff input:
-- PRD: docs/prd/archon-piv-loop-codex-v2.prd.md
-- Peer review sidecar: docs/plans/_doc-reviews/archon-piv-loop-codex-v2.prd-peer-review.json
+- PRD: docs/prd/r001-archon-piv-loop-codex-v2.md
+- Peer review sidecar: docs/plans/_doc-reviews/r001-archon-piv-loop-codex-v2-peer-review.json
 - Planning shape: umbrella + slices
 - Umbrella plan: create if missing
 
