@@ -1,74 +1,90 @@
 {
   "$schema": "plan-state-v1",
   "plan": {
-    "status": "active",
-    "current_phase": 0,
+    "status": "accepted",
+    "current_phase": 2,
     "authoring_state": "drafted",
-    "updated": "2026-04-27T18:11:57.352521+00:00"
+    "updated": "2026-04-27T19:22:09.217159+00:00"
   },
   "tasks": [
     {
       "id": "P0-T1",
       "phase": 0,
-      "status": "approved"
+      "status": "done",
+      "last_sha": "1f9c006150a9799ebb72dcdc1dcea8db9a6b3ca8",
+      "last_transition": "2026-04-27T18:13:23.349953+00:00"
     },
     {
       "id": "P0-T2",
       "phase": 0,
-      "status": "approved"
+      "status": "done",
+      "last_sha": "1f9c006150a9799ebb72dcdc1dcea8db9a6b3ca8",
+      "last_transition": "2026-04-27T18:13:29.733193+00:00"
     },
     {
       "id": "P0-T3",
       "phase": 0,
-      "status": "approved"
+      "status": "done",
+      "last_sha": "1f9c006150a9799ebb72dcdc1dcea8db9a6b3ca8",
+      "last_transition": "2026-04-27T18:13:39.005936+00:00"
     },
     {
       "id": "P1-T1",
       "phase": 1,
-      "status": "approved"
+      "status": "done",
+      "last_sha": "1f9c006150a9799ebb72dcdc1dcea8db9a6b3ca8",
+      "last_transition": "2026-04-27T19:17:29.564160+00:00"
     },
     {
       "id": "P1-T2",
       "phase": 1,
-      "status": "approved"
+      "status": "done",
+      "last_sha": "1f9c006150a9799ebb72dcdc1dcea8db9a6b3ca8",
+      "last_transition": "2026-04-27T19:17:32.162731+00:00"
     },
     {
       "id": "P1-T3",
       "phase": 1,
-      "status": "approved"
+      "status": "done",
+      "last_sha": "1f9c006150a9799ebb72dcdc1dcea8db9a6b3ca8",
+      "last_transition": "2026-04-27T19:17:34.783229+00:00"
     },
     {
       "id": "P2-T1",
       "phase": 2,
-      "status": "approved"
+      "status": "done",
+      "last_sha": "1f9c006150a9799ebb72dcdc1dcea8db9a6b3ca8",
+      "last_transition": "2026-04-27T19:17:37.351059+00:00"
     },
     {
       "id": "P2-T2",
       "phase": 2,
-      "status": "approved"
+      "status": "done",
+      "last_sha": "1f9c006150a9799ebb72dcdc1dcea8db9a6b3ca8",
+      "last_transition": "2026-04-27T19:20:27.856417+00:00"
     }
   ],
   "task_contracts": {},
   "unresolved_items": [],
   "snapshot_gate": {
-    "branch": "dev",
+    "branch": "slice/r001-archon-piv-loop-codex-v2/s3",
     "checked_at": "2026-04-27T18:11:57+00:00",
     "default_branch": "dev",
-    "dirty_before_snapshot": true,
-    "lane_branch": "dev",
+    "dirty_before_snapshot": false,
+    "lane_branch": "slice/r001-archon-piv-loop-codex-v2/s3",
     "lane_decision_basis": "deterministic",
-    "lane_decision_reason": "repo_dirty_before_implementation",
-    "lane_type": "branch",
-    "lane_worktree_path": null,
-    "next_command": "git checkout -b r001-archon-piv-loop-codex-v2-s3-plan",
+    "lane_decision_reason": "clean_feature_lane_before_implementation",
+    "lane_type": "worktree",
+    "lane_worktree_path": "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s3",
+    "next_command": null,
     "plan_path": "docs/plans/r001-archon-piv-loop-codex-v2-s3_plan.md",
-    "reason": "running_on_default_branch",
-    "snapshot_commit_message": null,
-    "snapshot_commit_sha": null,
-    "snapshot_created_at": null,
-    "status": "missing",
-    "worktree_count": 1,
-    "worktree_present": false,
-    "worktree_required": true
+    "reason": "snapshot_commit_created",
+    "snapshot_commit_message": "chore(workflow): snapshot before implementing r001-archon-piv-loop-codex-v2-s3-plan\n\nPlan: docs/plans/r001-archon-piv-loop-codex-v2-s3_plan.md\nFeature: r001-archon-piv-loop-codex-v2-s3-plan\nPurpose: rollback anchor before implementation\nLane: branch=slice/r001-archon-piv-loop-codex-v2/s3 worktree=/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s3\n",
+    "snapshot_commit_sha": "1f9c006150a9799ebb72dcdc1dcea8db9a6b3ca8",
+    "snapshot_created_at": "2026-04-27T18:11:57+00:00",
+    "status": "current",
+    "worktree_count": 2,
+    "worktree_present": true,
+    "worktree_required": false
   }
 }

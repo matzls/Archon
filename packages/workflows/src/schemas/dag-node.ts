@@ -246,7 +246,8 @@ export type ScriptNode = z.infer<typeof scriptNodeSchema> & {
 
 /**
  * Loop node schema — extends base with `loop` config.
- * AI-specific fields from the base are present in the type but ignored at runtime with a warning.
+ * `model`, `provider`, and `output_format` are runtime-supported for loop
+ * iterations; other AI-specific base fields are ignored with a loader warning.
  * retry is not supported on loop nodes (enforced at parse time).
  */
 export const loopNodeSchema = dagNodeBaseSchema.extend({
@@ -354,11 +355,11 @@ export const SCRIPT_NODE_AI_FIELDS: readonly string[] = BASH_NODE_AI_FIELDS;
 
 /**
  * AI-specific fields that are unsupported on loop nodes.
- * `model` and `provider` are excluded because the DAG executor resolves and
- * forwards them to each iteration's AI call (see dag-executor.ts:2602-2648).
+ * `model`, `provider`, and `output_format` are excluded because the DAG
+ * executor forwards them to each iteration's AI call.
  */
 export const LOOP_NODE_AI_FIELDS: readonly string[] = BASH_NODE_AI_FIELDS.filter(
-  f => f !== 'model' && f !== 'provider'
+  f => f !== 'model' && f !== 'provider' && f !== 'output_format'
 );
 
 // ---------------------------------------------------------------------------
@@ -629,7 +630,13 @@ export const dagNodeSchema = dagNodeBaseSchema
     }
     // loop — guaranteed by superRefine to be defined at this point
     if (!data.loop) throw new Error('unreachable: loop must be defined after superRefine');
-    return { ...base, loop: data.loop } as LoopNode;
+    return {
+      ...base,
+      ...(data.model !== undefined ? { model: data.model } : {}),
+      ...(data.provider !== undefined ? { provider: data.provider } : {}),
+      ...(data.output_format !== undefined ? { output_format: data.output_format } : {}),
+      loop: data.loop,
+    } as LoopNode;
   })
   .openapi('DagNode');
 

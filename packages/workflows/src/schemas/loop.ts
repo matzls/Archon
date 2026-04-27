@@ -3,6 +3,43 @@
  */
 import { z } from '@hono/zod-openapi';
 
+export const loopDecisionGateDecisionSchema = z
+  .object({
+    id: z.string().trim().min(1, "'loop.decision_gate.decisions[].id' must be non-empty"),
+    resume_reason: z.string().trim().min(1).optional(),
+    transition_intent: z.string().trim().min(1).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.resume_reason && !data.transition_intent) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "'loop.decision_gate.decisions[]' must include either 'resume_reason' or 'transition_intent'",
+      });
+    }
+  });
+
+export const loopDecisionGateSchema = z
+  .object({
+    gate_kind: z.string().trim().min(1).optional(),
+    decisions: z
+      .array(loopDecisionGateDecisionSchema)
+      .nonempty("'loop.decision_gate.decisions' must include at least one decision"),
+  })
+  .superRefine((data, ctx) => {
+    const seen = new Set<string>();
+    for (const [index, decision] of data.decisions.entries()) {
+      if (seen.has(decision.id)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `'loop.decision_gate.decisions[].id' must be unique: ${decision.id}`,
+          path: ['decisions', index, 'id'],
+        });
+      }
+      seen.add(decision.id);
+    }
+  });
+
 export const loopNodeConfigSchema = z
   .object({
     /** Inline prompt text executed each iteration. */
@@ -15,6 +52,8 @@ export const loopNodeConfigSchema = z
     fresh_context: z.boolean().default(false),
     /** Optional bash script run after each iteration; exit 0 = complete. */
     until_bash: z.string().optional(),
+    /** Optional typed decision contract for structured continue/advance loop gates. */
+    decision_gate: loopDecisionGateSchema.optional(),
     /** Optional progress file used to detect durable task completion across iterations. */
     progress_file: z.string().optional(),
     /** Fail early when this many consecutive iterations make no durable progress. */
@@ -42,3 +81,4 @@ export const loopNodeConfigSchema = z
   });
 
 export type LoopNodeConfig = z.infer<typeof loopNodeConfigSchema>;
+export type LoopDecisionGate = z.infer<typeof loopDecisionGateSchema>;

@@ -39,11 +39,14 @@ import * as bundledDefaults from './defaults/bundled-defaults';
 
 describe('Workflow Loader', () => {
   let testDir: string;
+  let previousArchonHome: string | undefined;
 
   beforeEach(async () => {
     // Create unique temp directory for each test
     testDir = join(tmpdir(), `workflow-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     await mkdir(testDir, { recursive: true });
+    previousArchonHome = process.env.ARCHON_HOME;
+    process.env.ARCHON_HOME = join(testDir, 'archon-home');
   });
 
   afterEach(async () => {
@@ -52,6 +55,11 @@ describe('Workflow Loader', () => {
       await rm(testDir, { recursive: true, force: true });
     } catch {
       // Ignore cleanup errors
+    }
+    if (previousArchonHome === undefined) {
+      delete process.env.ARCHON_HOME;
+    } else {
+      process.env.ARCHON_HOME = previousArchonHome;
     }
   });
 
@@ -1655,7 +1663,7 @@ nodes:
       expect(aiFieldWarnings).toHaveLength(0);
     });
 
-    it('should warn about unsupported AI fields on loop nodes (not model/provider)', async () => {
+    it('should warn about unsupported AI fields on loop nodes (not model/provider/output_format)', async () => {
       const workflowDir = join(testDir, '.archon', 'workflows');
       await mkdir(workflowDir, { recursive: true });
 
@@ -1676,6 +1684,7 @@ nodes:
       properties:
         status:
           type: string
+    allowed_tools: []
 `
       );
 
@@ -1683,16 +1692,23 @@ nodes:
       const result = await discoverWorkflows(testDir, { loadDefaults: false });
       expect(result.errors).toHaveLength(0);
 
-      // Should warn about output_format but NOT about model
+      // Should warn about allowed_tools but NOT about model/output_format
       const warnCalls = (mockLogger.warn as Mock<() => undefined>).mock.calls;
       const aiFieldWarnings = warnCalls.filter(
         call => typeof call[1] === 'string' && call[1].includes('ai_fields_ignored')
       );
       expect(aiFieldWarnings).toHaveLength(1);
       const warnedFields = (aiFieldWarnings[0][0] as { fields: string[] }).fields;
-      expect(warnedFields).toContain('output_format');
+      expect(warnedFields).toContain('allowed_tools');
+      expect(warnedFields).not.toContain('output_format');
       expect(warnedFields).not.toContain('model');
       expect(warnedFields).not.toContain('provider');
+
+      const node = result.workflows[0].workflow.nodes[0];
+      expect(isLoopNode(node)).toBe(true);
+      if (isLoopNode(node)) {
+        expect(node.output_format).toBeDefined();
+      }
     });
   });
 

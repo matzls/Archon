@@ -1,7 +1,7 @@
 ---
 title: "Archon PIV Loop Codex V2 S3 — typed phase-gate support where runtime permits — Plan"
 kind: plan
-status: draft
+status: accepted
 created: 2026-04-27
 updated: "2026-04-27"
 origin_prd: "docs/prd/r001-archon-piv-loop-codex-v2.md"
@@ -15,7 +15,7 @@ version: "0.1"
 - Why we're doing it: prompt nodes already support structured output, but loop nodes still advance only through `until` / `until_bash` strings, so V2 cannot honestly claim typed phase gates yet.
 - What "done" looks like: loop nodes can opt into a typed `decision_gate` contract, targeted runtime tests prove `continue` versus `advance`, and the V2 workflow on the campaign integration base pilots the contract. If the pilot target is missing in the S3 execution lane, stop as a campaign-state mismatch rather than silently falling back.
 - How we'll do it: ground the exact runtime boundary, freeze one additive contract, implement the minimal loop-schema and executor support, then adopt or explicitly defer the V2 pilot with focused tests and docs.
-- Next step / resume point: peer-review this corrected slice, then freeze only if the runtime contract and integration-branch pilot target are both explicit.
+- Next step / resume point: optional git commit/PR handoff; workflow closeout evidence is accepted.
 
 ### Optional Mental Model
 
@@ -60,8 +60,8 @@ flowchart LR
 **Choice:** [x] A1  [ ] A2
 
 ## Plan Status & Controls
-- Plan Status: Draft (as of 2026-04-27)
-- Current Phase: P0 — Grounding
+- Plan Status: Accepted (as of 2026-04-27)
+- Current Phase: P2 - Validation And Doc Sync
 - Last Updated: 2026-04-27
 - Last Reviewed: 2026-04-27
 - Next Checkpoint: peer-review this refined slice after the execution-base correction, then freeze only if the loop contract and V2 pilot target are both explicit
@@ -99,15 +99,15 @@ Rules:
 
 | Phase | Phase Status | Tasks (ID: Title — Status) |
 |------:|--------------|----------------------------|
-| P0 | Proposed | - P0-T1: Ground the loop-versus-prompt structured-output boundary against repo reality — proposed<br>- P0-T2: Freeze the additive `decision_gate` contract and fallback rule for `S3` — proposed<br>- P0-T3: Record the V2 pilot target on the integration execution base — proposed |
-| P1 | Proposed | - P1-T1: Extend loop-node schema and executor support for additive typed phase gates — proposed<br>- P1-T2: Pilot the typed gate contract on the V2 workflow from the integration base — proposed<br>- P1-T3: Add focused regression tests for typed-loop decisions and sentinel fallback — proposed |
-| P2 | Proposed | - P2-T1: Run the focused Slice 3 proof commands and capture the exact runtime result — proposed<br>- P2-T2: Reconcile docs and close the slice evidence loop — proposed |
+| P0 | Done | - P0-T1: Ground the loop-versus-prompt structured-output boundary against repo reality - done<br>- P0-T2: Freeze the additive `decision_gate` contract and fallback rule for `S3` - done<br>- P0-T3: Record the V2 pilot target on the integration execution base - done |
+| P1 | Done | - P1-T1: Extend loop-node schema and executor support for additive typed phase gates - done<br>- P1-T2: Pilot the typed gate contract on the V2 workflow from the integration base - done<br>- P1-T3: Add focused regression tests for typed-loop decisions and sentinel fallback - done |
+| P2 | Done | - P2-T1: Run the focused Slice 3 proof commands and capture the exact runtime result - done<br>- P2-T2: Reconcile docs and close the slice evidence loop - done |
 
 ## 6) Phased Execution Plan
 
 ### Phase 0 — Grounding And Contract Lock
 
-- [ ] P0-T1: Ground the loop-versus-prompt structured-output boundary against repo reality
+- [x] P0-T1: Ground the loop-versus-prompt structured-output boundary against repo reality
   - Test Impact: N/A
   - Commands to Run:
     - `sed -n '340,347p' docs/prd/r001-archon-piv-loop-codex-v2.md`
@@ -130,7 +130,7 @@ Rules:
   - Verify Commands:
     - `rg -n "output_format|decision_gate|until_bash|prompt nodes|loop nodes" docs/plans/r001-archon-piv-loop-codex-v2-s3_plan.md`
 
-- [ ] P0-T2: Freeze the additive `decision_gate` contract and fallback rule for `S3`
+- [x] P0-T2: Freeze the additive `decision_gate` contract and fallback rule for `S3`
   - Test Impact: N/A
   - Commands to Run:
     - `sed -n '466,590p' docs/plans/piv-transition-control-surface-hardening_plan.md`
@@ -145,7 +145,7 @@ Rules:
   - Verify Commands:
     - `rg -n "decision_gate|transition_intent|resume_reason|sentinel fallback|V1 stays" docs/plans/r001-archon-piv-loop-codex-v2-s3_plan.md`
 
-- [ ] P0-T3: Record the V2 pilot target on the integration execution base
+- [x] P0-T3: Record the V2 pilot target on the integration execution base
   - Test Impact: N/A
   - Commands to Run:
     - `git log --oneline --decorate -6 integration/r001-archon-piv-loop-codex-v2`
@@ -162,7 +162,7 @@ Rules:
 
 ### Phase 1 — Runtime And Workflow Pilot
 
-- [ ] P1-T1: Extend loop-node schema and executor support for additive typed phase gates
+- [x] P1-T1: Extend loop-node schema and executor support for additive typed phase gates
   - Test Impact: update
   - Commands to Run:
     - update `packages/workflows/src/schemas/loop.ts` to add the additive `decision_gate` contract for loop nodes
@@ -178,7 +178,7 @@ Rules:
     - `rg -n "decision_gate|output_format|buildLoopNodeOptions|structuredOutput|until_bash" packages/workflows/src/schemas/loop.ts packages/workflows/src/schemas/dag-node.ts packages/workflows/src/dag-executor.ts`
     - `bun test packages/workflows/src/dag-executor.test.ts packages/workflows/src/schemas.test.ts`
 
-- [ ] P1-T2: Pilot the typed gate contract on the V2 workflow from the integration base
+- [x] P1-T2: Pilot the typed gate contract on the V2 workflow from the integration base
   - Test Impact: update
   - Commands to Run:
     - update `.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml` in the S3 execution worktree created from `integration/r001-archon-piv-loop-codex-v2`
@@ -195,7 +195,7 @@ Rules:
     - `bun run cli validate workflows archon-piv-loop-codex-v2 --json`
     - `rg -n "id: explore|id: refine-plan|id: fix-feedback|decision_gate|output_format|PLAN_READY|PLAN_APPROVED|VALIDATED|COMPLETE" .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml`
 
-- [ ] P1-T3: Add focused regression tests for typed-loop decisions and sentinel fallback
+- [x] P1-T3: Add focused regression tests for typed-loop decisions and sentinel fallback
   - Test Impact: add
   - Commands to Run:
     - extend `packages/workflows/src/dag-executor.test.ts` with loop-node coverage for:
@@ -214,7 +214,7 @@ Rules:
 
 ### Phase 2 — Validation And Doc Sync
 
-- [ ] P2-T1: Run the focused Slice 3 proof commands and capture the exact runtime result
+- [x] P2-T1: Run the focused Slice 3 proof commands and capture the exact runtime result
   - Test Impact: N/A
   - Commands to Run:
     - `bun test packages/workflows/src/dag-executor.test.ts packages/workflows/src/schemas.test.ts`
@@ -228,7 +228,7 @@ Rules:
     - `bun test packages/workflows/src/dag-executor.test.ts packages/workflows/src/schemas.test.ts`
     - `bun run cli validate workflows archon-piv-loop-codex-v2 --json`
 
-- [ ] P2-T2: Reconcile docs and close the slice evidence loop
+- [x] P2-T2: Reconcile docs and close the slice evidence loop
   - Test Impact: N/A
   - Commands to Run:
     - review `docs/design/codex-piv-v2-workflow-design.md` and update it only if the landed `decision_gate` field names or fallback rules differ from the current typed-gate prose
@@ -243,9 +243,9 @@ Rules:
 
 ## Documentation Checklist
 
-- [ ] Review whether `.archon/workflows/defaults/archon-piv-loop-codex-v2.README.md` must explain the new typed-gate pilot; create or update it only if the YAML is no longer sufficient by itself.
-- [ ] Update `docs/design/codex-piv-v2-workflow-design.md` only if the landed `decision_gate` field names or sentinel fallback behavior differ from the current prose.
-- [ ] Keep `docs/prd/r001-archon-piv-loop-codex-v2.md` as the scope authority unless Slice 3 resolves a narrow factual ambiguity that must be written back after closeout.
+- [x] Review whether `.archon/workflows/defaults/archon-piv-loop-codex-v2.README.md` must explain the new typed-gate pilot; create or update it only if the YAML is no longer sufficient by itself.
+- [x] Update `docs/design/codex-piv-v2-workflow-design.md` only if the landed `decision_gate` field names or sentinel fallback behavior differ from the current prose.
+- [x] Keep `docs/prd/r001-archon-piv-loop-codex-v2.md` as the scope authority unless Slice 3 resolves a narrow factual ambiguity that must be written back after closeout.
 
 ## Current Inputs (single source of truth)
 - Feature: `Archon PIV Loop Codex V2`
@@ -326,3 +326,4 @@ Explicit exclusions (handled outside the PIV loop closeout): Project Brief, Feat
 - 2026-04-27: Seeded focused slice draft from the PRD execution map so the orchestrator can refine from a concrete boundary instead of a blank template.
 - 2026-04-27: Refined `S3` around the verified runtime boundary: prompt nodes already support structured output, loop nodes do not yet, and the V2 pilot target must be read from the campaign integration branch.
 - 2026-04-27: Corrected the S3 pilot-target grounding to use the campaign integration branch, where S1/S2 have already landed, instead of the root `dev` checkout that intentionally trails integration work during the umbrella campaign.
+- 2026-04-27: Implemented additive loop-node `output_format` plus `loop.decision_gate` support, piloted it on V2 `explore`, `refine-plan`, and `fix-feedback`, and kept `implement` on the existing `COMPLETE` sentinel fallback. Focused schema/loop executor/loader tests, V2 workflow validation, type-check, bundled-defaults check, and format check pass. The full `packages/workflows/src/dag-executor.test.ts` file still has one unrelated approval-node failure recorded in `artifacts/workflow/implementation-reports/dag-executor-full-file-caveat.json`.
