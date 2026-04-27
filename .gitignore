@@ -102,6 +102,7 @@ undefined/
 coverage
 
 worktrees
+.worktrees/
 screenshots/
 test-screenshots/
 .claude/worktree-registry.json
