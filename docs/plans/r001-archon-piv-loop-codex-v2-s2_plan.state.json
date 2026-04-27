@@ -1,10 +1,10 @@
 {
   "$schema": "plan-state-v1",
   "plan": {
-    "status": "active",
+    "status": "accepted",
     "current_phase": 0,
     "authoring_state": "drafted",
-    "updated": "2026-04-27T17:24:59.296708+00:00"
+    "updated": "2026-04-27T17:28:16.216089+00:00"
   },
   "tasks": [
     {
