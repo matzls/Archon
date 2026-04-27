@@ -1,0 +1,224 @@
+{
+  "schema_version": "peer-review-v1",
+  "review_id": "peer-review-8d94a2675e20",
+  "plan_path": "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s4/docs/plans/r001-archon-piv-loop-codex-v2-s4_plan.md",
+  "plan_sha256": "4eabdb626cd1b9db17b7cc7ebe999d37355887223dc22c6f0d8d07c2d289573b",
+  "mode": "workflow-plan-gate",
+  "sidecar_dir": "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s4/docs/plans/_peer-reviews",
+  "engine": "Claude",
+  "requested_engine": "auto",
+  "origin_runtime": "codex",
+  "engine_policy": "opposite_preferred",
+  "resolved_primary_engine": "claude",
+  "preferred_engine": "claude",
+  "fallback_engine": null,
+  "final_engine": "claude",
+  "reviewer_match": "opposite",
+  "gate_quality": "preferred",
+  "artifact_role": "canonical",
+  "canonical_sidecar_path": "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s4/docs/plans/_peer-reviews/r001-archon-piv-loop-codex-v2-s4_plan-peer-review.json",
+  "fallback_used": false,
+  "fallback_reason": null,
+  "attempt_chain": [
+    {
+      "engine": "claude",
+      "phase": "primary",
+      "attempt": 1,
+      "timeout_seconds": 300,
+      "result": "completed",
+      "elapsed_seconds": 215.087,
+      "returncode": 0
+    }
+  ],
+  "review_round": 3,
+  "max_rounds": 3,
+  "prior_review_id": "peer-review-e030d1feda71",
+  "caller_disposition_summary": "",
+  "addressed_issues": [],
+  "deferred_issues": [],
+  "recheck_requests": [],
+  "model": "claude-opus-4-6",
+  "verdict": "Sound-with-issues",
+  "stance": null,
+  "issues_count": 2,
+  "ran_at": "2026-04-27T19:59:12.356378+00:00",
+  "raw_review_excerpt": "Round 3/3 freeze-readiness review of the S4 focused slice plan. The plan is a seeded draft (status: draft, version 0.2) at Phase 0 (Grounding). All load-bearing claims verified: the PRD S4 execution-map row matches the plan scope, the design doc Mode B contract aligns, the workflow YAML is correctly absent (captured by LBA1), all named test files exist at the stated paths, the `bun run cli validate workflows` command exists in the CLI, and the state file is consistent with the plan text. No prior-round carried issues were specified. The plan is freeze-ready for its current authoring state (seeded draft entering grounding).\n\nIssues:\n- 1. [WARN] P0-T2 verify command is self-referential\n- 2. [NOTE] plan_readiness.py not verified to exist",
+  "error": null,
+  "closure_verification": "No prior-round issues were carried forward. The artifact was assessed on its own merits against directly inspected repo evidence. All load-bearing claims verified successfully. One WARN raised for self-referential verify command in P0-T2.",
+  "prior_round_closure": [
+    {
+      "title": "Prior round context",
+      "severity": "NOTE",
+      "caller_claim": "Round 3/3 with prior review id peer-review-e030d1feda71. No specific carried issues were listed in the prior-round packet.",
+      "verification_status": "resolved",
+      "verification_notes": "No carried issues to verify. The prior-round packet contained only round metadata and no specific issue claims. The current artifact was reviewed independently against repo evidence."
+    }
+  ],
+  "rerun_recommendation": "stop",
+  "review": {
+    "mode": "workflow-plan-gate",
+    "summary": "Round 3/3 freeze-readiness review of the S4 focused slice plan. The plan is a seeded draft (status: draft, version 0.2) at Phase 0 (Grounding). All load-bearing claims verified: the PRD S4 execution-map row matches the plan scope, the design doc Mode B contract aligns, the workflow YAML is correctly absent (captured by LBA1), all named test files exist at the stated paths, the `bun run cli validate workflows` command exists in the CLI, and the state file is consistent with the plan text. No prior-round carried issues were specified. The plan is freeze-ready for its current authoring state (seeded draft entering grounding).",
+    "rubric_cards": [
+      {
+        "title": "Claim Anchoring",
+        "anchor": "Load-bearing claims vs. repo evidence",
+        "claim": "Plan claims S4 scope is 'design-doc and slice-map mode' from the PRD execution map row, names specific test files and CLI commands as verify surfaces, and captures the V2 YAML absence via LBA1.",
+        "evidence": "PRD line 347 confirms S4 scope as 'design-doc and slice-map mode' with expected output 'workflow run against fixture request producing expected artifacts'. Design doc Mode B (lines 124-138) describes create-design-doc, create-slice-map, select-one-slice flow matching the plan. executor.test.ts, loader.test.ts, bundled-defaults.test.ts all exist at named paths. cli.ts:64 imports validateWorkflowsCommand and cli.ts:105 documents 'validate workflows [name]' subcommand. archon-piv-loop-codex-v2.yaml correctly does not exist (confirmed by read error); LBA1 in state.json blocks P1/P2 until it does.",
+        "disposition": "PRESENT \u2014 all load-bearing claims trace to inspected repo artifacts"
+      },
+      {
+        "title": "Disposition Matrix",
+        "anchor": "Artifact/conversation/campaign coverage assessment",
+        "claim": "The plan artifact is self-consistent, conversation evidence was not needed beyond the plan text, and campaign coverage was assessed for the S4 slice only.",
+        "evidence": "Plan frontmatter, phased execution, unresolved items, state.json, and verify commands are internally consistent. PRD execution map and design doc were inspected to confirm scope alignment. Only the S4 slice was reviewed; S1-S3, S5-S7 and the umbrella plan were not assessed for implementation status.",
+        "disposition": "PRESENT \u2014 artifact-primary review with PRD/design cross-check; campaign scope limited to S4 slice"
+      },
+      {
+        "title": "Coverage Scope",
+        "anchor": "What was and was not inspected",
+        "claim": "Review covered the S4 plan artifact, its state.json, the PRD execution map rows, the design doc Mode B section, the three named test files, the CLI validate command, and the orchestration plan slice ledger. Not covered: S1-S3 implementation status (relevant to LBA1 satisfaction timing), runtime behavior of the validate or test commands, plan_readiness.py script existence.",
+        "evidence": "Files directly inspected: r001-archon-piv-loop-codex-v2-s4_plan.md (full), .state.json (full), PRD lines 1-397, design doc lines 1-180, executor.test.ts (head), loader.test.ts (head), bundled-defaults.test.ts (lines 1-90), cli.ts (lines 1-180), validate.ts (head), S1 plan (head), orchestration plan (head).",
+        "disposition": "PARTIAL \u2014 slice-scoped review; campaign and runtime not assessed"
+      }
+    ],
+    "disposition_matrix": {
+      "rows": [
+        "artifact",
+        "conversation",
+        "campaign"
+      ],
+      "columns": [
+        "present",
+        "partial",
+        "missing"
+      ],
+      "cells": [
+        [
+          "scope, phases, LBAs, verify cmds, state.json aligned",
+          "P0-T2 verify command is self-referential (greps own plan)",
+          "\u2014"
+        ],
+        [
+          "\u2014",
+          "\u2014",
+          "no conversation evidence needed or used"
+        ],
+        [
+          "S4 slice fully checked",
+          "S1 status (LBA1 dependency) not verified",
+          "S2-S3, S5-S7 not inspected"
+        ]
+      ]
+    },
+    "conversation_evidence": {
+      "used": false,
+      "sources": [],
+      "summary": "No conversation or thread evidence was used. All claims were verified against the plan artifact and directly inspected repo files.",
+      "gaps": [
+        "No prior-round carried issues were provided to verify."
+      ]
+    },
+    "campaign_coverage": {
+      "scope": "slice-only",
+      "covered": [
+        "S4 plan artifact and state.json",
+        "PRD execution map S4 row",
+        "Design doc Mode B section",
+        "Named test files (executor, loader, bundled-defaults)",
+        "CLI validate workflows command",
+        "Orchestration plan slice ledger (S4 entry)"
+      ],
+      "missing": [
+        "S1-S3 implementation status (affects LBA1 resolution timing)",
+        "S5-S7 plan artifacts",
+        "Runtime execution of verify commands",
+        "plan_readiness.py script existence"
+      ],
+      "gaps": [
+        "LBA1 depends on S1 completing first; S1 status in the orchestration plan is 'not started', which means LBA1 cannot currently be satisfied \u2014 this is expected for a seeded draft but should be monitored"
+      ]
+    },
+    "issues": [
+      {
+        "title": "P0-T2 verify command is self-referential",
+        "details": "P0-T2's sole verify command greps the plan file itself for task IDs and keywords. This proves the plan text contains those strings but does not independently verify that the slice contract and doc surface are actually locked or consistent with the PRD.",
+        "suggested_fix": "Consider adding a cross-check command in P0-T2 that validates against the PRD or design doc (e.g., grep the PRD execution map row and compare to plan scope), rather than only grepping the plan's own text. This can be deferred to the grounding pass itself.",
+        "severity": "WARN"
+      },
+      {
+        "title": "plan_readiness.py not verified to exist",
+        "details": "P0-T1 and P2-T1 reference `plan_readiness.py` via the CODEX_HOME path. This script was not verified to exist on disk. If it is missing, those verify commands will fail silently or with an unhelpful error.",
+        "suggested_fix": "During the P0 grounding pass, confirm `plan_readiness.py` exists at the expected path and runs without error against this plan file. If it does not exist, replace or remove that verify command.",
+        "severity": "NOTE"
+      }
+    ],
+    "verification_gaps": [
+      "S1 implementation status not verified \u2014 LBA1 cannot be satisfied until S1 lands the V2 workflow YAML",
+      "plan_readiness.py existence not confirmed on disk",
+      "Runtime execution of bun test and bun run cli validate commands not tested"
+    ],
+    "recommended_fixes": [
+      "P0-T2: add at least one verify command that cross-checks the locked slice contract against the PRD or design doc, rather than only grepping the plan's own markdown"
+    ],
+    "evidence_sources": [
+      "docs/plans/r001-archon-piv-loop-codex-v2-s4_plan.md (full artifact)",
+      "docs/plans/r001-archon-piv-loop-codex-v2-s4_plan.state.json (full)",
+      "docs/prd/r001-archon-piv-loop-codex-v2.md lines 1-397 (PRD execution map, scope, implementation notes)",
+      "docs/design/codex-piv-v2-workflow-design.md lines 1-180 (Mode B contract)",
+      "packages/workflows/src/executor.test.ts (head \u2014 confirms existence)",
+      "packages/workflows/src/loader.test.ts (head \u2014 confirms existence)",
+      "packages/workflows/src/defaults/bundled-defaults.test.ts lines 1-90 (confirms existence and bundle-drift test shape)",
+      "packages/cli/src/cli.ts lines 60-134 (confirms validate workflows subcommand)",
+      "packages/cli/src/commands/validate.ts (head \u2014 confirms implementation exists)",
+      "docs/plans/r001-archon-piv-loop-codex-v2-s1_plan.md (head \u2014 confirms S1 plan exists)",
+      "docs/plans/r001-archon-piv-loop-codex-v2-orchestration-plan.md (head \u2014 confirms umbrella and slice ledger)",
+      "Read error on .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml (confirms expected absence, LBA1 valid)"
+    ],
+    "error": null,
+    "verdict": "Sound-with-issues",
+    "workflow_compliance": [
+      "Plan frontmatter includes required fields: title, kind, status, created, updated, origin_prd, version",
+      "State file schema matches plan structure: 5 tasks across 3 phases, 1 LBA blocker",
+      "Plan status is 'draft' with authoring_state 'drafted' \u2014 appropriate for a seeded slice entering grounding",
+      "LBA1 correctly blocks P1 and P2 in both plan markdown and state.json",
+      "E2E gate waiver is documented with category and rationale",
+      "Phase summary table matches the phased execution plan tasks"
+    ],
+    "technical_reality": [
+      "PRD execution map S4 row (line 347) matches plan scope: 'design-doc and slice-map mode'",
+      "Design doc Mode B (lines 124-138) describes the exact intake path the plan targets: create design doc, create slice map, select one slice",
+      "archon-piv-loop-codex-v2.yaml does not exist yet \u2014 correctly captured by LBA1 as a blocking dependency on S1",
+      "All three named test files exist and contain relevant test infrastructure",
+      "CLI 'validate workflows' command exists (cli.ts:64,105; validate.ts implements it)",
+      "bundled-defaults.test.ts includes bundle-drift detection that will catch new workflow YAML additions"
+    ],
+    "assumptions_to_verify": [
+      "S1 will land archon-piv-loop-codex-v2.yaml before S4 P1 begins (LBA1)",
+      "plan_readiness.py exists at the CODEX_HOME path and can validate this plan",
+      "The 'bun run cli validate workflows archon-piv-loop-codex-v2 --json' command will work once the YAML exists (command infrastructure confirmed, but runtime not tested against a nonexistent workflow name)"
+    ],
+    "verification_sufficiency": [
+      "Verify commands in P1-T1 and P1-T2 are concrete and executable: file existence test, CLI validate, bun test against named files",
+      "P0-T1 verify commands include concrete grep and ls commands against real repo paths",
+      "P0-T2 verify command is self-referential (grepping own plan text) \u2014 provides weak independent assurance",
+      "P2-T1 relies on plan_readiness.py which was not confirmed to exist"
+    ],
+    "downstream_risks": [
+      "If S1 stalls or changes the V2 workflow YAML contract, S4 LBA1 may need updating",
+      "Mode B intake path details may evolve during S1-S3 implementation, potentially requiring S4 plan updates during its own grounding phase",
+      "bundled-defaults.test.ts will require regeneration of bundled-defaults.generated.ts when the V2 YAML is added \u2014 this is expected but not called out in the plan"
+    ],
+    "freeze_recommendation": "Safe to freeze. Carry the remaining WARN/NOTE items as explicit follow-ups or implementation-time checks.",
+    "prior_round_closure": [
+      {
+        "title": "Prior round context",
+        "severity": "NOTE",
+        "caller_claim": "Round 3/3 with prior review id peer-review-e030d1feda71. No specific carried issues were listed in the prior-round packet.",
+        "verification_status": "resolved",
+        "verification_notes": "No carried issues to verify. The prior-round packet contained only round metadata and no specific issue claims. The current artifact was reviewed independently against repo evidence."
+      }
+    ],
+    "closure_verification": "No prior-round issues were carried forward. The artifact was assessed on its own merits against directly inspected repo evidence. All load-bearing claims verified successfully. One WARN raised for self-referential verify command in P0-T2.",
+    "rerun_recommendation": "stop"
+  }
+}

@@ -3,10 +3,10 @@ title: "Archon PIV Loop Codex V2 S4 — design-doc and slice-map mode — Plan"
 kind: plan
 status: draft
 created: 2026-04-27
-updated: 2026-04-27
+updated: "2026-04-27"
 origin_prd: "docs/prd/r001-archon-piv-loop-codex-v2.md"
 origin: ""
-version: "0.1"
+version: "0.2"
 ---
 
 ## ELI5 Summary (Read This First)
@@ -85,7 +85,9 @@ Rules:
 - Default scope is phases `P1+` unless explicitly tagged.
 
 ### Blockers (must resolve before freeze)
-- (none)
+- [ ] [LBA] LBA1 (Blocks: P1 freeze, P2 freeze) — S1 must have landed the V2 workflow skeleton so `archon-piv-loop-codex-v2.yaml` exists and can be extended before S4 implementation begins.
+  - Verify: `test -f .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml` passes in the S4 execution lane before P1 starts.
+  - Evidence: `.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml` exists in the execution lane used for S4.
 
 ### FYI / Later (does not block freeze)
 - (none)
@@ -104,48 +106,61 @@ Rules:
 - [ ] P0-T1: Ground the current slice boundary against repo reality
   - Test Impact: N/A
   - Commands to Run:
-    - inspect `docs/prd/r001-archon-piv-loop-codex-v2.md` and the directly implicated repo surfaces for `S4`
-    - record the current runtime, contract, and doc truth that this slice must preserve or change
+    - inspect `docs/prd/r001-archon-piv-loop-codex-v2.md` and `docs/design/codex-piv-v2-workflow-design.md` for the `S4` Mode B contract: large-request intake, design doc creation or refresh, slice-map creation, and exactly-one-slice selection before the normal one-slice lane
+    - inspect the directly implicated repo surfaces that bound the slice today: `.archon/workflows/defaults/`, `packages/workflows/src/executor.test.ts`, `packages/workflows/src/loader.test.ts`, and `packages/workflows/src/defaults/bundled-defaults.test.ts`
+    - record the exact workflow YAML and test surfaces that will carry the Phase 1 implementation and proof commands
   - Exit Criteria:
-    - the plan captures the current repo truth for `S4`
+    - the plan captures the current repo truth for `S4`, including the current absence or presence of `archon-piv-loop-codex-v2.yaml`
+    - the plan names the concrete workflow YAML and test surfaces that Phase 1 will modify
     - adjacent slice work is explicitly kept out of scope
   - Verify Commands:
+    - `sed -n '340,347p' docs/prd/r001-archon-piv-loop-codex-v2.md`
+    - `rg -n "create or refresh design doc|create slice map|select exactly one slice|workflow run against fixture request" docs/prd/r001-archon-piv-loop-codex-v2.md docs/design/codex-piv-v2-workflow-design.md`
+    - `ls .archon/workflows/defaults | rg 'archon-piv-loop-codex-v2' || true`
+    - `rg -n "executeWorkflow|discoverWorkflows|BUNDLED_WORKFLOWS" packages/workflows/src/executor.test.ts packages/workflows/src/loader.test.ts packages/workflows/src/defaults/bundled-defaults.test.ts`
     - `python3 "${CODEX_HOME:-$HOME/.codex}/skills/.shared/workflow/scripts/plan_readiness.py" --plan-path docs/plans/r001-archon-piv-loop-codex-v2-s4_plan.md --format markdown`
 
 - [ ] P0-T2: Lock the slice contract and doc surface
   - Test Impact: N/A
   - Commands to Run:
-    - update this focused plan after the grounding pass
-    - identify the exact docs and contracts that must stay in sync with `S4`
+    - update this focused plan after the grounding pass with the exact workflow YAML and validation surfaces for `S4`
+    - identify the exact docs and contracts that must stay in sync with `S4`, including the PRD execution-map row and the Mode B design-doc and slice-map artifact contract
   - Exit Criteria:
     - the plan, code boundary, and doc surface describe the same slice
+    - `P1-T1` and `P1-T2` each name concrete verify commands rather than prose placeholders
     - no first-pass scope gap remains inside `Execution Map row`
   - Verify Commands:
-    - `rg -n "S4|Execution Map row" docs`
+    - `rg -n "P1-T1|P1-T2|workflow run against fixture request|executeWorkflow|bundled-defaults|validate workflows archon-piv-loop-codex-v2" docs/plans/r001-archon-piv-loop-codex-v2-s4_plan.md`
 
 ### Phase 1 — Scoped Implementation
 
 - [ ] P1-T1: Implement the smallest load-bearing `S4` surface
   - Test Impact: update
   - Commands to Run:
-    - modify only the code and docs required to land `S4`
-    - keep neighboring execution-map rows untouched unless the PRD contract proves coupling
+    - after `LBA1` is verified, update `.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml` with the smallest Mode B intake path needed for large-request or PRD inputs
+    - keep the implementation scoped to creating or refreshing a design doc, creating a slice map, selecting exactly one slice, and then returning to the normal one-slice lane
+    - preserve neighboring execution-map rows as separate slices unless the PRD contract proves unavoidable coupling
   - Exit Criteria:
-    - design-doc and slice-map mode
-    - the implementation boundary still matches `Execution Map row`
+    - the V2 workflow supports Mode B intake: given a large request or PRD, it creates or refreshes a design doc, creates a slice map, and selects exactly one slice before entering the normal one-slice lane
+    - the implementation boundary still matches the `S4` execution-map row instead of widening into S5+
   - Verify Commands:
-    - run the focused repo-local validation for the touched surface
+    - `test -f .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml`
+    - `bun run cli validate workflows archon-piv-loop-codex-v2 --json`
+    - `bun test packages/workflows/src/executor.test.ts packages/workflows/src/loader.test.ts packages/workflows/src/defaults/bundled-defaults.test.ts`
 
 - [ ] P1-T2: Add or update focused validation for the touched surface
   - Test Impact: add
   - Commands to Run:
-    - update the nearest existing test surface or add a small focused test where coverage is missing
-    - capture the validation evidence needed for freeze and post-freeze review
+    - add or update a fixture-driven workflow proof in `packages/workflows/src/executor.test.ts` that exercises large-request or PRD intake and asserts design-doc and slice-map artifact creation plus exactly-one-slice selection
+    - update the nearest workflow discovery or bundled-defaults regression surface in `packages/workflows/src/loader.test.ts` or `packages/workflows/src/defaults/bundled-defaults.test.ts` if the V2 default workflow contract changes
+    - capture the validation evidence needed for freeze and post-freeze review using those repo-native tests
   - Exit Criteria:
     - the load-bearing behavior of `S4` has direct validation coverage
+    - a fixture-driven workflow proof fails if Mode B stops producing the expected design-doc and slice-map artifacts or stops selecting exactly one slice
     - validation proves the slice without depending on unrelated later-slice work
   - Verify Commands:
-    - run the focused test command chosen during P0 grounding
+    - `bun test packages/workflows/src/executor.test.ts packages/workflows/src/loader.test.ts packages/workflows/src/defaults/bundled-defaults.test.ts`
+    - `bun run cli validate workflows archon-piv-loop-codex-v2 --json`
 
 ### Phase 2 — Validation And Doc Sync
 
@@ -178,9 +193,10 @@ Rules:
   - keep changes scoped to the smallest load-bearing surface
 - Testing (only if code changes):
   - Test posture: `unit=happy-path`, `integration=critical-only`
-  - Test suite status: use the nearest existing repo-local validation surface for `S4`
-  - Primary test command(s): record the focused command selected during P0 grounding and keep it tied to the touched surface
-  - Test locations: the nearest existing tests for the code touched by `S4`
+  - Test suite status: grounded to existing workflow-runtime and bundled-defaults validation surfaces
+  - Primary test command(s): `bun test packages/workflows/src/executor.test.ts packages/workflows/src/loader.test.ts packages/workflows/src/defaults/bundled-defaults.test.ts`
+  - Supporting validation command: `bun run cli validate workflows archon-piv-loop-codex-v2 --json`
+  - Test locations: `packages/workflows/src/executor.test.ts`, `packages/workflows/src/loader.test.ts`, `packages/workflows/src/defaults/bundled-defaults.test.ts`
   - Waivers: if code changes are not required after grounding, record the exact rationale in the plan update
 - Owner/Stakeholders: Mase
 - Definition of Done: `S4` lands exactly within the PRD row boundary and is proven with focused validation evidence.
