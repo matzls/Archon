@@ -2347,6 +2347,10 @@ export interface components {
           args?: string[];
         };
       };
+      worktree?: {
+        enabled?: boolean;
+      };
+      tags?: string[];
       nodes: components['schemas']['DagNode'][];
     };
     /** @enum {string} */
@@ -2563,6 +2567,7 @@ export interface components {
       runningWorkflows: number;
       version?: string;
       is_docker: boolean;
+      activePlatforms?: string[];
     };
     UpdateCheckResponse: {
       updateAvailable: boolean;
