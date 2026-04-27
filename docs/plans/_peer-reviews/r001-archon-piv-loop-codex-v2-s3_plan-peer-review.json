@@ -1,0 +1,220 @@
+{
+  "schema_version": "peer-review-v1",
+  "review_id": "peer-review-041e280214eb",
+  "plan_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/r001-archon-piv-loop-codex-v2-s3_plan.md",
+  "plan_sha256": "c4b8ac81a543501183805ca28d594bf2ec6e5590a557714ac3d7e0458f75c2cd",
+  "mode": "workflow-plan-gate",
+  "sidecar_dir": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/_peer-reviews",
+  "engine": "Claude",
+  "requested_engine": "auto",
+  "origin_runtime": "codex",
+  "engine_policy": "opposite_preferred",
+  "resolved_primary_engine": "claude",
+  "preferred_engine": "claude",
+  "fallback_engine": null,
+  "final_engine": "claude",
+  "reviewer_match": "opposite",
+  "gate_quality": "preferred",
+  "artifact_role": "canonical",
+  "canonical_sidecar_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/_peer-reviews/r001-archon-piv-loop-codex-v2-s3_plan-peer-review.json",
+  "fallback_used": false,
+  "fallback_reason": null,
+  "attempt_chain": [
+    {
+      "engine": "claude",
+      "phase": "primary",
+      "attempt": 1,
+      "timeout_seconds": 300,
+      "result": "completed",
+      "elapsed_seconds": 238.314,
+      "returncode": 0
+    }
+  ],
+  "review_round": 3,
+  "max_rounds": 3,
+  "prior_review_id": "peer-review-1c3770b154b2",
+  "caller_disposition_summary": "",
+  "addressed_issues": [],
+  "deferred_issues": [],
+  "recheck_requests": [],
+  "model": "claude-opus-4-6",
+  "verdict": "Sound",
+  "stance": null,
+  "issues_count": 0,
+  "ran_at": "2026-04-27T18:11:24.976152+00:00",
+  "raw_review_excerpt": "The S3 plan is freeze-ready. All three load-bearing technical claims verified against repo code: (1) loop-node transform at dag-node.ts:632 strips `output_format` by omitting `...aiOnly`, (2) `buildLoopNodeOptions` at dag-executor.ts:1856-1898 never sets `outputFormat`, (3) prompt-node path at dag-executor.ts:636-638 does set it. The `decision_gate` authoring shape in the hardening plan (lines 559-568) provides the reuse precedent. The integration branch `integration/r001-archon-piv-loop-codex-v2` exists locally. The CLI `validate workflows` subcommand and `schemas.test.ts` test file both exist. Verify commands map to real repo tooling. No blockers found.",
+  "error": null,
+  "closure_verification": "Prior round carried one issue (execution-base grounding). The current artifact addresses it comprehensively across four surfaces: execution-base note, P0-T3 task, P1-T2 guard, and Doc Sync Log. The integration branch exists locally. Issue is resolved.",
+  "prior_round_closure": [
+    {
+      "title": "Execution-base grounding correction (integration branch vs root dev)",
+      "severity": "BLOCK",
+      "caller_claim": "Corrected S3 pilot-target grounding to use integration/r001-archon-piv-loop-codex-v2 instead of root dev checkout",
+      "verification_status": "resolved",
+      "verification_notes": "Verified in current artifact: Plan Status & Controls execution-base note references integration branch; P0-T3 commands use git show/log against integration/r001-archon-piv-loop-codex-v2; P1-T2 includes test -f guard with campaign-state mismatch stop rule; Doc Sync Log third entry documents the correction. Integration branch confirmed to exist at .git/refs/heads/integration/r001-archon-piv-loop-codex-v2."
+    }
+  ],
+  "rerun_recommendation": "stop",
+  "review": {
+    "mode": "workflow-plan-gate",
+    "summary": "The S3 plan is freeze-ready. All three load-bearing technical claims verified against repo code: (1) loop-node transform at dag-node.ts:632 strips `output_format` by omitting `...aiOnly`, (2) `buildLoopNodeOptions` at dag-executor.ts:1856-1898 never sets `outputFormat`, (3) prompt-node path at dag-executor.ts:636-638 does set it. The `decision_gate` authoring shape in the hardening plan (lines 559-568) provides the reuse precedent. The integration branch `integration/r001-archon-piv-loop-codex-v2` exists locally. The CLI `validate workflows` subcommand and `schemas.test.ts` test file both exist. Verify commands map to real repo tooling. No blockers found.",
+    "rubric_cards": [
+      {
+        "title": "Claim Anchoring",
+        "anchor": "Plan sections: deterministic grounding snapshot, P0-T1/T2/T3, P1-T1/T2/T3",
+        "claim": "Loop nodes strip output_format; buildLoopNodeOptions omits outputFormat; prompt nodes pass it through; decision_gate shape exists in hardening plan; integration branch hosts V2 workflow",
+        "evidence": "dag-node.ts:632 returns {...base, loop: data.loop} without ...aiOnly (which carries output_format at line 575). dag-executor.ts:1856-1898 buildLoopNodeOptions never sets outputFormat. dag-executor.ts:636-638 sets baseOptions.outputFormat for prompt nodes. piv-transition-control-surface-hardening_plan.md:559-568 shows the decision_gate YAML shape. .git/refs/heads/integration/r001-archon-piv-loop-codex-v2 exists with commit 117cd7e.",
+        "disposition": "present \u2014 all load-bearing claims verified against primary code sources"
+      },
+      {
+        "title": "Disposition Matrix",
+        "anchor": "Full artifact + repo inspection",
+        "claim": "Artifact evidence is present; conversation evidence is partial (round 3 caller claims about execution-base fix); campaign coverage is a slice",
+        "evidence": "Artifact: plan text verified against loop.ts, dag-node.ts, dag-executor.ts, hardening plan, CLI entrypoint, schemas.test.ts, integration branch ref. Conversation: prior-round execution-base correction claim verified via Doc Sync Log third entry and P0-T3 + execution-base note. Campaign: only S3 slice inspected; S1-S7 orchestration plan shows all slices at 'not started'.",
+        "disposition": "present/partial/slice \u2014 see matrix"
+      },
+      {
+        "title": "Coverage Scope",
+        "anchor": "PRD Execution Map row S3, orchestration plan",
+        "claim": "Review covered only the S3 focused slice plan and its directly referenced repo surfaces",
+        "evidence": "Did not inspect S1, S2, or S4-S7 plans. Did not verify the V2 workflow YAML content on the integration branch (only confirmed branch existence). Did not run any verify commands \u2014 only confirmed they reference real files and CLI paths.",
+        "disposition": "slice-only \u2014 S3 freeze readiness assessed; other slices and runtime execution not covered"
+      }
+    ],
+    "disposition_matrix": {
+      "rows": [
+        "artifact",
+        "conversation",
+        "campaign"
+      ],
+      "columns": [
+        "present",
+        "partial",
+        "missing"
+      ],
+      "cells": [
+        [
+          "grounding snapshot, exit criteria, verify commands, scope, architecture, doc surface map",
+          "\u2014",
+          "\u2014"
+        ],
+        [
+          "\u2014",
+          "prior-round execution-base fix (verified in artifact but no independent branch-content proof)",
+          "\u2014"
+        ],
+        [
+          "\u2014",
+          "\u2014",
+          "S1-S2 landed state, S4-S7 plans, V2 workflow YAML content on integration branch"
+        ]
+      ]
+    },
+    "conversation_evidence": {
+      "used": true,
+      "sources": [
+        "Prior round context: round 3/3, review id peer-review-1c3770b154b2, execution-base correction claim"
+      ],
+      "summary": "The prior round claimed the execution-base was corrected to use the integration branch instead of the root dev checkout. This is verified in the current artifact: Plan Status & Controls execution-base note, P0-T3 task body, P1-T2 test -f guard, and Doc Sync Log third entry all reference integration/r001-archon-piv-loop-codex-v2 as the S3 execution base.",
+      "gaps": [
+        "No independent verification that the V2 workflow YAML file actually exists on the integration branch (only confirmed the branch ref exists); the plan's own P0-T3 commands and P1-T2 test -f guard address this at execution time"
+      ]
+    },
+    "campaign_coverage": {
+      "scope": "slice-only",
+      "covered": [
+        "S3 plan artifact text",
+        "S3 state.json",
+        "Referenced source files: loop.ts, dag-node.ts, dag-executor.ts",
+        "Referenced precedent: piv-transition-control-surface-hardening_plan.md",
+        "CLI validate command existence",
+        "schemas.test.ts existence",
+        "Integration branch ref existence",
+        "PRD Execution Map row S3",
+        "V2 design doc Slice 3 section"
+      ],
+      "missing": [
+        "S1/S2 landed implementation content on integration branch",
+        "V2 workflow YAML content (archon-piv-loop-codex-v2.yaml)",
+        "S4-S7 plan artifacts",
+        "dag-executor.test.ts loop-specific coverage baseline"
+      ],
+      "gaps": [
+        "Did not run any verify commands \u2014 confirmed they reference real tooling but did not execute them",
+        "Did not verify whether S1/S2 implementation is complete on the integration branch"
+      ]
+    },
+    "issues": [],
+    "verification_gaps": [
+      "V2 workflow YAML content on integration branch not directly inspected (branch ref confirmed, file content not read)",
+      "Existing loop-node test coverage baseline in dag-executor.test.ts not inspected (file exists and is referenced in package.json test script)",
+      "Whether bun run cli validate workflows passes for the current V2 workflow was not executed"
+    ],
+    "recommended_fixes": [],
+    "evidence_sources": [
+      "packages/workflows/src/schemas/loop.ts:1-44",
+      "packages/workflows/src/schemas/dag-node.ts:248-262 (loopNodeSchema)",
+      "packages/workflows/src/schemas/dag-node.ts:560-634 (transform, loop branch at 630-632)",
+      "packages/workflows/src/dag-executor.ts:600-674 (prompt-node outputFormat at 636-638)",
+      "packages/workflows/src/dag-executor.ts:1856-1898 (buildLoopNodeOptions \u2014 no outputFormat)",
+      "packages/workflows/src/dag-executor.ts:2172-2500 (executeLoopNode completion logic)",
+      "docs/plans/piv-transition-control-surface-hardening_plan.md:466-594 (decision_gate precedent)",
+      "docs/design/codex-piv-v2-workflow-design.md:532-543 (Slice 3 design guidance)",
+      "docs/prd/r001-archon-piv-loop-codex-v2.md:340-346 (Execution Map)",
+      "packages/workflows/src/schemas.test.ts:1-30 (file exists)",
+      "packages/cli/src/cli.ts:64,105 (validate workflows command)",
+      "package.json:10 (cli script)",
+      "docs/plans/r001-archon-piv-loop-codex-v2-orchestration-plan.md:25-33 (slice table)",
+      "docs/plans/r001-archon-piv-loop-codex-v2-s3_plan.state.json (all tasks proposed)",
+      ".git/refs/heads/integration/r001-archon-piv-loop-codex-v2 (branch exists)"
+    ],
+    "error": null,
+    "verdict": "Sound",
+    "workflow_compliance": [
+      "Plan status is draft with current_phase 0 and authoring_state drafted \u2014 consistent with pre-freeze gate review",
+      "State file matches plan: 8 tasks across 3 phases, all proposed",
+      "Unresolved Items section has no blockers \u2014 verified empty in both plan text and state.json",
+      "E2E gate explicitly waived with category and rationale",
+      "Execution-base note correctly identifies integration branch as the S3 worktree source",
+      "Doc Surface Map present with action classifications",
+      "Documentation Checklist present with deferred-evaluation items"
+    ],
+    "technical_reality": [
+      "loop.ts:1-44 confirms loop nodes use until/until_bash only \u2014 no decision_gate or output_format field exists yet",
+      "dag-node.ts:630-632 confirms loop branch omits ...aiOnly spread, which is where output_format lives (line 575)",
+      "dag-executor.ts:1856-1898 buildLoopNodeOptions confirmed to never set outputFormat",
+      "dag-executor.ts:636-638 confirms prompt-node path does set baseOptions.outputFormat from node.output_format",
+      "dag-executor.ts:2451-2490 confirms loop completion is driven by detectCompletionSignal + until_bash only",
+      "piv-transition-control-surface-hardening_plan.md:559-568 confirms the decision_gate YAML shape the plan intends to reuse",
+      "design doc Slice 3 section (lines 532-543) confirms typed phase gates are an engine/runtime slice requiring loop-schema/executor work"
+    ],
+    "assumptions_to_verify": [
+      "The V2 workflow YAML file actually exists and is well-formed on the integration branch (plan's P0-T3 and P1-T2 guard commands handle this at execution time)",
+      "The existing dag-executor.test.ts loop coverage is sufficient as a regression baseline for the additive changes (plan's P1-T3 addresses this)"
+    ],
+    "verification_sufficiency": [
+      "All load-bearing code claims verified against primary source files",
+      "CLI validate command path confirmed real via package.json and cli.ts",
+      "Test file schemas.test.ts confirmed to exist",
+      "Integration branch confirmed to exist locally",
+      "Verify commands in all tasks reference real file paths and real CLI tooling",
+      "No fictional or aspirational verify commands detected"
+    ],
+    "downstream_risks": [
+      "If loop-node output_format preservation changes the Zod transform output shape, downstream type consumers in dag-executor.ts may need updates beyond what P1-T1 scopes",
+      "If the integration branch has diverged significantly from dev, S3 worktree creation may require merge conflict resolution not addressed in the plan"
+    ],
+    "freeze_recommendation": "Safe to freeze. No blocker-level issues were identified.",
+    "prior_round_closure": [
+      {
+        "title": "Execution-base grounding correction (integration branch vs root dev)",
+        "severity": "BLOCK",
+        "caller_claim": "Corrected S3 pilot-target grounding to use integration/r001-archon-piv-loop-codex-v2 instead of root dev checkout",
+        "verification_status": "resolved",
+        "verification_notes": "Verified in current artifact: Plan Status & Controls execution-base note references integration branch; P0-T3 commands use git show/log against integration/r001-archon-piv-loop-codex-v2; P1-T2 includes test -f guard with campaign-state mismatch stop rule; Doc Sync Log third entry documents the correction. Integration branch confirmed to exist at .git/refs/heads/integration/r001-archon-piv-loop-codex-v2."
+      }
+    ],
+    "closure_verification": "Prior round carried one issue (execution-base grounding). The current artifact addresses it comprehensively across four surfaces: execution-base note, P0-T3 task, P1-T2 guard, and Doc Sync Log. The integration branch exists locally. Issue is resolved.",
+    "rerun_recommendation": "stop"
+  }
+}

@@ -3,8 +3,8 @@
   "plan": {
     "status": "draft",
     "current_phase": 0,
-    "authoring_state": "unknown",
-    "updated": "2026-04-27T14:33:14.862248+00:00"
+    "authoring_state": "drafted",
+    "updated": "2026-04-27T18:12:00.000000+00:00"
   },
   "tasks": [
     {
@@ -14,6 +14,11 @@
     },
     {
       "id": "P0-T2",
+      "phase": 0,
+      "status": "proposed"
+    },
+    {
+      "id": "P0-T3",
       "phase": 0,
       "status": "proposed"
     },
@@ -28,7 +33,17 @@
       "status": "proposed"
     },
     {
+      "id": "P1-T3",
+      "phase": 1,
+      "status": "proposed"
+    },
+    {
       "id": "P2-T1",
+      "phase": 2,
+      "status": "proposed"
+    },
+    {
+      "id": "P2-T2",
       "phase": 2,
       "status": "proposed"
     }
