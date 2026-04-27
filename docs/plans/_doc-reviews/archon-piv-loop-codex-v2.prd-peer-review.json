@@ -1,0 +1,214 @@
+{
+  "schema_version": "peer-review-v1",
+  "review_id": "peer-review-226358d18429",
+  "plan_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/prd/archon-piv-loop-codex-v2.prd.md",
+  "plan_sha256": "f6897c8b4073bc547538fcc1f93469259980a58ff75dd3c92293181b86e06d2b",
+  "mode": "artifact-review",
+  "sidecar_dir": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/_doc-reviews",
+  "engine": "Claude",
+  "requested_engine": "opposite",
+  "origin_runtime": "codex",
+  "engine_policy": "opposite_preferred",
+  "resolved_primary_engine": "claude",
+  "preferred_engine": "claude",
+  "fallback_engine": null,
+  "final_engine": "claude",
+  "reviewer_match": "opposite",
+  "gate_quality": "preferred",
+  "artifact_role": "canonical",
+  "canonical_sidecar_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/_doc-reviews/archon-piv-loop-codex-v2.prd-peer-review.json",
+  "fallback_used": false,
+  "fallback_reason": null,
+  "attempt_chain": [
+    {
+      "engine": "claude",
+      "phase": "primary",
+      "attempt": 1,
+      "timeout_seconds": 300,
+      "result": "completed",
+      "elapsed_seconds": 139.52,
+      "returncode": 0
+    }
+  ],
+  "review_round": 2,
+  "max_rounds": 3,
+  "prior_review_id": "peer-review-56fd3eadce36",
+  "caller_disposition_summary": "Addressed both round-1 findings: added durable PRD/slice-map feedback-loop acceptance criterion and tightened S1 Execution Map scope to keep V1 plan-path and sentinel contracts while deferring typed gates, design-doc intake, review automation, live evidence conventions, and PR handoff.",
+  "addressed_issues": [
+    "Missing AC for durable feedback loop to PRD and slice map",
+    "Execution Map S1 description is vaguer than Slice Defaults"
+  ],
+  "deferred_issues": [],
+  "recheck_requests": [
+    "Missing AC for durable feedback loop to PRD and slice map",
+    "Execution Map S1 description is vaguer than Slice Defaults"
+  ],
+  "model": "claude-opus-4-6",
+  "verdict": "Sound",
+  "stance": null,
+  "issues_count": 0,
+  "ran_at": "2026-04-27T14:18:32.044742+00:00",
+  "raw_review_excerpt": "Both round-1 findings are resolved by direct artifact inspection. The feedback-loop AC now appears as the final acceptance criterion in Section 8, closely matching the round-1 suggested fix. The S1 Execution Map row now explicitly echoes the Section 6.6 Slice Defaults boundaries. The PRD is well-structured for umbrella-plus-slices orchestrator handoff: clear tier positioning, concrete ACs, honest open questions, grounded constraints, and an actionable operator handoff prompt. No new material issues found.",
+  "error": null,
+  "closure_verification": "Both round-1 issues verified as resolved by direct artifact inspection. The feedback-loop AC (Section 8, final criterion) matches the round-1 suggested fix. The S1 Execution Map row (Section 12) now explicitly echoes all Section 6.6 Slice Defaults boundaries. No new material issues found. PRD is handoff-ready for umbrella-plus-slices orchestrator intake.",
+  "prior_round_closure": [
+    {
+      "title": "Missing AC for durable feedback loop to PRD and slice map",
+      "severity": "WARN",
+      "caller_claim": "Added AC covering durable feedback from completed slices to PRD and slice map",
+      "verification_status": "resolved",
+      "verification_notes": "Section 8 now includes final AC: 'Given a completed V2 slice resolves an assumption, changes scope, or lands a requirement, when that slice closes out, then durable feedback is recorded in both this PRD and the campaign slice map.' This directly satisfies the round-1 finding and anchors design doc \u00a76 and \u00a78.2 contracts."
+    },
+    {
+      "title": "Execution Map S1 description is vaguer than Slice Defaults",
+      "severity": "NOTE",
+      "caller_claim": "Tightened S1 Execution Map scope to reference Section 6.6 boundaries explicitly",
+      "verification_status": "resolved",
+      "verification_notes": "Section 12 S1 row now reads: 'V2 workflow skeleton from V1, keeping V1 plan-path behavior and explicit sentinel contracts while deferring typed gates, design-doc intake, review automation, live evidence conventions, and PR handoff to later slices.' This echoes all six Section 6.6 boundaries and eliminates the vagueness flagged in round 1."
+    }
+  ],
+  "rerun_recommendation": "stop",
+  "review": {
+    "mode": "artifact-review",
+    "summary": "Both round-1 findings are resolved by direct artifact inspection. The feedback-loop AC now appears as the final acceptance criterion in Section 8, closely matching the round-1 suggested fix. The S1 Execution Map row now explicitly echoes the Section 6.6 Slice Defaults boundaries. The PRD is well-structured for umbrella-plus-slices orchestrator handoff: clear tier positioning, concrete ACs, honest open questions, grounded constraints, and an actionable operator handoff prompt. No new material issues found.",
+    "rubric_cards": [
+      {
+        "title": "Claim anchoring",
+        "anchor": "Sections 2, 3, 5, 6, 8, 9, 10, 12, 15",
+        "claim": "PRD claims V1 is too light, local heavy is too heavy, V2 fills a verified middle tier. Claims V2 starts from V1 YAML. Slice defaults and execution map claim specific S1 boundaries.",
+        "evidence": "V1 YAML confirmed: no frontmatter, no plan status, plans at .claude/archon/plans/. Design doc \u00a77 lists V1 template gaps. Strategy doc \u00a78.1 confirms V1 as reference Codex workflow. Skill SKILL.md names V2 preparation. S1 Execution Map row now references keeping V1 plan-path, sentinel contracts, and deferring typed gates/design-doc intake/review automation/live evidence/PR handoff \u2014 matches \u00a76.6 exactly. All load-bearing claims trace to inspected sources.",
+        "disposition": "present \u2014 all load-bearing claims verified against V1 YAML, design doc, strategy doc, skill reference, and internal cross-section consistency"
+      },
+      {
+        "title": "Disposition matrix",
+        "anchor": "Full artifact",
+        "claim": "PRD covers tier model, operating modes, artifact contract, integration branch, review/validation gates, slice defaults, execution map, ACs (including feedback loop), constraints, and handoff prompt.",
+        "evidence": "Sections 1\u201315 verified. Tier model matches design doc \u00a73. Operating modes match \u00a74. Artifact model matches \u00a76. Integration branch matches \u00a75. Review gates match \u00a78. Validation model matches \u00a79. Implementation basis matches \u00a711 and skill reference. Feedback-loop AC added in Section 8 satisfies design doc \u00a76/\u00a78.2 contract. S1 Execution Map tightened to echo \u00a76.6.",
+        "disposition": "present \u2014 the PRD faithfully distills both design docs and now covers all identified gaps from round 1"
+      },
+      {
+        "title": "Coverage scope",
+        "anchor": "Sections 6.6, 8, 11, 12",
+        "claim": "Closure review covered the full PRD artifact, verified both prior-round issues, and confirmed handoff readiness.",
+        "evidence": "Files inspected: archon-piv-loop-codex.yaml, codex-piv-v2-workflow-design.md, codex-first-workflow-surface-strategy.md, my-dash-workflow-builder-codex/SKILL.md, archon-piv-loop-codex-v2.prd-peer-review.json (round-1 sidecar). Not inspected: bundled-defaults.ts, validator.ts, dag-executor.ts, loop schema \u2014 these are post-implementation evidence surfaces, not PRD authoring inputs.",
+        "disposition": "present \u2014 full artifact reviewed, prior-round closure verified, repo coverage sufficient for PRD-level review"
+      }
+    ],
+    "disposition_matrix": {
+      "rows": [
+        "artifact",
+        "conversation",
+        "campaign"
+      ],
+      "columns": [
+        "present",
+        "partial",
+        "missing"
+      ],
+      "cells": [
+        [
+          "tier model, modes, ACs (including feedback loop), slice defaults, execution map (tightened S1), constraints, integration branch, review gates, risks, handoff prompt",
+          "none",
+          "none"
+        ],
+        [
+          "prior-round sidecar used to verify claimed fixes",
+          "not applicable",
+          "not applicable"
+        ],
+        [
+          "PRD artifact complete and internally consistent; round-1 sidecar verified",
+          "no slice plans, umbrella plan, or implementation artifacts yet (expected at this stage)",
+          "no validator run or bundle drift check (post-implementation evidence)"
+        ]
+      ]
+    },
+    "conversation_evidence": {
+      "used": true,
+      "sources": [
+        "docs/plans/_doc-reviews/archon-piv-loop-codex-v2.prd-peer-review.json (round-1 review sidecar)"
+      ],
+      "summary": "Round-1 sidecar used to identify the two carried issues and verify the caller's claimed fixes against the current artifact text. Both fixes confirmed by direct artifact inspection.",
+      "gaps": [
+        "No additional conversation thread beyond the round-1 sidecar and caller disposition summary"
+      ]
+    },
+    "campaign_coverage": {
+      "scope": "slice-only",
+      "covered": [
+        "PRD artifact text (all 15 sections)",
+        "V1 workflow YAML (archon-piv-loop-codex.yaml)",
+        "V2 design doc (codex-piv-v2-workflow-design.md)",
+        "Codex-first workflow surface strategy doc",
+        "my-dash-workflow-builder-codex SKILL.md",
+        "Round-1 peer review sidecar"
+      ],
+      "missing": [
+        "No umbrella plan or slice plans exist yet (expected at this stage)",
+        "No implementation artifacts exist yet"
+      ],
+      "gaps": [
+        "AC1 (workflow validator reports valid) and AC2 (bundled-defaults drift check) require post-implementation evidence",
+        "Typed phase-gate runtime support (S3 dependency) not verified against loop schema \u2014 deferred to S3 execution"
+      ]
+    },
+    "issues": [],
+    "verification_gaps": [
+      "AC1 and AC2 require running workflow validator and bundled-defaults drift check after V2 YAML exists \u2014 post-implementation evidence, not a PRD authoring gap",
+      "Typed phase-gate runtime support (S3 dependency) not verified against dag-executor.ts or loop schema \u2014 correctly deferred to S3 execution",
+      "Codex red lines compliance cannot be verified until V2 YAML exists \u2014 inherently post-implementation",
+      "$ARTIFACTS_DIR/e2e-reports/ path usability to be confirmed in S5 execution"
+    ],
+    "recommended_fixes": [],
+    "evidence_sources": [
+      "archon-piv-loop-codex.yaml (V1 workflow YAML, inspected in full)",
+      "docs/design/codex-piv-v2-workflow-design.md (V2 design doc, inspected in full)",
+      "docs/design/codex-first-workflow-surface-strategy.md (strategy doc, inspected in full)",
+      ".agents/skills/my-dash-workflow-builder-codex/SKILL.md (skill contract, inspected lines 1\u201380)",
+      "docs/plans/_doc-reviews/archon-piv-loop-codex-v2.prd-peer-review.json (round-1 sidecar, inspected in full)"
+    ],
+    "error": null,
+    "verdict": "Sound",
+    "core_challenge": "Creating a truthful middle-tier Codex workflow that borrows the local heavy system's planning and validation discipline without becoming a disguised campaign orchestrator or importing unsupported runtime assumptions.",
+    "assumptions_to_verify": [
+      "V1's .claude/archon/plans/ path convention will remain stable through S1 \u2014 confirmed by Section 6.6 and design doc \u00a712 Slice 1",
+      "Archon's loop schema does not yet support structured loop decisions \u2014 stated in PRD Section 9 and design doc \u00a712 Slice 3, not verified against loop.ts",
+      "$ARTIFACTS_DIR/e2e-reports/ path will be usable for run-scoped evidence \u2014 proposed in design doc \u00a76 and PRD Section 6.3, to be verified in S5",
+      "Archon's workflow validator and bundled-defaults infrastructure can accommodate a new default workflow \u2014 implied by AC1 and AC2, testable once S1 lands"
+    ],
+    "technical_reality": [
+      "V1 YAML is ~1116 lines with 9 nodes using string-based completion signals via <promise> tags \u2014 confirmed by inspection",
+      "V1 stores plans at .claude/archon/plans/{slug}.plan.md \u2014 confirmed in create-plan node prompt",
+      "V1 uses fresh_context: true for stateless per-task implement iterations \u2014 confirmed",
+      "Codex red lines prohibit per-node hooks, mcp, skills, agents, allowed_tools, denied_tools, and Claude-only fields \u2014 confirmed in SKILL.md",
+      "Design doc recommends 7 slices in the same order as the PRD \u2014 confirmed"
+    ],
+    "spec_gaps": [
+      "The PRD does not specify what happens when a V2 run discovers that the selected slice is no longer independent after implementation starts \u2014 low risk given one-slice-per-run constraint",
+      "The PRD does not specify whether the operator handoff prompt's integration-branch field should be a required input or auto-detected \u2014 non-blocking for S1 which starts from dev"
+    ],
+    "downstream_risks": [
+      "S3 typed-gate work could stall if loop.ts schema is harder to extend than assumed \u2014 PRD mitigates this by defaulting to sentinel contracts",
+      "Plan-path migration in S2 is genuinely load-bearing: V1 YAML has at least 5 nodes that reference .claude/archon/plans/ \u2014 a partial migration would break the workflow",
+      "If the one-slice boundary is not enforced tightly in the workflow YAML, V2 could drift into being a hidden campaign orchestrator"
+    ],
+    "prior_round_closure": [
+      {
+        "title": "Missing AC for durable feedback loop to PRD and slice map",
+        "severity": "WARN",
+        "caller_claim": "Added AC covering durable feedback from completed slices to PRD and slice map",
+        "verification_status": "resolved",
+        "verification_notes": "Section 8 now includes final AC: 'Given a completed V2 slice resolves an assumption, changes scope, or lands a requirement, when that slice closes out, then durable feedback is recorded in both this PRD and the campaign slice map.' This directly satisfies the round-1 finding and anchors design doc \u00a76 and \u00a78.2 contracts."
+      },
+      {
+        "title": "Execution Map S1 description is vaguer than Slice Defaults",
+        "severity": "NOTE",
+        "caller_claim": "Tightened S1 Execution Map scope to reference Section 6.6 boundaries explicitly",
+        "verification_status": "resolved",
+        "verification_notes": "Section 12 S1 row now reads: 'V2 workflow skeleton from V1, keeping V1 plan-path behavior and explicit sentinel contracts while deferring typed gates, design-doc intake, review automation, live evidence conventions, and PR handoff to later slices.' This echoes all six Section 6.6 boundaries and eliminates the vagueness flagged in round 1."
+      }
+    ],
+    "closure_verification": "Both round-1 issues verified as resolved by direct artifact inspection. The feedback-loop AC (Section 8, final criterion) matches the round-1 suggested fix. The S1 Execution Map row (Section 12) now explicitly echoes all Section 6.6 Slice Defaults boundaries. No new material issues found. PRD is handoff-ready for umbrella-plus-slices orchestrator intake.",
+    "rerun_recommendation": "stop"
+  }
+}
