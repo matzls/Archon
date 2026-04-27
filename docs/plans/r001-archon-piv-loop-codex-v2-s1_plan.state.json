@@ -3,8 +3,8 @@
   "plan": {
     "status": "draft",
     "current_phase": 0,
-    "authoring_state": "unknown",
-    "updated": "2026-04-27T14:33:14.729030+00:00"
+    "authoring_state": "drafted",
+    "updated": "2026-04-27T14:58:47.578265+00:00"
   },
   "tasks": [
     {
@@ -14,6 +14,11 @@
     },
     {
       "id": "P0-T2",
+      "phase": 0,
+      "status": "proposed"
+    },
+    {
+      "id": "P0-T3",
       "phase": 0,
       "status": "proposed"
     },
@@ -28,11 +33,35 @@
       "status": "proposed"
     },
     {
+      "id": "P1-T3",
+      "phase": 1,
+      "status": "proposed"
+    },
+    {
       "id": "P2-T1",
+      "phase": 2,
+      "status": "proposed"
+    },
+    {
+      "id": "P2-T2",
       "phase": 2,
       "status": "proposed"
     }
   ],
   "task_contracts": {},
-  "unresolved_items": []
+  "unresolved_items": [
+    {
+      "id": "Q1",
+      "kind": "q",
+      "checked": false,
+      "section": "blockers",
+      "blocks_phases": [
+        0,
+        1,
+        2
+      ],
+      "summary": "Resolve the PRD `plan:` backlink handoff before freezing this focused S1 plan.",
+      "answer": "Default path: keep the PRD `plan:` pointer on the umbrella plan while this slice is still a draft, then run `frontmatter_link_sync.py` during `phase_freeze` or `freeze_all confirm=true` to repoint the backlink to this slice plan once S1 becomes the active frozen plan. Only fall back to a readiness-rule change if that handoff would violate umbrella governance. Use P0-T3 to dry-run the sync and keep this blocker open until the handoff path is verified."
+    }
+  ]
 }
