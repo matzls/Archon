@@ -1,51 +1,67 @@
 {
   "$schema": "plan-state-v1",
   "plan": {
-    "status": "active",
-    "current_phase": 0,
+    "status": "accepted",
+    "current_phase": 2,
     "authoring_state": "drafted",
-    "updated": "2026-04-27T16:27:42.587661+00:00"
+    "updated": "2026-04-27T16:39:51.838895+00:00"
   },
   "tasks": [
     {
       "id": "P0-T1",
       "phase": 0,
-      "status": "approved"
+      "status": "validated",
+      "last_sha": "c62d35774b74e4e45b89b99921c808ba38db6886",
+      "last_transition": "2026-04-27T16:29:57.132484+00:00"
     },
     {
       "id": "P0-T2",
       "phase": 0,
-      "status": "approved"
+      "status": "validated",
+      "last_sha": "c62d35774b74e4e45b89b99921c808ba38db6886",
+      "last_transition": "2026-04-27T16:30:18.047331+00:00"
     },
     {
       "id": "P0-T3",
       "phase": 0,
-      "status": "approved"
+      "status": "validated",
+      "last_sha": "c62d35774b74e4e45b89b99921c808ba38db6886",
+      "last_transition": "2026-04-27T16:30:35.859161+00:00"
     },
     {
       "id": "P1-T1",
       "phase": 1,
-      "status": "approved"
+      "status": "validated",
+      "last_sha": "c62d35774b74e4e45b89b99921c808ba38db6886",
+      "last_transition": "2026-04-27T16:33:10.479965+00:00"
     },
     {
       "id": "P1-T2",
       "phase": 1,
-      "status": "approved"
+      "status": "validated",
+      "last_sha": "c62d35774b74e4e45b89b99921c808ba38db6886",
+      "last_transition": "2026-04-27T16:33:26.510653+00:00"
     },
     {
       "id": "P1-T3",
       "phase": 1,
-      "status": "approved"
+      "status": "validated",
+      "last_sha": "c62d35774b74e4e45b89b99921c808ba38db6886",
+      "last_transition": "2026-04-27T16:33:51.017097+00:00"
     },
     {
       "id": "P2-T1",
       "phase": 2,
-      "status": "approved"
+      "status": "validated",
+      "last_sha": "c62d35774b74e4e45b89b99921c808ba38db6886",
+      "last_transition": "2026-04-27T16:34:05.199884+00:00"
     },
     {
       "id": "P2-T2",
       "phase": 2,
-      "status": "approved"
+      "status": "validated",
+      "last_sha": "c62d35774b74e4e45b89b99921c808ba38db6886",
+      "last_transition": "2026-04-27T16:35:29.438021+00:00"
     }
   ],
   "task_contracts": {},
@@ -65,24 +81,24 @@
     }
   ],
   "snapshot_gate": {
-    "branch": "dev",
-    "checked_at": "2026-04-27T16:27:42+00:00",
+    "branch": "slice/r001-archon-piv-loop-codex-v2/s1",
+    "checked_at": "2026-04-27T16:27:43+00:00",
     "default_branch": "dev",
-    "dirty_before_snapshot": true,
-    "lane_branch": "dev",
+    "dirty_before_snapshot": false,
+    "lane_branch": "slice/r001-archon-piv-loop-codex-v2/s1",
     "lane_decision_basis": "deterministic",
-    "lane_decision_reason": "repo_dirty_before_implementation",
-    "lane_type": "branch",
-    "lane_worktree_path": null,
-    "next_command": "git checkout -b r001-archon-piv-loop-codex-v2-s1-plan",
+    "lane_decision_reason": "clean_feature_lane_before_implementation",
+    "lane_type": "worktree",
+    "lane_worktree_path": "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s1",
+    "next_command": null,
     "plan_path": "docs/plans/r001-archon-piv-loop-codex-v2-s1_plan.md",
-    "reason": "running_on_default_branch",
-    "snapshot_commit_message": null,
-    "snapshot_commit_sha": null,
-    "snapshot_created_at": null,
-    "status": "missing",
-    "worktree_count": 1,
-    "worktree_present": false,
-    "worktree_required": true
+    "reason": "snapshot_commit_created",
+    "snapshot_commit_message": "chore(workflow): snapshot before implementing r001-archon-piv-loop-codex-v2-s1-plan\n\nPlan: docs/plans/r001-archon-piv-loop-codex-v2-s1_plan.md\nFeature: r001-archon-piv-loop-codex-v2-s1-plan\nPurpose: rollback anchor before implementation\nLane: branch=slice/r001-archon-piv-loop-codex-v2/s1 worktree=/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s1\n",
+    "snapshot_commit_sha": "c62d35774b74e4e45b89b99921c808ba38db6886",
+    "snapshot_created_at": "2026-04-27T16:27:43+00:00",
+    "status": "current",
+    "worktree_count": 2,
+    "worktree_present": true,
+    "worktree_required": false
   }
 }
