@@ -172,6 +172,8 @@ describe('bundled-defaults', () => {
       expect(content).toContain('docs/plans/_peer-reviews/');
       expect(content).toContain('review_needed');
       expect(content).toContain('review_revisions');
+      expect(content).toContain('complete_on_user_input:');
+      expect(content).toContain('gate_message: |');
       expect(content).toContain('max_iterations: 3');
     });
 

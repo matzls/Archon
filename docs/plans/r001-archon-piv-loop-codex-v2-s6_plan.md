@@ -15,7 +15,7 @@ version: "0.2"
 - Why we're doing it: the integration-branch V2 workflow now has stronger plan metadata and a separate `live-validate` gate, but it still has no actual planning-review or implementation-review checkpoint.
 - What "done" looks like: `archon-piv-loop-codex-v2` requires planning review before implementation, implementation review after code validation, caps material review/fix loops at `3`, and proves it with review sidecar fixtures and gate behavior tests.
 - How we did it: grounded the integration-branch gap, locked the review-node and sidecar contract, updated the workflow plus targeted tests, then validated and closed the slice evidence loop.
-- Next step / resume point: review/ship the accepted S6 slice into `integration/r001-archon-piv-loop-codex-v2`; the Claude peer lane is currently quota-blocked, so the Codex fallback review artifact is the active review evidence.
+- Next step / resume point: review/ship the accepted S6 slice into `integration/r001-archon-piv-loop-codex-v2`; the Claude ship-review lane is currently quota-blocked, so the Codex fallback ship-review artifact is separate evidence from the earlier Claude plan-gate sidecar.
 
 ### Optional Mental Model
 
@@ -69,7 +69,7 @@ flowchart LR
 - Current Phase: P2 — Validation And Doc Sync
 - Last Updated: 2026-04-28
 - Last Reviewed: 2026-04-28
-- Next Checkpoint: review/ship the S6 branch into the campaign integration branch, using the explicit Codex fallback review artifact while Claude remains quota-blocked.
+- Next Checkpoint: review/ship the S6 branch into the campaign integration branch, using the explicit Codex fallback ship-review artifact while Claude remains quota-blocked; do not confuse this with the earlier Claude plan-gate peer-review sidecar.
 - Execution-base note: the root `dev` checkout still lacks `.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml`; `S6` execution should branch from `integration/r001-archon-piv-loop-codex-v2` or an equivalent lane that already contains the S1-S5 V2 workflow surfaces.
 - Deterministic grounding snapshot: PRD `§6.5` requires planning review before implementation, implementation review after code validation, a three-iteration cap on material review/fix loops, and separation between code validation and final live validation. PRD `§6.3` names `docs/plans/_advisory-reviews/` and `docs/plans/_peer-reviews/` as the durable review sidecar locations. The integration-branch V2 workflow already carries peer-review frontmatter fields and a separate `live-validate` node from `S5`, but it still has no `planning-review` or `implementation-review` node, `implement-setup` still depends directly on `refine-plan`, and `fix-feedback` still allows `max_iterations: 10`.
 - E2E Gate: not_required

@@ -2504,6 +2504,14 @@ nodes:
       if (isLoopNode(planningReviewNode)) {
         expect(planningReviewNode.depends_on).toEqual(['refine-plan', 'create-plan']);
         expect(planningReviewNode.loop.max_iterations).toBe(3);
+        expect(planningReviewNode.loop.gate_message).toContain('Review the frozen plan');
+        expect(planningReviewNode.loop.complete_on_user_input).toEqual([
+          'approved',
+          'looks good',
+          'ship it',
+          "let's go",
+          'proceed',
+        ]);
       }
 
       const implementationReviewNode = workflow.nodes.find(
@@ -2518,6 +2526,16 @@ nodes:
           'detect-project',
         ]);
         expect(implementationReviewNode.loop.max_iterations).toBe(3);
+        expect(implementationReviewNode.loop.gate_message).toContain(
+          'Review the post-code-validation implementation'
+        );
+        expect(implementationReviewNode.loop.complete_on_user_input).toEqual([
+          'approved',
+          'looks good',
+          'ship it',
+          "let's go",
+          'proceed',
+        ]);
       }
     });
   });
