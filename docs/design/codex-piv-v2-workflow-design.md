@@ -2,7 +2,7 @@
 title: Codex PIV V2 Workflow Design
 status: draft
 created: 2026-04-26
-updated: 2026-04-26
+updated: 2026-04-28
 ---
 
 # Design Doc: Codex PIV V2 Workflow
@@ -547,6 +547,12 @@ Why:
 - add optional slice-map creation
 - select exactly one slice for execution
 - avoid automatic multi-slice orchestration
+- implementation note: `archon-piv-loop-codex-v2` now runs Mode B intake
+  before the normal exploration lane when the request is a PRD or large
+  request. The intake classifier branches to design-doc and slice-map nodes,
+  the summary node enforces that both artifacts exist and exactly one slice is
+  selected, then `explore` and `create-plan` continue with that selected slice
+  as the focused one-slice scope.
 
 ### Slice 5: Live E2E Evidence
 

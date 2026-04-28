@@ -1,9 +1,9 @@
 ---
 title: "Archon PIV Loop Codex V2 S4 — design-doc and slice-map mode — Plan"
 kind: plan
-status: active
+status: accepted
 created: 2026-04-27
-updated: "2026-04-27"
+updated: "2026-04-28"
 origin_prd: "docs/prd/r001-archon-piv-loop-codex-v2.md"
 origin: ""
 version: "0.2"
@@ -56,11 +56,11 @@ flowchart LR
 **Choice:** [x] A1  [ ] A2
 
 ## Plan Status & Controls
-- Plan Status: Active (as of 2026-04-27)
-- Current Phase: P0 — Grounding
-- Last Updated: 2026-04-27
+- Plan Status: Accepted (as of 2026-04-28)
+- Current Phase: P2 — Validated
+- Last Updated: 2026-04-28
 - Last Reviewed: 2026-04-27
-- Next Checkpoint: refine this seeded slice against current repo reality, then freeze only if no real blockers remain
+- Next Checkpoint: commit/review handoff
 - E2E Gate: not_required
 - E2E Waiver Category: internal_tooling
 - E2E Waiver Rationale: This seeded slice targets contract, workflow, or internal runtime surfaces. Focused repo-local validation is the required proof shape before any broader end-to-end coverage is considered.
@@ -96,8 +96,8 @@ Rules:
 | Phase | Phase Status | Tasks (ID: Title — Status) |
 |------:|--------------|----------------------------|
 | P0 | Validated | - P0-T1: Ground the current slice boundary against repo reality — validated<br>- P0-T2: Lock the slice contract and doc surface — validated |
-| P1 | Proposed | - P1-T1: Implement the smallest load-bearing `S4` surface — proposed<br>- P1-T2: Add or update focused validation for the touched surface — proposed |
-| P2 | Proposed | - P2-T1: Reconcile docs and prove final slice evidence — proposed |
+| P1 | Validated | - P1-T1: Implement the smallest load-bearing `S4` surface — validated<br>- P1-T2: Add or update focused validation for the touched surface — validated |
+| P2 | Validated | - P2-T1: Reconcile docs and prove final slice evidence — validated |
 
 ## 6) Phased Execution Plan
 
@@ -147,7 +147,7 @@ Rules:
 
 ### Phase 1 — Scoped Implementation
 
-- [ ] P1-T1: Implement the smallest load-bearing `S4` surface
+- [x] **Validated** P1-T1: Implement the smallest load-bearing `S4` surface
   - Test Impact: update
   - Commands to Run:
     - after `LBA1` is verified, update `.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml` with the smallest Mode B intake path needed for large-request or PRD inputs
@@ -160,8 +160,12 @@ Rules:
     - `test -f .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml`
     - `bun run cli validate workflows archon-piv-loop-codex-v2 --json`
     - `bun test packages/workflows/src/executor.test.ts packages/workflows/src/loader.test.ts packages/workflows/src/defaults/bundled-defaults.test.ts`
+  - Implementation Results:
+    - Added Mode B intake nodes to `.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml`: `intake-classifier`, `mode-b-design-doc`, `mode-b-slice-map`, and `mode-b-intake-summary`.
+    - Mode B now creates or refreshes `docs/design/<slug>.md`, writes `docs/plans/<slug>_slice_map.md`, enforces exactly one selected slice, and then routes through the existing one-slice `explore` and `create-plan` lane.
+    - Regenerated `packages/workflows/src/defaults/bundled-defaults.generated.ts` so bundled defaults match the on-disk workflow YAML.
 
-- [ ] P1-T2: Add or update focused validation for the touched surface
+- [x] **Validated** P1-T2: Add or update focused validation for the touched surface
   - Test Impact: add
   - Commands to Run:
     - add or update a fixture-driven workflow proof in `packages/workflows/src/executor.test.ts` that exercises large-request or PRD intake and asserts design-doc and slice-map artifact creation plus exactly-one-slice selection
@@ -174,10 +178,13 @@ Rules:
   - Verify Commands:
     - `bun test packages/workflows/src/executor.test.ts packages/workflows/src/loader.test.ts packages/workflows/src/defaults/bundled-defaults.test.ts`
     - `bun run cli validate workflows archon-piv-loop-codex-v2 --json`
+  - Implementation Results:
+    - Added a bundled V2 Mode B intake contract regression in `packages/workflows/src/executor.test.ts`.
+    - Extended `packages/workflows/src/defaults/bundled-defaults.test.ts` so bundled-default coverage checks for the new Mode B nodes and exactly-one-slice guard.
 
 ### Phase 2 — Validation And Doc Sync
 
-- [ ] P2-T1: Reconcile docs and prove final slice evidence
+- [x] **Validated** P2-T1: Reconcile docs and prove final slice evidence
   - Test Impact: N/A
   - Commands to Run:
     - sync the touched docs, plan state, and validation evidence after implementation
@@ -187,6 +194,9 @@ Rules:
     - the slice is ready for freeze/review without hidden follow-on scope
   - Verify Commands:
     - `python3 "${CODEX_HOME:-$HOME/.codex}/skills/.shared/workflow/scripts/plan_readiness.py" --plan-path docs/plans/r001-archon-piv-loop-codex-v2-s4_plan.md --format markdown`
+  - Implementation Results:
+    - Synced this focused plan and `docs/design/codex-piv-v2-workflow-design.md` with the landed S4 Mode B implementation and proof surface.
+    - Verified the focused plan remains structurally ready with `plan_readiness.py`.
 
 ## Current Inputs (single source of truth)
 - Feature: `Archon PIV Loop Codex V2`
@@ -250,3 +260,4 @@ Explicit exclusions (handled outside the PIV loop closeout): Project Brief, Feat
 ## Doc Sync Log
 - 2026-04-27: Seeded focused slice draft from the PRD execution map so the orchestrator can refine from a concrete boundary instead of a blank template.
 - 2026-04-27: Completed Phase 0 grounding. Verified the existing V2 workflow YAML, resolved `LBA1`, recorded the current Slice 3 deferral gap, and locked the Phase 1 S4 implementation and validation surfaces.
+- 2026-04-28: Landed S4 Mode B intake in the V2 workflow YAML, regenerated bundled defaults, added focused executor/default-workflow coverage, and verified `archon-piv-loop-codex-v2` with the targeted workflow validator and workflow test batch.

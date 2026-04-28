@@ -1,10 +1,10 @@
 {
   "schema_version": "peer-review-v1",
   "review_id": "peer-review-721968044987",
-  "plan_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/r001-archon-piv-loop-codex-v2-s5_plan.md",
+  "plan_path": "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s5/docs/plans/r001-archon-piv-loop-codex-v2-s5_plan.md",
   "plan_sha256": "9d4439636394304abe579c67a2da8ee152a602dbf8806123e03c0663bdc3947b",
   "mode": "workflow-plan-gate",
-  "sidecar_dir": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/_peer-reviews",
+  "sidecar_dir": "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s5/docs/plans/_peer-reviews",
   "engine": "Claude",
   "requested_engine": "auto",
   "origin_runtime": "codex",
@@ -16,7 +16,7 @@
   "reviewer_match": "opposite",
   "gate_quality": "preferred",
   "artifact_role": "canonical",
-  "canonical_sidecar_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/_peer-reviews/r001-archon-piv-loop-codex-v2-s5_plan-peer-review.json",
+  "canonical_sidecar_path": "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s5/docs/plans/_peer-reviews/r001-archon-piv-loop-codex-v2-s5_plan-peer-review.json",
   "fallback_used": false,
   "fallback_reason": null,
   "attempt_chain": [

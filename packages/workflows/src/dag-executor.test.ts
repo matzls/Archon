@@ -543,9 +543,10 @@ nodes:
 
     const result = await discoverWorkflows(testDir, { loadDefaults: false });
     expect(result.errors).toHaveLength(0);
-    expect(result.workflows).toHaveLength(1);
+    const projectWorkflows = result.workflows.filter(workflow => workflow.source === 'project');
+    expect(projectWorkflows).toHaveLength(1);
 
-    const wf = result.workflows[0].workflow;
+    const wf = projectWorkflows[0].workflow;
     expect(wf.nodes).toHaveLength(4);
     expect(wf.nodes[0].id).toBe('classify');
     expect(wf.nodes[0].output_format).toBeDefined();
@@ -573,9 +574,10 @@ nodes:
 
     const result = await discoverWorkflows(testDir, { loadDefaults: false });
     expect(result.errors).toHaveLength(0);
-    expect(result.workflows).toHaveLength(1);
+    const projectWorkflows = result.workflows.filter(workflow => workflow.source === 'project');
+    expect(projectWorkflows).toHaveLength(1);
 
-    const wf = result.workflows[0].workflow;
+    const wf = projectWorkflows[0].workflow;
     expect(wf.nodes).toBeDefined();
     expect(wf.nodes[0].prompt).toBe('Output exactly: hello from A');
     expect(wf.nodes[1].depends_on).toEqual(['step-a']);
@@ -602,8 +604,9 @@ prompt: "do something"
 
     const result = await discoverWorkflows(testDir, { loadDefaults: false });
     expect(result.errors).toHaveLength(0);
-    expect(result.workflows).toHaveLength(1);
-    expect(result.workflows[0].workflow.name).toBe('extra-fields');
+    const projectWorkflows = result.workflows.filter(workflow => workflow.source === 'project');
+    expect(projectWorkflows).toHaveLength(1);
+    expect(projectWorkflows[0].workflow.name).toBe('extra-fields');
   });
 
   it('rejects node with invalid trigger_rule', async () => {
@@ -3478,6 +3481,264 @@ describe('executeDagWorkflow -- resume with priorCompletedNodes', () => {
       expect(optionsArg.additionalDirectories).toEqual(['/workflow/loop-override']);
     });
 
+    it('advances an interactive loop when structured decision maps to phase advance', async () => {
+      mockSendQueryDag.mockImplementation(function* () {
+        yield { type: 'assistant', content: '{"decision":"advance"}' };
+        yield {
+          type: 'result',
+          sessionId: 'loop-typed-advance-sid',
+          structuredOutput: { decision: 'advance' },
+        };
+      });
+
+      const store = createMockStore();
+      const mockDeps = createMockDeps(store);
+      const platform = createMockPlatform();
+      const workflowRun = makeWorkflowRun('loop-typed-advance-run', {
+        metadata: {
+          lastApproval: {
+            type: 'interactive_loop',
+            nodeId: 'phase-gate',
+            iteration: 1,
+            sessionId: 'loop-typed-gate-sid',
+            message: 'Continue or advance?',
+            resolution: 'feedback',
+            resolvedAt: '2026-04-27T10:00:00.000Z',
+          },
+          loop_user_input: 'advance',
+        },
+      });
+
+      await executeDagWorkflow(
+        mockDeps,
+        platform,
+        'conv-typed-advance',
+        testDir,
+        {
+          name: 'typed-loop-advance',
+          nodes: [
+            {
+              id: 'phase-gate',
+              output_format: {
+                type: 'object',
+                properties: {
+                  decision: { type: 'string', enum: ['continue', 'advance'] },
+                },
+                required: ['decision'],
+              },
+              loop: {
+                prompt: 'User said: $LOOP_USER_INPUT. Decide.',
+                until: 'PLAN_READY',
+                max_iterations: 3,
+                interactive: true,
+                gate_message: 'Continue or advance?',
+                decision_gate: {
+                  gate_kind: 'phase_decision',
+                  decisions: [
+                    { id: 'continue', resume_reason: 'loop_feedback' },
+                    { id: 'advance', transition_intent: 'phase_advance' },
+                  ],
+                },
+              },
+            },
+          ],
+        },
+        workflowRun,
+        'claude',
+        undefined,
+        join(testDir, 'artifacts'),
+        join(testDir, 'logs'),
+        'main',
+        'docs/',
+        minimalConfig
+      );
+
+      expect(mockSendQueryDag.mock.calls.length).toBe(1);
+      const optionsArg = mockSendQueryDag.mock.calls[0][3] as Record<string, unknown>;
+      expect(optionsArg.outputFormat).toEqual({
+        type: 'json_schema',
+        schema: {
+          type: 'object',
+          properties: {
+            decision: { type: 'string', enum: ['continue', 'advance'] },
+          },
+          required: ['decision'],
+        },
+      });
+      expect(
+        (
+          store.pauseWorkflowRun as Mock<
+            (id: string, ctx: Record<string, unknown>) => Promise<void>
+          >
+        ).mock.calls.length
+      ).toBe(0);
+      expect(
+        (store.completeWorkflowRun as Mock<(id: string) => Promise<void>>).mock.calls.length
+      ).toBe(1);
+    });
+
+    it('keeps an interactive loop paused when structured decision maps to continue', async () => {
+      mockSendQueryDag.mockImplementation(function* () {
+        yield { type: 'assistant', content: '{"decision":"continue"}' };
+        yield {
+          type: 'result',
+          sessionId: 'loop-typed-continue-sid',
+          structuredOutput: { decision: 'continue' },
+        };
+      });
+
+      const store = createMockStore();
+      const mockDeps = createMockDeps(store);
+      const platform = createMockPlatform();
+      const workflowRun = makeWorkflowRun('loop-typed-continue-run', {
+        metadata: {
+          lastApproval: {
+            type: 'interactive_loop',
+            nodeId: 'phase-gate',
+            iteration: 1,
+            sessionId: 'loop-typed-gate-sid',
+            message: 'Continue or advance?',
+            resolution: 'feedback',
+            resolvedAt: '2026-04-27T10:00:00.000Z',
+          },
+          loop_user_input: 'keep exploring',
+        },
+      });
+
+      await executeDagWorkflow(
+        mockDeps,
+        platform,
+        'conv-typed-continue',
+        testDir,
+        {
+          name: 'typed-loop-continue',
+          nodes: [
+            {
+              id: 'phase-gate',
+              output_format: {
+                type: 'object',
+                properties: {
+                  decision: { type: 'string', enum: ['continue', 'advance'] },
+                },
+                required: ['decision'],
+              },
+              loop: {
+                prompt: 'User said: $LOOP_USER_INPUT. Decide.',
+                until: 'PLAN_READY',
+                max_iterations: 3,
+                interactive: true,
+                gate_message: 'Continue or advance?',
+                decision_gate: {
+                  decisions: [
+                    { id: 'continue', resume_reason: 'loop_feedback' },
+                    { id: 'advance', transition_intent: 'phase_advance' },
+                  ],
+                },
+              },
+            },
+          ],
+        },
+        workflowRun,
+        'claude',
+        undefined,
+        join(testDir, 'artifacts'),
+        join(testDir, 'logs'),
+        'main',
+        'docs/',
+        minimalConfig
+      );
+
+      expect(mockSendQueryDag.mock.calls.length).toBe(1);
+      const pauseCalls = (
+        store.pauseWorkflowRun as Mock<(id: string, ctx: Record<string, unknown>) => Promise<void>>
+      ).mock.calls;
+      expect(pauseCalls.length).toBe(1);
+      expect(pauseCalls[0][1]).toMatchObject({
+        type: 'interactive_loop',
+        nodeId: 'phase-gate',
+        iteration: 2,
+      });
+    });
+
+    it('falls back to sentinel completion when structured output is unavailable', async () => {
+      mockSendQueryDag.mockImplementation(function* () {
+        yield { type: 'assistant', content: 'Ready. <promise>PLAN_READY</promise>' };
+        yield { type: 'result', sessionId: 'loop-sentinel-fallback-sid' };
+      });
+
+      const store = createMockStore();
+      const mockDeps = createMockDeps(store);
+      const platform = createMockPlatform();
+      const workflowRun = makeWorkflowRun('loop-sentinel-fallback-run', {
+        metadata: {
+          lastApproval: {
+            type: 'interactive_loop',
+            nodeId: 'phase-gate',
+            iteration: 1,
+            sessionId: 'loop-sentinel-gate-sid',
+            message: 'Continue or advance?',
+            resolution: 'feedback',
+            resolvedAt: '2026-04-27T10:00:00.000Z',
+          },
+          loop_user_input: 'ready',
+        },
+      });
+
+      await executeDagWorkflow(
+        mockDeps,
+        platform,
+        'conv-sentinel-fallback',
+        testDir,
+        {
+          name: 'typed-loop-sentinel-fallback',
+          nodes: [
+            {
+              id: 'phase-gate',
+              output_format: {
+                type: 'object',
+                properties: {
+                  decision: { type: 'string', enum: ['continue', 'advance'] },
+                },
+              },
+              loop: {
+                prompt: 'User said: $LOOP_USER_INPUT. Decide.',
+                until: 'PLAN_READY',
+                max_iterations: 3,
+                interactive: true,
+                gate_message: 'Continue or advance?',
+                decision_gate: {
+                  decisions: [
+                    { id: 'continue', resume_reason: 'loop_feedback' },
+                    { id: 'advance', transition_intent: 'phase_advance' },
+                  ],
+                },
+              },
+            },
+          ],
+        },
+        workflowRun,
+        'claude',
+        undefined,
+        join(testDir, 'artifacts'),
+        join(testDir, 'logs'),
+        'main',
+        'docs/',
+        minimalConfig
+      );
+
+      expect(mockSendQueryDag.mock.calls.length).toBe(1);
+      expect(
+        (
+          store.pauseWorkflowRun as Mock<
+            (id: string, ctx: Record<string, unknown>) => Promise<void>
+          >
+        ).mock.calls.length
+      ).toBe(0);
+      expect(
+        (store.completeWorkflowRun as Mock<(id: string) => Promise<void>>).mock.calls.length
+      ).toBe(1);
+    });
+
     it('preserves node-level loop provider and model when workflow-level Codex tuning is present', async () => {
       mockGetAgentProviderDag.mockImplementation(provider => ({
         sendQuery: mockSendQueryDag,
@@ -5754,12 +6015,14 @@ describe('executeDagWorkflow -- approval node', () => {
 
     const workflowRun = makeWorkflowRun('reject-no-poison-run', {
       metadata: {
-        approval: {
+        lastApproval: {
           type: 'approval',
           nodeId: 'review',
           message: 'Approve this plan?',
           onRejectPrompt: 'Fix based on: $REJECTION_REASON',
           onRejectMaxAttempts: 3,
+          resolution: 'rejected',
+          resolvedAt: '2026-04-20T10:00:00.000Z',
         },
         rejection_reason: 'Missing edge case handling',
         rejection_count: 1,
@@ -5792,6 +6055,7 @@ describe('executeDagWorkflow -- approval node', () => {
       'docs/',
       minimalConfig
     );
+    await Promise.resolve();
 
     // The on_reject synthetic node must NOT produce a node_completed event with
     // step_name equal to the approval gate's own ID ('review'). If it did, a

@@ -1,7 +1,7 @@
 ---
 title: "Archon PIV Loop Codex V2 S1 — V2 workflow skeleton from V1, keeping V1 plan-path behavior and explicit sentinel contracts while deferring typed gates, design-doc intake, review automation, live evidence conventions, and PR handoff to later slices — Plan"
 kind: plan
-status: draft
+status: accepted
 created: 2026-04-27
 updated: "2026-04-27"
 origin_prd: "docs/prd/r001-archon-piv-loop-codex-v2.md"
@@ -60,8 +60,8 @@ flowchart LR
 **Choice:** [x] A1  [ ] A2
 
 ## Plan Status & Controls
-- Plan Status: Draft (as of 2026-04-27)
-- Current Phase: P0 — Grounding
+- Plan Status: Accepted (as of 2026-04-27)
+- Current Phase: P2 — Validation And Doc Sync
 - Last Updated: 2026-04-27
 - Last Reviewed: 2026-04-27
 - Next Checkpoint: peer-review this refined slice, then freeze if the review gate remains acceptable and deterministic readiness stays green
@@ -100,15 +100,15 @@ Rules:
 
 | Phase | Phase Status | Tasks (ID: Title — Status) |
 |------:|--------------|----------------------------|
-| P0 | Proposed | - P0-T1: Ground the `S1` boundary against the PRD, V1 workflow, and V2 design note — proposed<br>- P0-T2: Lock the exact implementation surfaces and proof commands — proposed<br>- P0-T3: Verify focused-slice lineage with the umbrella backlink preserved — proposed |
-| P1 | Proposed | - P1-T1: Create `archon-piv-loop-codex-v2` from the V1 workflow while preserving Slice 1 contracts — proposed<br>- P1-T2: Regenerate bundled defaults so binaries discover the new workflow — proposed<br>- P1-T3: Add targeted default-workflow tests for the v2 skeleton contract — proposed |
-| P2 | Proposed | - P2-T1: Run the focused Slice 1 proof commands and capture failures precisely — proposed<br>- P2-T2: Reconcile workflow-reference docs and close the slice evidence loop — proposed |
+| P0 | Done | - P0-T1: Ground the `S1` boundary against the PRD, V1 workflow, and V2 design note — done<br>- P0-T2: Lock the exact implementation surfaces and proof commands — done<br>- P0-T3: Verify focused-slice lineage with the umbrella backlink preserved — done |
+| P1 | Done | - P1-T1: Create `archon-piv-loop-codex-v2` from the V1 workflow while preserving Slice 1 contracts — done<br>- P1-T2: Regenerate bundled defaults so binaries discover the new workflow — done<br>- P1-T3: Add targeted default-workflow tests for the v2 skeleton contract — done |
+| P2 | Done | - P2-T1: Run the focused Slice 1 proof commands and capture failures precisely — done<br>- P2-T2: Reconcile workflow-reference docs and close the slice evidence loop — done |
 
 ## 6) Phased Execution Plan
 
 ### Phase 0 — Grounding And Contract Lock
 
-- [ ] P0-T1: Ground the `S1` boundary against the PRD, V1 workflow, and V2 design note
+- [x] **Validated** P0-T1: Ground the `S1` boundary against the PRD, V1 workflow, and V2 design note
   - Test Impact: N/A
   - Commands to Run:
     - `sed -n '340,352p' docs/prd/r001-archon-piv-loop-codex-v2.md`
@@ -128,7 +128,7 @@ Rules:
   - Verify Commands:
     - `rg -n "\\.claude/archon/plans|PLAN_READY|PLAN_APPROVED|COMPLETE|VALIDATED|typed gates|design-doc|slice-map|review automation|PR handoff|umbrella|fresh-context|node topology|session-reset|compose-finalize|finalize" docs/plans/r001-archon-piv-loop-codex-v2-s1_plan.md`
 
-- [ ] P0-T2: Lock the exact implementation surfaces and proof commands
+- [x] **Validated** P0-T2: Lock the exact implementation surfaces and proof commands
   - Test Impact: N/A
   - Commands to Run:
     - `sed -n '1,220p' packages/workflows/src/defaults/bundled-defaults.test.ts`
@@ -151,7 +151,7 @@ Rules:
   - Verify Commands:
     - `python3 "${CODEX_HOME:-$HOME/.codex}/skills/.shared/workflow/scripts/plan_readiness.py" --plan-path docs/plans/r001-archon-piv-loop-codex-v2-s1_plan.md --format markdown`
 
-- [ ] P0-T3: Verify focused-slice lineage with the umbrella backlink preserved
+- [x] **Validated** P0-T3: Verify focused-slice lineage with the umbrella backlink preserved
   - Test Impact: N/A
   - Commands to Run:
     - `python3 "${CODEX_HOME:-$HOME/.codex}/skills/.shared/workflow/scripts/frontmatter_link_sync.py" --repo-root "$(pwd)" --plan-path docs/plans/r001-archon-piv-loop-codex-v2-s1_plan.md --check`
@@ -175,7 +175,7 @@ Rules:
 
 ### Phase 1 — Scoped Implementation
 
-- [ ] P1-T1: Create `archon-piv-loop-codex-v2` from the V1 workflow while preserving Slice 1 contracts
+- [x] **Validated** P1-T1: Create `archon-piv-loop-codex-v2` from the V1 workflow while preserving Slice 1 contracts
   - Test Impact: update
   - Commands to Run:
     - copy `.archon/workflows/defaults/archon-piv-loop-codex.yaml` to `.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml`
@@ -195,7 +195,7 @@ Rules:
     - `bun run cli validate workflows archon-piv-loop-codex-v2 --json`
     - `rg -n "\\.claude/archon/plans|id: create-plan|id: code-review|id: compose-finalize|id: finalize|context: fresh|fresh_context: true|PLAN_READY|PLAN_APPROVED|COMPLETE|VALIDATED" .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml`
 
-- [ ] P1-T2: Regenerate bundled defaults so binaries discover the new workflow
+- [x] **Validated** P1-T2: Regenerate bundled defaults so binaries discover the new workflow
   - Test Impact: update
   - Commands to Run:
     - run the root script `bun run generate:bundled`
@@ -209,7 +209,7 @@ Rules:
     - `bun run check:bundled`
     - `rg -n "archon-piv-loop-codex-v2" packages/workflows/src/defaults/bundled-defaults.generated.ts`
 
-- [ ] P1-T3: Add targeted default-workflow tests for the v2 skeleton contract
+- [x] **Validated** P1-T3: Add targeted default-workflow tests for the v2 skeleton contract
   - Test Impact: update
   - Commands to Run:
     - extend `packages/workflows/src/defaults/bundled-defaults.test.ts`
@@ -227,7 +227,7 @@ Rules:
 
 ### Phase 2 — Validation And Doc Sync
 
-- [ ] P2-T1: Run the focused Slice 1 proof commands and capture failures precisely
+- [x] **Validated** P2-T1: Run the focused Slice 1 proof commands and capture failures precisely
   - Test Impact: N/A
   - Commands to Run:
     - `bun run cli validate workflows archon-piv-loop-codex-v2 --json`
@@ -242,7 +242,7 @@ Rules:
     - `bun run check:bundled`
     - `bun test packages/workflows/src/defaults/bundled-defaults.test.ts`
 
-- [ ] P2-T2: Reconcile workflow-reference docs and close the slice evidence loop
+- [x] **Validated** P2-T2: Reconcile workflow-reference docs and close the slice evidence loop
   - Test Impact: N/A
   - Commands to Run:
     - review `.archon/workflows/defaults/archon-piv-loop-codex.README.md` as the execution-notes precedent for the v2 workflow
@@ -259,14 +259,14 @@ Rules:
 
 ## Documentation Checklist
 
-- [ ] Add or update `.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml` as the new default workflow surface for `S1`.
-- [ ] Regenerate `packages/workflows/src/defaults/bundled-defaults.generated.ts` after the new workflow is added.
-- [ ] Treat `packages/workflows/src/defaults/bundled-defaults.generated.ts` as generated output from `bun run generate:bundled`, not a hand-edited file.
-- [ ] Review whether `.archon/workflows/defaults/archon-piv-loop-codex-v2.README.md` is required; create it only if Slice 1 introduces non-obvious operator-facing context behavior.
-- [ ] Before freeze, dry-run and then execute the PRD lineage handoff with `frontmatter_link_sync.py` if Slice 1 becomes the active focused plan.
-- [ ] Keep rollout slice-map creation out of this slice unless the PRD execution-map contract itself changes.
-- [ ] Keep `docs/design/codex-piv-v2-workflow-design.md` and `docs/prd/r001-archon-piv-loop-codex-v2.md` as scope authorities unless a narrow factual correction is required.
-- [ ] Sync this plan and its `.state.json` sidecar after any task list changes or status updates.
+- [x] Add or update `.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml` as the new default workflow surface for `S1`.
+- [x] Regenerate `packages/workflows/src/defaults/bundled-defaults.generated.ts` after the new workflow is added.
+- [x] Treat `packages/workflows/src/defaults/bundled-defaults.generated.ts` as generated output from `bun run generate:bundled`, not a hand-edited file.
+- [x] Review whether `.archon/workflows/defaults/archon-piv-loop-codex-v2.README.md` is required; no new README is required because the V2 YAML only inherits V1 context behavior and adds explicit in-YAML Slice 1 deferral guardrails.
+- [x] Review the PRD lineage handoff with `frontmatter_link_sync.py --check`; keep the PRD `plan:` backlink on the umbrella plan for this slice.
+- [x] Keep rollout slice-map creation out of this slice unless the PRD execution-map contract itself changes.
+- [x] Keep `docs/design/codex-piv-v2-workflow-design.md` and `docs/prd/r001-archon-piv-loop-codex-v2.md` as scope authorities unless a narrow factual correction is required.
+- [x] Sync this plan and its `.state.json` sidecar after any task list changes or status updates.
 
 ## Current Inputs (single source of truth)
 - Feature: `Archon PIV Loop Codex V2`
@@ -361,3 +361,4 @@ Explicit exclusions (handled outside the PIV loop closeout): Project Brief, Feat
 - 2026-04-27: Updated the PRD Execution Map to include explicit slice plan links and a parser-compatible heading so deterministic lineage tooling can preserve the umbrella backlink while recognizing this focused S1 plan.
 - 2026-04-27: Verified that `frontmatter_link_sync.py --check` is clean after metadata sync and that `plan_readiness.py` marks `P0`, `P1`, and `P2` ready with the umbrella backlink preserved.
 - 2026-04-27: Verified that `.archon/workflows/defaults/archon-piv-loop-codex.README.md` is useful as an operator note but slightly stale around the `compose-finalize` versus downstream `finalize` split, so this slice now treats the YAML as the canonical source for that node/session contract.
+- 2026-04-27: Implemented `archon-piv-loop-codex-v2` as a V1-derived bundled workflow, regenerated bundled defaults, added targeted bundled-workflow contract assertions, and confirmed no new V2 README is needed for Slice 1 because context behavior is inherited while the new deferrals are explicit in YAML.
