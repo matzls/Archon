@@ -1,21 +1,26 @@
 {
   "$schema": "plan-state-v1",
   "plan": {
-    "status": "draft",
+    "status": "active",
     "current_phase": 0,
-    "authoring_state": "unknown",
-    "updated": "2026-04-27T14:33:14.994944+00:00"
+    "authoring_state": "drafted",
+    "updated": "2026-04-28T10:18:11.172487+00:00"
   },
   "tasks": [
     {
       "id": "P0-T1",
       "phase": 0,
-      "status": "proposed"
+      "status": "approved"
     },
     {
       "id": "P0-T2",
       "phase": 0,
-      "status": "proposed"
+      "status": "approved"
+    },
+    {
+      "id": "P0-T3",
+      "phase": 0,
+      "status": "approved"
     },
     {
       "id": "P1-T1",
@@ -31,8 +36,130 @@
       "id": "P2-T1",
       "phase": 2,
       "status": "proposed"
+    },
+    {
+      "id": "P2-T2",
+      "phase": 2,
+      "status": "proposed"
+    },
+    {
+      "id": "P99-T1",
+      "phase": 99,
+      "status": "proposed"
+    },
+    {
+      "id": "P99-T2",
+      "phase": 99,
+      "status": "proposed"
     }
   ],
-  "task_contracts": {},
-  "unresolved_items": []
+  "task_contracts": {
+    "P99-T1": {
+      "schema": "task-contract-v1",
+      "prerequisites": [
+        {
+          "kind": "tool_binary",
+          "lane_bound": false,
+          "name": "bun",
+          "smoke_command": "bun --version"
+        },
+        {
+          "kind": "env_binding",
+          "lane_bound": true,
+          "key": "ARCHON_HOME",
+          "source": "plan_constant",
+          "required_in_lane": "execution_worktree"
+        },
+        {
+          "kind": "command_smoke",
+          "lane_bound": true,
+          "command": "ARCHON_HOME=\"$PWD/.tmp/archon-home\" bun run cli workflow run e2e-codex-smoke --no-worktree \"smoke test\"",
+          "cwd_policy": "repo_root",
+          "expected_exit_code": 0
+        },
+        {
+          "kind": "fixture_path",
+          "lane_bound": true,
+          "path": ".archon/workflows/defaults/archon-piv-loop-codex-v2.yaml",
+          "must_exist": true,
+          "producer": "integration/r001-archon-piv-loop-codex-v2 execution lane"
+        }
+      ]
+    },
+    "P99-T2": {
+      "schema": "task-contract-v1",
+      "prerequisites": [
+        {
+          "kind": "tool_binary",
+          "lane_bound": false,
+          "name": "bun",
+          "smoke_command": "bun --version"
+        },
+        {
+          "kind": "command_smoke",
+          "lane_bound": true,
+          "command": "PORT=4000 bun run dev",
+          "cwd_policy": "repo_root",
+          "expected_exit_code": 0
+        },
+        {
+          "kind": "browser_smoke",
+          "lane_bound": true,
+          "runner": "playwright",
+          "entry_artifact": "artifacts/workflow/tmp/r001-s5-ui-home.html",
+          "export_artifact": "artifacts/workflow/tmp/r001-s5-ui-notes.md",
+          "expected_artifact": "artifacts/workflow/e2e-reports/<plan-slug>-<YYYY-MM-DD>-e2e.json"
+        }
+      ]
+    }
+  },
+  "unresolved_items": [
+    {
+      "id": "LBA1",
+      "kind": "lba",
+      "checked": false,
+      "section": "blockers",
+      "blocks_phases": [
+        1,
+        2,
+        99
+      ],
+      "summary": "S5 must execute from integration/r001-archon-piv-loop-codex-v2 or another lane that already contains .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml; the root dev checkout alone is not a valid execution base for this slice.",
+      "verify": "`git show integration/r001-archon-piv-loop-codex-v2:.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml | sed -n '1,20p'`",
+      "evidence": "`git branch --list \"integration/r001-archon-piv-loop-codex-v2\"` returned the integration branch, `git show integration/r001-archon-piv-loop-codex-v2:.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml` returned the V2 workflow content, and local `sed -n '1,20p' .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml` failed in the root checkout on 2026-04-28."
+    },
+    {
+      "id": "LBA2",
+      "kind": "lba",
+      "checked": false,
+      "section": "blockers",
+      "blocks_phases": [
+        99
+      ],
+      "summary": "The execution lane can run Codex-backed Archon smoke workflows with a writable ARCHON_HOME and the credentials required for real workflow runs before S5 claims PASS live evidence.",
+      "verify": "`ARCHON_HOME=\"$PWD/.tmp/archon-home\" bun run cli workflow run e2e-codex-smoke --no-worktree \"smoke test\"`",
+      "evidence": "TBD during Phase 99; if this preflight cannot run, the slice may still implement the gate but cannot claim PASS live evidence without an explicit waiver outcome."
+    }
+  ],
+  "snapshot_gate": {
+    "branch": "dev",
+    "checked_at": "2026-04-28T10:18:11+00:00",
+    "default_branch": "dev",
+    "dirty_before_snapshot": true,
+    "lane_branch": "dev",
+    "lane_decision_basis": "deterministic",
+    "lane_decision_reason": "repo_dirty_before_implementation",
+    "lane_type": "branch",
+    "lane_worktree_path": null,
+    "next_command": "git checkout -b r001-archon-piv-loop-codex-v2-s5-plan",
+    "plan_path": "docs/plans/r001-archon-piv-loop-codex-v2-s5_plan.md",
+    "reason": "running_on_default_branch",
+    "snapshot_commit_message": null,
+    "snapshot_commit_sha": null,
+    "snapshot_created_at": null,
+    "status": "missing",
+    "worktree_count": 1,
+    "worktree_present": false,
+    "worktree_required": true
+  }
 }
