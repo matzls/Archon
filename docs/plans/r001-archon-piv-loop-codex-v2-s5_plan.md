@@ -15,7 +15,7 @@ version: "0.2"
 - Why we're doing it: the current V2 workflow on the campaign integration branch still defers live E2E evidence conventions and jumps from implementation approval straight to PR artifact composition.
 - What "done" looks like: `archon-piv-loop-codex-v2` has an explicit post-review live-validation gate, writes or references run-scoped evidence under `$ARTIFACTS_DIR/e2e-reports/*`, records a waiver only when live proof is genuinely not possible, and proves the contract with focused workflow validation plus real smoke evidence.
 - How we'll do it: ground the current workflow gap on the integration base, freeze the smallest live-validation contract around the existing `e2e_report_manager.py` helper, update the V2 workflow and bundled assertions, then run real CLI and UI smoke with canonical evidence recording.
-- Next step / resume point: peer-review this corrected slice, then freeze only if the execution base, live-validation gate, and Phase 99 proof commands are all explicit.
+- Next step / resume point: continue S5 with the backend/CLI proof and an explicit UI-proof waiver if needed. After the V2 slice artifacts merge back to `dev`, rerun the UI smoke from `dev`; if the Web UI still creates worker worktrees from stale `origin/dev` or the wrong source branch, open the follow-on/stretch item documented below instead of widening S5.
 
 ### Optional Mental Model
 
@@ -38,6 +38,30 @@ version: "0.2"
 - Non-goal: planning review or implementation review automation (`S6`).
 - Non-goal: PR or PR-review handoff behavior (`S7`).
 - Non-goal: broad workflow-engine changes unrelated to the V2 workflow contract.
+- Non-goal for S5: adding a general Web UI source-branch selector or changing global isolation semantics. That belongs to the follow-on/stretch item below if the post-merge UI smoke proves it is still needed.
+
+## Follow-On / Stretch: Web UI Isolation Source Branch
+
+S5 may be allowed to finish with an explicit UI-proof waiver when backend/CLI proof passes but the browser-launched workflow cannot honestly validate the S5 branch surface before the slice is merged back to `dev`.
+
+Follow-on trigger after the original V2 merge:
+- Merge the V2 slice artifacts into `dev` or the campaign integration branch that `origin/dev` will eventually receive.
+- Start the Archon Web UI from that merged branch.
+- Launch `archon-piv-loop-codex-v2` from `/workflows`.
+- Confirm whether the UI-created worker checkout contains the merged V2 workflow and S5 plan artifacts.
+
+If that post-merge UI run still creates a worker from stale `origin/dev` or another wrong start point, create a focused follow-on/stretch slice named along these lines:
+
+`S8 / Stretch — Web workflow source-branch isolation parity`
+
+Expected implementation boundary for that follow-on:
+- Add an optional source-branch/start-point input equivalent to CLI `--from` for Web workflow runs.
+- Thread it through `packages/web/src/lib/api.ts`, `packages/web/src/components/sidebar/WorkflowInvoker.tsx`, `packages/server/src/routes/schemas/workflow.schemas.ts`, and `packages/server/src/routes/api.ts`.
+- Preserve it through `dispatchToOrchestrator`, `dispatchOrchestratorWorkflow`, and `dispatchBackgroundWorkflow`.
+- Make background worker isolation use the same start-point hint instead of silently falling back to `origin/<default>`.
+- Add server/core tests proving a Web run can pass `fromBranch` into worker isolation without changing normal default behavior.
+
+Do not block S5 on this follow-on unless the user explicitly decides that Web-source-branch parity is required before the first V2 merge.
 
 ## 4) Architecture Overview
 
@@ -100,7 +124,8 @@ Rules:
   - Evidence: TBD during Phase 99; if this preflight cannot run, the slice may still implement the gate but cannot claim PASS live evidence without an explicit waiver outcome.
 
 ### FYI / Later (does not block freeze)
-- (none)
+- [ ] [Q] Q1 (Blocks: none) — Follow-on after the original V2 merge: decide whether Web workflow runs need source-branch/start-point isolation parity with CLI `--from`.
+  - Answer: Recommendation as of 2026-04-28: do not widen S5. Rerun the UI smoke from merged `dev` first. If the UI worker still starts from stale `origin/dev` or another wrong source branch, create a focused follow-on/stretch slice that threads optional `fromBranch` through Web UI/API/orchestrator/background-worker isolation.
 ## Phase Summary (Quick View)
 
 | Phase | Phase Status | Tasks (ID: Title — Status) |
@@ -417,7 +442,9 @@ Explicit exclusions (handled outside the PIV loop closeout): Project Brief, Feat
 | The root checkout is used accidentally and the V2 workflow file is missing | HIGH | Keep `LBA1` explicit and ground execution against `integration/r001-archon-piv-loop-codex-v2`. |
 | Live smoke prerequisites are unavailable, leading to fake PASS evidence | HIGH | Keep `LBA2` explicit, require real smoke preflight, and use explicit waiver recording when proof is genuinely unavailable. |
 | `S5` widens into review automation or PR handoff | MED | Keep tasks and assertions scoped to the live-validation gate, evidence path, and finalization summary only. |
+| Browser-launched workflow proof is attempted before V2 artifacts exist on the branch used by UI worker isolation | MED | Allow an explicit S5 UI-proof waiver, rerun UI smoke after the V2 merge to `dev`, and use Q1 as the follow-on trigger for Web source-branch isolation parity if still needed. |
 
 ## Doc Sync Log
 - 2026-04-27: Seeded focused slice draft from the PRD execution map so the orchestrator can refine from a concrete boundary instead of a blank template.
 - 2026-04-28: Completed Phase 0 grounding for the refine pass. Verified that the root `dev` checkout lacks the V2 workflow file, grounded `S5` against the integration-branch workflow, recorded the current post-review -> finalization gap, and froze the live-validation/evidence-path contract around `e2e_report_manager.py`.
+- 2026-04-28: Recorded the Web UI isolation source-branch issue as a follow-on/stretch decision instead of widening S5. S5 may close with backend/CLI proof plus an explicit UI-proof waiver, then rerun the UI smoke after the V2 artifacts merge to `dev`.

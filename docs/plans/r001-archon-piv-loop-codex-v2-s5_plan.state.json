@@ -4,7 +4,7 @@
     "status": "active",
     "current_phase": 0,
     "authoring_state": "drafted",
-    "updated": "2026-04-28T10:18:11.172487+00:00"
+    "updated": "2026-04-28T13:22:26.542899+00:00"
   },
   "tasks": [
     {
@@ -139,6 +139,15 @@
       "summary": "The execution lane can run Codex-backed Archon smoke workflows with a writable ARCHON_HOME and the credentials required for real workflow runs before S5 claims PASS live evidence.",
       "verify": "`ARCHON_HOME=\"$PWD/.tmp/archon-home\" bun run cli workflow run e2e-codex-smoke --no-worktree \"smoke test\"`",
       "evidence": "TBD during Phase 99; if this preflight cannot run, the slice may still implement the gate but cannot claim PASS live evidence without an explicit waiver outcome."
+    },
+    {
+      "id": "Q1",
+      "kind": "q",
+      "checked": false,
+      "section": "fyi",
+      "blocks_phases": [],
+      "summary": "Follow-on after the original V2 merge: decide whether Web workflow runs need source-branch/start-point isolation parity with CLI `--from`.",
+      "answer": "Recommendation as of 2026-04-28: do not widen S5. Rerun the UI smoke from merged `dev` first. If the UI worker still starts from stale `origin/dev` or another wrong source branch, create a focused follow-on/stretch slice that threads optional `fromBranch` through Web UI/API/orchestrator/background-worker isolation."
     }
   ],
   "snapshot_gate": {
