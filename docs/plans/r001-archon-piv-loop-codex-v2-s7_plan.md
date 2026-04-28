@@ -1,7 +1,7 @@
 ---
 title: "Archon PIV Loop Codex V2 S7 — PR or PR-review handoff — Plan"
 kind: plan
-status: draft
+status: accepted
 created: 2026-04-27
 updated: "2026-04-28"
 origin_prd: "docs/prd/r001-archon-piv-loop-codex-v2.md"
@@ -63,11 +63,11 @@ flowchart LR
 **Choice:** [x] A1  [ ] A2
 
 ## Plan Status & Controls
-- Plan Status: Draft (as of 2026-04-28)
-- Current Phase: P0 — Grounding
+- Plan Status: Accepted (as of 2026-04-28)
+- Current Phase: P2 — Closeout validated
 - Last Updated: 2026-04-28
 - Last Reviewed: 2026-04-28
-- Next Checkpoint: rerun Codex fallback plan-gate review, then freeze only if the review accepts the concrete S7 handoff contract and proof commands
+- Next Checkpoint: rerun the Codex fallback implementation review, then merge S7 when the handoff packet is accepted
 - PRD locator: `docs/prd/r001-archon-piv-loop-codex-v2.md:350` (`S7 | PR or PR-review handoff | ... | structured PR-ready or PR-review handoff after slice completion | generated PR payload or handoff packet with branch/base/evidence fields`)
 - Acceptance criteria locator: `docs/prd/r001-archon-piv-loop-codex-v2.md:270-275`
 - Design locator: `docs/design/codex-piv-v2-workflow-design.md:466-484` and `:564-568`

@@ -197,6 +197,8 @@ describe('bundled-defaults', () => {
       expect(content).toContain('implementation_status');
       expect(content).toContain('implementation_review_artifact');
       expect(content).toContain('PLANNING_REVIEW_DECISION');
+      expect(content).toContain('IMPLEMENTATION_REVIEW_ARTIFACT');
+      expect(content).toContain('implementation review artifact path missing');
       expect(content).toContain('unsupported {review_name} decision');
       expect(content).toContain('"planning-review": planning_review_decision');
       expect(content).toContain('"implementation-review": implementation_review_decision');
@@ -212,7 +214,7 @@ describe('bundled-defaults', () => {
       expect(content).toContain('required_pr_fields');
       expect(content).toContain('pr-result.json missing required field');
       expect(content).toContain('"isDraft": bool');
-      expect(content).toContain('docs/plans/_peer-reviews');
+      expect(content).toContain('artifact_path');
       expect(content).toContain('implementation review artifact missing');
 
       const artifactsDir =
@@ -236,7 +238,7 @@ describe('bundled-defaults', () => {
           planning_status: 'advance',
           implementation_status: 'advance',
           implementation_review_artifact:
-            'docs/plans/_peer-reviews/r001-archon-piv-loop-codex-v2-s7_plan-peer-review.json',
+            'artifacts/workflow/code-review-and-ship/slice-review-iterate/r001-archon-piv-loop-codex-v2/s7/round-02-20260428T171026Z/codex-review.md',
         },
         pr: {
           url: 'https://github.com/matzls/Archon/pull/123',
@@ -263,7 +265,7 @@ describe('bundled-defaults', () => {
       expect(written.review.planning_status).toBe('advance');
       expect(written.review.implementation_status).toBe('advance');
       expect(written.review.implementation_review_artifact).toBe(
-        'docs/plans/_peer-reviews/r001-archon-piv-loop-codex-v2-s7_plan-peer-review.json'
+        'artifacts/workflow/code-review-and-ship/slice-review-iterate/r001-archon-piv-loop-codex-v2/s7/round-02-20260428T171026Z/codex-review.md'
       );
       expect(written.pr.url).toBe('https://github.com/matzls/Archon/pull/123');
       expect(written.pr.number).toBe(123);
