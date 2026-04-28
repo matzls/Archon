@@ -3,7 +3,7 @@ title: "Archon PIV Loop Codex V2 S4 — design-doc and slice-map mode — Plan"
 kind: plan
 status: active
 created: 2026-04-27
-updated: "2026-04-27"
+updated: "2026-04-28"
 origin_prd: "docs/prd/r001-archon-piv-loop-codex-v2.md"
 origin: ""
 version: "0.2"
