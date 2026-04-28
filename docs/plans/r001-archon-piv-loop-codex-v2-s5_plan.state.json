@@ -1,10 +1,10 @@
 {
   "$schema": "plan-state-v1",
   "plan": {
-    "status": "active",
+    "status": "accepted",
     "current_phase": 99,
     "authoring_state": "drafted",
-    "updated": "2026-04-28T13:22:26.547673+00:00"
+    "updated": "2026-04-28T14:35:42.232050+00:00"
   },
   "tasks": [
     {
@@ -59,12 +59,12 @@
     {
       "id": "P99-T1",
       "phase": 99,
-      "status": "blocked"
+      "status": "validated"
     },
     {
       "id": "P99-T2",
       "phase": 99,
-      "status": "blocked",
+      "status": "validated",
       "last_sha": "1bce812d781b95fbda59a308ad4829465074c2b6",
       "last_transition": "2026-04-28T12:17:47.000322+00:00"
     }
