@@ -50,3 +50,10 @@ Plan: `docs/plans/r001-archon-piv-loop-codex-v2-s1_plan.md`
 - Plan: `docs/plans/r001-archon-piv-loop-codex-v2-s5_plan.md`
 - In sandboxed worktrees with no `node_modules`, `TMPDIR` alone may not be enough for Bun install; use a writable cache directory plus `--backend=copyfile` before rerunning focused CLI proof commands.
 - For workflow-contract slices, pair prompt wording with dependency-shape assertions; a finalization gate is not enforceable unless the downstream node depends on the new gate and regression tests reject the old direct dependency.
+
+## 2026-04-28 — r001-archon-piv-loop-codex-v2-s6
+
+- Plan: `docs/plans/r001-archon-piv-loop-codex-v2-s6_plan.md`
+- For post-freeze contract-lock phases, resolving an LBA requires updating the state sidecar with `state_manager.py --action set_unresolved`; completing the task alone does not clear the deterministic blocker.
+- `assert_complete` treats `docs/reference/lessons_learned.md` as required closeout evidence even when implementation and validation manifests already pass.
+- When default workflow YAML changes, rerun `bun run generate:bundled` before `bun run check:bundled`; otherwise bundled-default validation can report a stale generated-default defect after the real workflow change is correct.

@@ -96,9 +96,9 @@ Rules:
 - Default scope is phases `P1+` unless explicitly tagged.
 
 ### Blockers (must resolve before freeze)
-- [ ] [LBA] LBA1 (Blocks: P1 freeze, P2 freeze) — The S6 execution lane must be based on integration/r001-archon-piv-loop-codex-v2 or an equivalent branch containing the S1-S5 V2 workflow surfaces before P1 changes start.
-  - Verify: P0-T1 commands: git branch --list integration/r001-archon-piv-loop-codex-v2 plus git show integration/r001-archon-piv-loop-codex-v2:.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml for the review-gate regions.
-  - Evidence: Pending P0-T1 execution; this LBA exists so freeze cannot skip the integration-base verification.
+- [x] [LBA] LBA1 (Blocks: P1 freeze, P2 freeze) — The S6 execution lane must be based on integration/r001-archon-piv-loop-codex-v2 or an equivalent branch containing the S1-S5 V2 workflow surfaces before P1 changes start.
+  - Verify: P0-T1 commands recorded in artifacts/workflow/implementation-reports/commands.json: branch existence plus git show reads of .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml review-gate regions.
+  - Evidence: Checked on 2026-04-28: integration/r001-archon-piv-loop-codex-v2 exists; git show of the V2 workflow review-gate regions succeeded; plan records the S6 gap as missing planning-review / implementation-review nodes and fix-feedback max_iterations: 10 on the integration base.
 
 ### FYI / Later (does not block freeze)
 - (none)

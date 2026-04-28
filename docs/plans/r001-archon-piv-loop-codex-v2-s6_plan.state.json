@@ -1,36 +1,46 @@
 {
   "$schema": "plan-state-v1",
   "plan": {
-    "status": "active",
-    "current_phase": 0,
+    "status": "accepted",
+    "current_phase": 2,
     "authoring_state": "drafted",
-    "updated": "2026-04-28T15:06:23.901830+00:00"
+    "updated": "2026-04-28T15:38:56.272476+00:00"
   },
   "tasks": [
     {
       "id": "P0-T1",
       "phase": 0,
-      "status": "approved"
+      "status": "done",
+      "last_sha": "34ea5f887bddabdab6e74e896178defa26af9127",
+      "last_transition": "2026-04-28T15:07:12.035271+00:00"
     },
     {
       "id": "P0-T2",
       "phase": 0,
-      "status": "approved"
+      "status": "done",
+      "last_sha": "34ea5f887bddabdab6e74e896178defa26af9127",
+      "last_transition": "2026-04-28T15:07:42.825160+00:00"
     },
     {
       "id": "P1-T1",
       "phase": 1,
-      "status": "proposed"
+      "status": "done",
+      "last_sha": "34ea5f887bddabdab6e74e896178defa26af9127",
+      "last_transition": "2026-04-28T15:37:10.283731+00:00"
     },
     {
       "id": "P1-T2",
       "phase": 1,
-      "status": "proposed"
+      "status": "done",
+      "last_sha": "34ea5f887bddabdab6e74e896178defa26af9127",
+      "last_transition": "2026-04-28T15:37:10.283731+00:00"
     },
     {
       "id": "P2-T1",
       "phase": 2,
-      "status": "proposed"
+      "status": "done",
+      "last_sha": "34ea5f887bddabdab6e74e896178defa26af9127",
+      "last_transition": "2026-04-28T15:37:10.283731+00:00"
     }
   ],
   "task_contracts": {},
@@ -38,15 +48,15 @@
     {
       "id": "LBA1",
       "kind": "lba",
-      "checked": false,
+      "checked": true,
       "section": "blockers",
       "blocks_phases": [
         1,
         2
       ],
       "summary": "The S6 execution lane must be based on integration/r001-archon-piv-loop-codex-v2 or an equivalent branch containing the S1-S5 V2 workflow surfaces before P1 changes start.",
-      "verify": "P0-T1 commands: git branch --list integration/r001-archon-piv-loop-codex-v2 plus git show integration/r001-archon-piv-loop-codex-v2:.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml for the review-gate regions.",
-      "evidence": "Pending P0-T1 execution; this LBA exists so freeze cannot skip the integration-base verification."
+      "verify": "P0-T1 commands recorded in artifacts/workflow/implementation-reports/commands.json: branch existence plus git show reads of .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml review-gate regions.",
+      "evidence": "Checked on 2026-04-28: integration/r001-archon-piv-loop-codex-v2 exists; git show of the V2 workflow review-gate regions succeeded; plan records the S6 gap as missing planning-review / implementation-review nodes and fix-feedback max_iterations: 10 on the integration base."
     }
   ],
   "snapshot_gate": {
@@ -69,5 +79,9 @@
     "worktree_count": 2,
     "worktree_present": true,
     "worktree_required": false
+  },
+  "lifecycle": {
+    "status": "closed",
+    "updated": "2026-04-28T15:38:56.272537+00:00"
   }
 }
