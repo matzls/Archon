@@ -146,7 +146,7 @@ nodes:
       **Design doc output**: $mode-b-design-doc.output
 
       Write the slice map at:
-      `docs/plans/$intake-classifier.output.slug_slice_map.md`
+      `docs/plans/$intake-classifier.output.slug-slice-map.md`
 
       Requirements:
       - list the full slice inventory needed for the larger request or PRD

@@ -637,7 +637,7 @@ describe('executeWorkflow', () => {
       const sliceMap = findNode(dispatchedWorkflow, 'mode-b-slice-map');
       expect(sliceMap.depends_on).toEqual(['mode-b-design-doc']);
       expect(sliceMap.when).toBe("$intake-classifier.output.mode == 'large_or_prd'");
-      expect(promptOf(sliceMap)).toContain('docs/plans/$intake-classifier.output.slug_slice_map.md');
+      expect(promptOf(sliceMap)).toContain('docs/plans/$intake-classifier.output.slug-slice-map.md');
       expect(promptOf(sliceMap)).toContain('mark exactly one slice as selected');
       expect(sliceMap.output_format).toEqual(
         expect.objectContaining({
