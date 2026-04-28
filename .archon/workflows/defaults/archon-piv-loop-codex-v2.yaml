@@ -1349,7 +1349,7 @@ nodes:
           enum: [continue, advance]
         artifact_path:
           type: string
-      required: [decision]
+      required: [decision, artifact_path]
       additionalProperties: false
     loop:
       prompt: |
@@ -1776,6 +1776,9 @@ nodes:
       }.items():
           if review_decision not in {"advance", "continue"}:
               print(f"ERROR: unsupported {review_name} decision {review_decision!r}", file=sys.stderr)
+              raise SystemExit(1)
+          if review_decision != "advance":
+              print(f"ERROR: {review_name} did not advance", file=sys.stderr)
               raise SystemExit(1)
 
       plan_file = os.environ["PLAN_FILE"].strip()

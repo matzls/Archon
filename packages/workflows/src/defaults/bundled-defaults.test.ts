@@ -200,6 +200,7 @@ describe('bundled-defaults', () => {
       expect(content).toContain('IMPLEMENTATION_REVIEW_ARTIFACT');
       expect(content).toContain('implementation review artifact path missing');
       expect(content).toContain('unsupported {review_name} decision');
+      expect(content).toContain('{review_name} did not advance');
       expect(content).toContain('"planning-review": planning_review_decision');
       expect(content).toContain('"implementation-review": implementation_review_decision');
       expect(content).toContain('url');
