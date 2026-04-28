@@ -1,7 +1,7 @@
 ---
 title: "Archon PIV Loop Codex V2 S6 — planning and implementation review gates — Plan"
 kind: plan
-status: draft
+status: accepted
 created: 2026-04-27
 updated: "2026-04-28"
 origin_prd: "docs/prd/r001-archon-piv-loop-codex-v2.md"
@@ -14,8 +14,8 @@ version: "0.2"
 - What we're doing: turn `S6` into a truthful review-gate slice by adding the PRD-required planning and implementation review checkpoints to V2 without widening into S7.
 - Why we're doing it: the integration-branch V2 workflow now has stronger plan metadata and a separate `live-validate` gate, but it still has no actual planning-review or implementation-review checkpoint.
 - What "done" looks like: `archon-piv-loop-codex-v2` requires planning review before implementation, implementation review after code validation, caps material review/fix loops at `3`, and proves it with review sidecar fixtures and gate behavior tests.
-- How we'll do it: ground the current integration-branch gap, lock the review-node and sidecar contract, update the workflow plus targeted tests, then validate and close the slice evidence loop.
-- Next step / resume point: peer-review this refined slice after the command backfill, then freeze only if the named review nodes, sidecar paths, and proof commands remain concrete.
+- How we did it: grounded the integration-branch gap, locked the review-node and sidecar contract, updated the workflow plus targeted tests, then validated and closed the slice evidence loop.
+- Next step / resume point: review/ship the accepted S6 slice into `integration/r001-archon-piv-loop-codex-v2`; the Claude ship-review lane is currently quota-blocked, so the Codex fallback ship-review artifact is separate evidence from the earlier Claude plan-gate sidecar.
 
 ### Optional Mental Model
 
@@ -65,11 +65,11 @@ flowchart LR
 **Choice:** [x] A1  [ ] A2
 
 ## Plan Status & Controls
-- Plan Status: Draft (as of 2026-04-28)
-- Current Phase: P0 — Grounding
+- Plan Status: Accepted / closed (as of 2026-04-28)
+- Current Phase: P2 — Validation And Doc Sync
 - Last Updated: 2026-04-28
 - Last Reviewed: 2026-04-28
-- Next Checkpoint: peer-review this refined slice after the review-node and verify-command backfill, then freeze only if the integration-base assumptions still hold.
+- Next Checkpoint: review/ship the S6 branch into the campaign integration branch, using the explicit Codex fallback ship-review artifact while Claude remains quota-blocked; do not confuse this with the earlier Claude plan-gate peer-review sidecar.
 - Execution-base note: the root `dev` checkout still lacks `.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml`; `S6` execution should branch from `integration/r001-archon-piv-loop-codex-v2` or an equivalent lane that already contains the S1-S5 V2 workflow surfaces.
 - Deterministic grounding snapshot: PRD `§6.5` requires planning review before implementation, implementation review after code validation, a three-iteration cap on material review/fix loops, and separation between code validation and final live validation. PRD `§6.3` names `docs/plans/_advisory-reviews/` and `docs/plans/_peer-reviews/` as the durable review sidecar locations. The integration-branch V2 workflow already carries peer-review frontmatter fields and a separate `live-validate` node from `S5`, but it still has no `planning-review` or `implementation-review` node, `implement-setup` still depends directly on `refine-plan`, and `fix-feedback` still allows `max_iterations: 10`.
 - E2E Gate: not_required
@@ -96,9 +96,9 @@ Rules:
 - Default scope is phases `P1+` unless explicitly tagged.
 
 ### Blockers (must resolve before freeze)
-- [ ] [LBA] LBA1 (Blocks: P1 freeze, P2 freeze) — The S6 execution lane must be based on integration/r001-archon-piv-loop-codex-v2 or an equivalent branch containing the S1-S5 V2 workflow surfaces before P1 changes start.
-  - Verify: P0-T1 commands: git branch --list integration/r001-archon-piv-loop-codex-v2 plus git show integration/r001-archon-piv-loop-codex-v2:.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml for the review-gate regions.
-  - Evidence: Pending P0-T1 execution; this LBA exists so freeze cannot skip the integration-base verification.
+- [x] [LBA] LBA1 (Blocks: P1 freeze, P2 freeze) — The S6 execution lane must be based on integration/r001-archon-piv-loop-codex-v2 or an equivalent branch containing the S1-S5 V2 workflow surfaces before P1 changes start.
+  - Verify: P0-T1 commands recorded in artifacts/workflow/implementation-reports/commands.json: branch existence plus git show reads of .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml review-gate regions.
+  - Evidence: Checked on 2026-04-28: integration/r001-archon-piv-loop-codex-v2 exists; git show of the V2 workflow review-gate regions succeeded; plan records the S6 gap as missing planning-review / implementation-review nodes and fix-feedback max_iterations: 10 on the integration base.
 
 ### FYI / Later (does not block freeze)
 - (none)
@@ -106,15 +106,15 @@ Rules:
 
 | Phase | Phase Status | Tasks (ID: Title — Status) |
 |------:|--------------|----------------------------|
-| P0 | Proposed | - P0-T1: Ground the review-gate gap and execution base against repo reality — proposed<br>- P0-T2: Freeze the review-node, sidecar, and proof contract — proposed |
-| P1 | Proposed | - P1-T1: Add planning-review and implementation-review checkpoints to the V2 workflow — proposed<br>- P1-T2: Add review sidecar fixture and gate behavior tests — proposed |
-| P2 | Proposed | - P2-T1: Run focused proof commands and close the slice evidence loop — proposed |
+| P0 | Done | - P0-T1: Ground the review-gate gap and execution base against repo reality — done<br>- P0-T2: Freeze the review-node, sidecar, and proof contract — done |
+| P1 | Done | - P1-T1: Add planning-review and implementation-review checkpoints to the V2 workflow — done<br>- P1-T2: Add review sidecar fixture and gate behavior tests — done |
+| P2 | Done | - P2-T1: Run focused proof commands and close the slice evidence loop — done |
 
 ## 6) Phased Execution Plan
 
 ### Phase 0 — Grounding And Contract Lock
 
-- [ ] P0-T1: Ground the review-gate gap and execution base against repo reality
+- [x] P0-T1: Ground the review-gate gap and execution base against repo reality
   - Resolves: LBA1
   - Test Impact: N/A
   - Commands to Run:
@@ -138,7 +138,7 @@ Rules:
     - Current V2 gap: on `integration/r001-archon-piv-loop-codex-v2`, the workflow template has peer-review metadata and the separate `live-validate` gate, but it still lacks `id: planning-review` and `id: implementation-review`; `implement-setup` still depends directly on `refine-plan`, and `fix-feedback` still allows `max_iterations: 10`.
     - Existing proof surfaces: `packages/workflows/src/defaults/bundled-defaults.test.ts` is the bundled-workflow regression surface, and `packages/workflows/src/loader.test.ts` already covers loop parsing, `depends_on`, and interactive-gate fields that can anchor the S6 gate behavior tests.
 
-- [ ] P0-T2: Freeze the review-node, sidecar, and proof contract
+- [x] P0-T2: Freeze the review-node, sidecar, and proof contract
   - Test Impact: N/A
   - Commands to Run:
     - update this focused plan after the grounding pass with the exact workflow node boundary and artifact contract for `S6`
@@ -162,7 +162,7 @@ Rules:
 
 ### Phase 1 — Scoped Implementation
 
-- [ ] P1-T1: Add planning-review and implementation-review checkpoints to the V2 workflow
+- [x] P1-T1: Add planning-review and implementation-review checkpoints to the V2 workflow
   - Test Impact: update
   - Commands to Run:
     - in the `S6` execution worktree created from `integration/r001-archon-piv-loop-codex-v2`, update `.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml`
@@ -179,7 +179,7 @@ Rules:
     - `bun run cli validate workflows archon-piv-loop-codex-v2 --json`
     - `rg -n "id: planning-review|id: implementation-review|docs/plans/_advisory-reviews|docs/plans/_peer-reviews|implementation_review_artifact|review_needed|review_revisions|max_iterations: 3" .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml`
 
-- [ ] P1-T2: Add review sidecar fixture and gate behavior tests
+- [x] P1-T2: Add review sidecar fixture and gate behavior tests
   - Test Impact: add
   - Commands to Run:
     - extend `packages/workflows/src/defaults/bundled-defaults.test.ts` with bundled-workflow assertions against `BUNDLED_WORKFLOWS['archon-piv-loop-codex-v2']`
@@ -196,7 +196,7 @@ Rules:
 
 ### Phase 2 — Validation And Doc Sync
 
-- [ ] P2-T1: Run focused proof commands and close the slice evidence loop
+- [x] P2-T1: Run focused proof commands and close the slice evidence loop
   - Test Impact: N/A
   - Commands to Run:
     - `bun run cli validate workflows archon-piv-loop-codex-v2 --json`
