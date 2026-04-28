@@ -2,9 +2,9 @@
   "$schema": "plan-state-v1",
   "plan": {
     "status": "active",
-    "current_phase": 0,
+    "current_phase": 1,
     "authoring_state": "drafted",
-    "updated": "2026-04-28T16:26:49.274799+00:00"
+    "updated": "2026-04-28T16:36:23.540428+00:00"
   },
   "tasks": [
     {
@@ -24,17 +24,17 @@
     {
       "id": "P1-T1",
       "phase": 1,
-      "status": "proposed"
+      "status": "approved"
     },
     {
       "id": "P1-T2",
       "phase": 1,
-      "status": "proposed"
+      "status": "approved"
     },
     {
       "id": "P2-T1",
       "phase": 2,
-      "status": "proposed"
+      "status": "approved"
     }
   ],
   "task_contracts": {},
