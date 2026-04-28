@@ -1,19 +1,19 @@
 {
   "schema_version": "peer-review-v1",
-  "review_id": "peer-review-721968044987",
+  "review_id": "peer-review-31082ef5a501",
   "plan_path": "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s5/docs/plans/r001-archon-piv-loop-codex-v2-s5_plan.md",
-  "plan_sha256": "9d4439636394304abe579c67a2da8ee152a602dbf8806123e03c0663bdc3947b",
+  "plan_sha256": "8a08cc7f64c6eff496b61593e4ab71f74ff32783fd3bed912dfd4d9172a22396",
   "mode": "workflow-plan-gate",
   "sidecar_dir": "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s5/docs/plans/_peer-reviews",
-  "engine": "Claude",
-  "requested_engine": "auto",
+  "engine": "GPT",
+  "requested_engine": "codex",
   "origin_runtime": "codex",
-  "engine_policy": "opposite_preferred",
-  "resolved_primary_engine": "claude",
-  "preferred_engine": "claude",
+  "engine_policy": "explicit",
+  "resolved_primary_engine": "codex",
+  "preferred_engine": "codex",
   "fallback_engine": null,
-  "final_engine": "claude",
-  "reviewer_match": "opposite",
+  "final_engine": "codex",
+  "reviewer_match": "same_model_fallback",
   "gate_quality": "preferred",
   "artifact_role": "canonical",
   "canonical_sidecar_path": "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s5/docs/plans/_peer-reviews/r001-archon-piv-loop-codex-v2-s5_plan-peer-review.json",
@@ -21,56 +21,63 @@
   "fallback_reason": null,
   "attempt_chain": [
     {
-      "engine": "claude",
+      "engine": "codex",
       "phase": "primary",
-      "attempt": 1,
-      "timeout_seconds": 300,
       "result": "completed",
-      "elapsed_seconds": 245.862,
       "returncode": 0
     }
   ],
-  "review_round": 1,
+  "review_round": 3,
   "max_rounds": 3,
-  "prior_review_id": "None",
+  "prior_review_id": "peer-review-b0340cd86c09",
   "caller_disposition_summary": "",
   "addressed_issues": [],
   "deferred_issues": [],
-  "recheck_requests": [],
-  "model": "claude-opus-4-6",
-  "verdict": "Sound-with-issues",
+  "recheck_requests": [
+    "P99-T1 still validates a latest token-matching CLI run instead of the exact launched run id"
+  ],
+  "model": "codex",
+  "verdict": "Sound",
   "stance": null,
-  "issues_count": 3,
-  "ran_at": "2026-04-28T10:18:10.125735+00:00",
-  "raw_review_excerpt": "The S5 plan is well-grounded and near freeze-ready. It correctly identifies the gap in the V2 workflow (no live-validation gate between fix-feedback and compose-finalize), proposes a concrete single-node solution, has two properly scoped LBAs with verify commands, and Phase 99 uses real Archon/Codex smoke surfaces rather than invented harnesses. Two WARN-level issues: (1) P1-T1 edits the workflow YAML but no task regenerates the bundled-defaults generated file, which will cause a confusing content-mismatch failure during P2-T1 testing; (2) the e2e_report_manager.py flag surface (especially --notes-file) is invoked by the plan but was not verified to accept all six flags used. One NOTE: P99-T2's prerequisite contract declares a command_smoke with expected_exit_code 0 for a long-running dev server, which is a structural mismatch with the actual backgrounded command in Commands to Run.\n\nIssues:\n- 1. [WARN] Bundle regeneration step missing from execution plan\n- 2. [WARN] e2e_report_manager.py flag surface not verified\n- 3. [NOTE] P99-T2 prerequisite contract declares expected_exit_code 0 for long-running dev server",
+  "issues_count": 0,
+  "ran_at": "2026-04-28T11:37:31.288883+00:00",
+  "raw_review_excerpt": "Current-artifact review of the supplied plan text finds the narrowed P99-T1 concern resolved. P99-T1 no longer selects the latest token-matching CLI run; its embedded assertion script fails unless exactly one UUID-derived token match exists for the target workflow run, then checks that run for `live-validate` completion before `compose-finalize` plus either an existing evidence path or an explicit waiver.",
   "error": null,
-  "closure_verification": "Round 1/3 \u2014 no prior-round issues to verify. All findings are first-round originals based on direct artifact inspection.",
-  "prior_round_closure": [],
+  "closure_verification": "Verified against the current plan artifact text supplied via stdin. Prior-round material was treated only as a claim to test, not as evidence of truth.",
+  "prior_round_closure": [
+    {
+      "title": "P99-T1 latest token-matching run selection",
+      "severity": "BLOCK",
+      "caller_claim": "P99-T1 still validates a latest token-matching CLI run instead of the exact launched run id.",
+      "verification_status": "resolved",
+      "verification_notes": "In the current artifact, P99-T1 no longer picks the latest match. The embedded assertion script fails unless exactly one token-matching run exists, then validates that single run's `live-validate` ordering and evidence-or-waiver output."
+    }
+  ],
   "rerun_recommendation": "stop",
   "review": {
     "mode": "workflow-plan-gate",
-    "summary": "The S5 plan is well-grounded and near freeze-ready. It correctly identifies the gap in the V2 workflow (no live-validation gate between fix-feedback and compose-finalize), proposes a concrete single-node solution, has two properly scoped LBAs with verify commands, and Phase 99 uses real Archon/Codex smoke surfaces rather than invented harnesses. Two WARN-level issues: (1) P1-T1 edits the workflow YAML but no task regenerates the bundled-defaults generated file, which will cause a confusing content-mismatch failure during P2-T1 testing; (2) the e2e_report_manager.py flag surface (especially --notes-file) is invoked by the plan but was not verified to accept all six flags used. One NOTE: P99-T2's prerequisite contract declares a command_smoke with expected_exit_code 0 for a long-running dev server, which is a structural mismatch with the actual backgrounded command in Commands to Run.",
+    "summary": "Current-artifact review of the supplied plan text finds the narrowed P99-T1 concern resolved. P99-T1 no longer selects the latest token-matching CLI run; its embedded assertion script fails unless exactly one UUID-derived token match exists for the target workflow run, then checks that run for `live-validate` completion before `compose-finalize` plus either an existing evidence path or an explicit waiver.",
     "rubric_cards": [
       {
         "title": "Claim Anchoring",
-        "anchor": "Plan sections 1-6, Unresolved Items, Current Inputs, References",
-        "claim": "All load-bearing claims (execution-base gap, V2 workflow defers live E2E, e2e_report_manager.py exists, smoke-workflow precedent exists) trace to directly inspected repo evidence or plan-embedded grounding results.",
-        "evidence": "Confirmed: root checkout lacks .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml (Read returned file-not-found). PRD line 348 confirms S5 scope as 'live E2E evidence convention' with 'real CLI/API/browser smoke evidence under run artifacts'. Design doc section 9.2 (lines 429-460) matches the plan's live-validation contract. e2e-codex-smoke.yaml exists with real Codex-provider nodes. bundled-defaults.test.ts (lines 44-71) confirms the string-match test surface the plan intends to extend. State file matches plan markdown on LBAs, phases, and task contracts.",
-        "disposition": "Present. All load-bearing claims are anchored to inspected artifacts. One claim (e2e_report_manager.py flag surface) could not be verified due to read-permission denial but is properly flagged as an assumption."
+        "anchor": "P99-T1 embedded `assert-r001-s5-cli-live-validate.py` in the current plan artifact",
+        "claim": "The load-bearing run-selection claim is anchored in the artifact itself and is specific enough to review without relying on caller narrative.",
+        "evidence": "The script queries token-matching `archon-piv-loop-codex-v2` runs, aborts when `len(runs) != 1`, then inspects that single run's events and requires `live-validate` proof or waiver.",
+        "disposition": "pass"
       },
       {
         "title": "Disposition Matrix",
-        "anchor": "Full plan artifact plus directly inspected repo files",
-        "claim": "The plan artifact is internally consistent, the state file matches the markdown surface, and no conversation-only evidence is required for freeze readiness assessment.",
-        "evidence": "Plan markdown and .state.json agree on: 9 tasks across 4 phases, 2 LBAs both unchecked/blocking, task contracts for P99-T1 and P99-T2. PRD execution map, design doc section 9.2, bundled-defaults.test.ts, and e2e-codex-smoke.yaml all confirm the plan's referenced surfaces exist and match described behavior. No prior-round claims to verify (round 1/3).",
-        "disposition": "Artifact evidence is strong. Conversation evidence not required. Campaign coverage is slice-only (S5 of S1-S7)."
+        "anchor": "Current plan artifact plus prior-round re-check request",
+        "claim": "Artifact evidence is present for the narrow run-selection question; conversation and campaign coverage are intentionally limited.",
+        "evidence": "The current plan text provides the exact P99-T1 commands and assertion logic. Prior-round context was used only to identify the carried issue to verify.",
+        "disposition": "pass"
       },
       {
         "title": "Coverage Scope",
-        "anchor": "Plan scope section, PRD execution map rows S1-S7",
-        "claim": "This review covers the S5 focused slice plan only, not the umbrella orchestration plan or other slices S1-S4/S6-S7.",
-        "evidence": "Only the S5 plan file, its state file, the PRD execution map (lines 340-350), the design doc live-validation section (lines 429-464), the bundled-defaults test file, and the e2e-codex-smoke workflow were inspected. The integration branch workflow content was not inspectable from the root checkout (confirming LBA1).",
-        "disposition": "Slice-only coverage. Neighboring slice plans and the integration-branch workflow content were not inspected."
+        "anchor": "Review focus constraint in the user prompt",
+        "claim": "This review covers only the P99-T1 run-selection/proof logic in the current plan artifact, not full plan or campaign freeze readiness.",
+        "evidence": "No broader phase, sidecar, code, or workflow-file audit was performed; the conclusion is limited to the narrowed P99-T1 criterion.",
+        "disposition": "pass"
       }
     ],
     "disposition_matrix": {
@@ -86,128 +93,95 @@
       ],
       "cells": [
         [
-          "plan, state file, PRD row, design doc, test file, smoke yaml",
-          "e2e_report_manager.py (read denied)",
-          "integration-branch V2 workflow (not on root checkout)"
+          "p99t1-script-logic-reviewed",
+          "no-code-or-state-cross-check",
+          "no-other-artifact-surfaces"
         ],
         [
-          "n/a (round 1, no prior claims)",
-          "n/a",
-          "n/a"
+          "prior-round-recheck-used",
+          "no-full-thread-review",
+          "no-extra-conversation-evidence"
         ],
         [
-          "S5 slice fully assessed",
-          "",
-          "S1-S4, S6-S7, umbrella plan not assessed"
+          "p99t1-slice-covered",
+          "full-campaign-not-assessed",
+          "no-sidecar-or-broader-campaign-audit"
         ]
       ]
     },
     "conversation_evidence": {
-      "used": false,
-      "sources": [],
-      "summary": "Round 1/3 with no prior-round context. All evidence was drawn from direct artifact inspection. No conversation-only claims were used.",
-      "gaps": []
+      "used": true,
+      "sources": [
+        "Prior-round context block in the prompt: explicit re-check request for P99-T1",
+        "Current-turn focus constraint in the prompt"
+      ],
+      "summary": "Conversation evidence was used only to define the carried issue and the narrow review scope. The substantive judgment was based on the current artifact text supplied via stdin.",
+      "gaps": [
+        "No broader thread history was inspected.",
+        "No external campaign packet was treated as authoritative."
+      ]
     },
     "campaign_coverage": {
       "scope": "slice-only",
       "covered": [
-        "S5 plan artifact",
-        "S5 state file",
-        "PRD execution map row S5",
-        "Design doc section 9.2 (live validation)",
-        "bundled-defaults.test.ts (current test surface)",
-        "e2e-codex-smoke.yaml (smoke workflow)"
+        "Current plan artifact section `P99-T1`",
+        "Prior-round carried issue closure for the P99-T1 latest-run-selection concern"
       ],
       "missing": [
-        "S1-S4 plan artifacts and implementation state",
-        "S6-S7 plan artifacts",
-        "Umbrella orchestration plan",
-        "Integration-branch V2 workflow YAML content (not accessible from root checkout)"
+        "P99-T2",
+        "Other phases and tasks",
+        "Companion `.state.json`",
+        "Underlying workflow/code artifacts outside the supplied plan text",
+        "Full campaign/thread review"
       ],
       "gaps": [
-        "Cannot verify the actual current state of the V2 workflow on the integration branch from this checkout \u2014 must trust LBA1's recorded evidence"
+        "This verdict does not certify full freeze readiness for the whole plan or campaign.",
+        "This review does not verify implementation reality beyond the supplied artifact text."
       ]
     },
-    "issues": [
-      {
-        "title": "Bundle regeneration step missing from execution plan",
-        "details": "P1-T1 edits .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml. The bundled-defaults.test.ts (lines 52-71) asserts that BUNDLED_WORKFLOWS content matches on-disk YAML via bundled-defaults.generated.ts, which is produced by scripts/generate-bundled-defaults.ts (referenced at test line 33). No task in P1 or P2 runs the bundle regeneration (bun run check:bundled or the generator script). P1-T2's string assertions on BUNDLED_WORKFLOWS['archon-piv-loop-codex-v2'] and P2-T1's bun test run will hit a content-mismatch failure before any S5-specific assertion is even evaluated.",
-        "suggested_fix": "Add an explicit step in P1-T1 (after editing the YAML) or as a standalone sub-step before P1-T2: run the bundle generator (scripts/generate-bundled-defaults.ts or bun run check:bundled) so the generated file reflects the updated YAML before string assertions are added.",
-        "severity": "WARN"
-      },
-      {
-        "title": "e2e_report_manager.py flag surface not verified",
-        "details": "The plan invokes e2e_report_manager.py with six flags: --plan-path, --repo-root, --verdict, --backend-mode, --ui-mode, and --notes-file (P99-T2 only). The script was not inspectable during this review (read permission denied). If --notes-file is not a supported flag, P99-T2's evidence-recording command will fail at runtime. The plan treats this helper as a known-good contract but does not include a preflight verification of its CLI surface.",
-        "suggested_fix": "Add a verify step in P0-T3 or P99-T1: run python3 e2e_report_manager.py --help and confirm all six flags are accepted. Record the output as grounding evidence. If --notes-file is missing, either add it to the helper or adjust the P99-T2 command.",
-        "severity": "WARN"
-      },
-      {
-        "title": "P99-T2 prerequisite contract declares expected_exit_code 0 for long-running dev server",
-        "details": "The P99-T2 task_contract in the state file and plan has a command_smoke entry with command 'PORT=4000 bun run dev' and expected_exit_code 0. This is a long-running process that never exits 0 on its own. The actual Commands to Run section correctly backgrounds the server. This is a structural mismatch between the prerequisite contract schema and the operational reality.",
-        "suggested_fix": "Either adjust the prerequisite contract to use a daemon-appropriate kind (if supported), or change the command_smoke entry to a bounded health-check like 'PORT=4000 bun run dev & sleep 5 && curl -sf http://localhost:4000/' that actually terminates with exit 0.",
-        "severity": "NOTE"
-      }
-    ],
+    "issues": [],
     "verification_gaps": [
-      "e2e_report_manager.py CLI flag surface (--plan-path, --repo-root, --verdict, --backend-mode, --ui-mode, --notes-file) not verified \u2014 read permission denied during review",
-      "Integration-branch V2 workflow YAML content not directly inspectable from the root checkout; LBA1 evidence is plan-recorded but not independently re-verified in this review session",
-      "Bundle regeneration pathway (scripts/generate-bundled-defaults.ts) not verified to exist or work correctly \u2014 inferred from test file comments only"
+      "No direct inspection of the companion `.state.json` was performed.",
+      "No direct inspection of workflow YAML, tests, or runtime DB schema was performed.",
+      "The review does not assess whether exact run-id capture would be preferable beyond the narrowed token-uniqueness criterion."
     ],
-    "recommended_fixes": [
-      "Add an explicit bundle-regeneration step (bun run check:bundled or invoke scripts/generate-bundled-defaults.ts) in P1-T1 after editing the workflow YAML, before P1-T2 assertions are added",
-      "Add a preflight verification of e2e_report_manager.py --help in P0-T3 to confirm all invoked flags (especially --notes-file) are accepted",
-      "Consider adjusting P99-T2's command_smoke prerequisite to a bounded health-check instead of a long-running dev server command"
-    ],
+    "recommended_fixes": [],
     "evidence_sources": [
-      "docs/plans/r001-archon-piv-loop-codex-v2-s5_plan.md (full file, 424 lines)",
-      "docs/plans/r001-archon-piv-loop-codex-v2-s5_plan.state.json (full file, 144 lines)",
-      "docs/prd/r001-archon-piv-loop-codex-v2.md (lines 330-378, execution map and open questions)",
-      "docs/design/codex-piv-v2-workflow-design.md (lines 420-484, validation and PR review sections)",
-      "packages/workflows/src/defaults/bundled-defaults.test.ts (full file, 147 lines)",
-      "Root checkout .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml \u2014 confirmed absent (file-not-found)",
-      ".archon/workflows/test-workflows/e2e-codex-smoke.yaml (lines 1-30)"
+      "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s5/docs/plans/r001-archon-piv-loop-codex-v2-s5_plan.md (supplied via stdin)",
+      "Prior-round context block in the user prompt"
     ],
     "error": null,
-    "verdict": "Sound-with-issues",
+    "verdict": "Sound",
     "workflow_compliance": [
-      "Plan status is draft, current phase P0, all tasks proposed \u2014 consistent between markdown and state file",
-      "Two LBAs are properly declared as blocking with verify commands and scoped phase blocks",
-      "Phase 99 E2E gate is present with concrete commands, prerequisite contracts, and evidence paths",
-      "Exit criteria are present and testable for all 9 tasks",
-      "Verify commands are present for all phases and use concrete repo paths rather than placeholders",
-      "Scope boundaries are explicit: non-goals correctly name S6 (review gates) and S7 (PR handoff)",
-      "Doc Surface Map correctly identifies must-edit vs review-only surfaces"
+      "P99-T1 now uses an explicit unique-token selection contract instead of latest-match selection.",
+      "P99-T1 exit criteria and verify commands align with the embedded assertion script's single-run requirement.",
+      "The task remains within workflow-plan-gate scope for the narrowed re-check."
     ],
     "technical_reality": [
-      "Root checkout confirmed to lack .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml \u2014 matches LBA1 claim",
-      "PRD execution map row S5 confirmed: 'live E2E evidence convention' with 'real CLI/API/browser smoke evidence under run artifacts'",
-      "Design doc section 9.2 confirmed: requires live proof under $ARTIFACTS_DIR/e2e-reports/ with explicit waiver only when genuinely not possible",
-      "bundled-defaults.test.ts confirmed: BUNDLED_WORKFLOWS string-match tests exist and the plan's P1-T2 approach of extending them is feasible",
-      "e2e-codex-smoke.yaml confirmed: real Codex-provider smoke workflow with structured output assertions",
-      "bundled-defaults.test.ts lines 52-71 confirmed: generated file must match on-disk YAML, requiring bundle regeneration after edits"
+      "Run token generation is UUID-derived (`uuid.uuid4().hex`) and persisted before the workflow launch command.",
+      "The assertion query scopes to workflow name, working path, and token-bearing user message.",
+      "The script aborts unless exactly one matching run exists.",
+      "The script then requires `node_completed` for `live-validate`, rejects `compose-finalize` occurring earlier, and requires either an existing evidence path or explicit waiver metadata."
     ],
-    "assumptions_to_verify": [
-      "e2e_report_manager.py accepts all six flags used in the plan: --plan-path, --repo-root, --verdict, --backend-mode, --ui-mode, --notes-file",
-      "scripts/generate-bundled-defaults.ts (or bun run check:bundled) exists and regenerates bundled-defaults.generated.ts correctly after YAML edits",
-      "The integration branch workflow actually has fix-feedback and compose-finalize nodes in the positions described by the plan's grounding results",
-      "bun run cli validate workflows archon-piv-loop-codex-v2 --json is a valid command that exercises the V2 workflow validation surface"
-    ],
+    "assumptions_to_verify": [],
     "verification_sufficiency": [
-      "P0 verify commands are self-referential (grep the plan itself) \u2014 appropriate for a grounding phase that updates the plan document",
-      "P1 verify commands cover three levels: file existence, CLI validation, and string-match grep \u2014 sufficient for the workflow edit",
-      "P1-T2 verify commands include both test execution and grep \u2014 sufficient if bundle regeneration is added first",
-      "P2 verify commands rerun the P1 suite plus plan_readiness.py \u2014 sufficient for a validation-and-sync phase",
-      "P99-T1 verify commands include smoke preflight, artifact find, and evidence-file existence check \u2014 sufficient for CLI E2E",
-      "P99-T2 verify commands include server health check, notes file existence, and evidence-file existence \u2014 sufficient for manual UI E2E"
+      "The supplied artifact text is sufficient to judge the narrowed P99-T1 run-selection logic because it includes the exact command sequence and embedded assertion code.",
+      "No blocker depends on uninspected external files for this narrow question."
     ],
     "downstream_risks": [
-      "If bundle regeneration is missed, P1-T2 and P2-T1 will fail with a confusing content-mismatch error rather than the intended S5-specific assertion failures",
-      "If e2e_report_manager.py does not support --notes-file, P99-T2's evidence recording will fail and the slice cannot close without either fixing the helper or changing the command",
-      "If the integration branch is rebased or force-pushed between plan freeze and execution, the grounding evidence for LBA1 may become stale"
+      "Broader Phase 99 or full-plan freeze readiness could still have issues outside this narrowed P99-T1 concern."
     ],
-    "freeze_recommendation": "Safe to freeze. Carry the remaining WARN/NOTE items as explicit follow-ups or implementation-time checks.",
-    "prior_round_closure": [],
-    "closure_verification": "Round 1/3 \u2014 no prior-round issues to verify. All findings are first-round originals based on direct artifact inspection.",
+    "freeze_recommendation": "Safe to freeze. No blocker-level issues were identified.",
+    "prior_round_closure": [
+      {
+        "title": "P99-T1 latest token-matching run selection",
+        "severity": "BLOCK",
+        "caller_claim": "P99-T1 still validates a latest token-matching CLI run instead of the exact launched run id.",
+        "verification_status": "resolved",
+        "verification_notes": "In the current artifact, P99-T1 no longer picks the latest match. The embedded assertion script fails unless exactly one token-matching run exists, then validates that single run's `live-validate` ordering and evidence-or-waiver output."
+      }
+    ],
+    "closure_verification": "Verified against the current plan artifact text supplied via stdin. Prior-round material was treated only as a claim to test, not as evidence of truth.",
     "rerun_recommendation": "stop"
   }
 }

@@ -141,6 +141,22 @@ describe('bundled-defaults', () => {
       expect(content).not.toContain('ls -t ');
     });
 
+    it('archon-piv-loop-codex-v2 should require live validation before finalization', () => {
+      const content = BUNDLED_WORKFLOWS['archon-piv-loop-codex-v2'];
+      const liveValidateIndex = content.indexOf('id: live-validate');
+      const composeFinalizeIndex = content.indexOf('id: compose-finalize');
+
+      expect(liveValidateIndex).toBeGreaterThan(-1);
+      expect(composeFinalizeIndex).toBeGreaterThan(liveValidateIndex);
+      expect(content).toContain('depends_on: [live-validate, implement-setup]');
+      expect(content).toContain('$ARTIFACTS_DIR/e2e-reports');
+      expect(content).toContain('e2e_report_manager.py');
+      expect(content).toContain('waiver_reason');
+      expect(content).toContain('ERROR: live validation evidence or waiver missing');
+      expect(content).not.toContain('depends_on: [fix-feedback, implement-setup]');
+      expect(content).not.toContain('deferred to later V2 slices');
+    });
+
     it('should have valid YAML structure', () => {
       for (const content of Object.values(BUNDLED_WORKFLOWS)) {
         expect(content).toContain('name:');

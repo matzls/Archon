@@ -44,3 +44,9 @@ Plan: `docs/plans/r001-archon-piv-loop-codex-v2-s1_plan.md`
 - Plan: `docs/plans/r001-archon-piv-loop-codex-v2-s4_plan.md`
 - When Bun cannot write `$HOME/.bun/install/cache` from a sandboxed worktree, set `BUN_INSTALL_CACHE_DIR` to a writable path before running targeted workflow validation commands.
 - S4 Mode B intake is safest as a pre-explore branch: classify large/PRD input, create or refresh the design doc, create the slice map, enforce exactly one selected slice, then pass the selected slice into the existing one-slice lane.
+
+## 2026-04-28 — r001-archon-piv-loop-codex-v2-s5
+
+- Plan: `docs/plans/r001-archon-piv-loop-codex-v2-s5_plan.md`
+- In sandboxed worktrees with no `node_modules`, `TMPDIR` alone may not be enough for Bun install; use a writable cache directory plus `--backend=copyfile` before rerunning focused CLI proof commands.
+- For workflow-contract slices, pair prompt wording with dependency-shape assertions; a finalization gate is not enforceable unless the downstream node depends on the new gate and regression tests reject the old direct dependency.

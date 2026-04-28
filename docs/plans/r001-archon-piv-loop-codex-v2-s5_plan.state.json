@@ -2,45 +2,59 @@
   "$schema": "plan-state-v1",
   "plan": {
     "status": "active",
-    "current_phase": 0,
+    "current_phase": 99,
     "authoring_state": "drafted",
-    "updated": "2026-04-28T10:18:11.172487+00:00"
+    "updated": "2026-04-28T11:09:00.514322+00:00"
   },
   "tasks": [
     {
       "id": "P0-T1",
       "phase": 0,
-      "status": "approved"
+      "status": "validated",
+      "last_sha": "f2176575519c6b21b89b1951ad63575263f71fe3",
+      "last_transition": "2026-04-28T10:20:00.917656+00:00"
     },
     {
       "id": "P0-T2",
       "phase": 0,
-      "status": "approved"
+      "status": "validated",
+      "last_sha": "f2176575519c6b21b89b1951ad63575263f71fe3",
+      "last_transition": "2026-04-28T10:20:17.677231+00:00"
     },
     {
       "id": "P0-T3",
       "phase": 0,
-      "status": "approved"
+      "status": "validated",
+      "last_sha": "f2176575519c6b21b89b1951ad63575263f71fe3",
+      "last_transition": "2026-04-28T10:21:50.392608+00:00"
     },
     {
       "id": "P1-T1",
       "phase": 1,
-      "status": "proposed"
+      "status": "validated",
+      "last_sha": "f2176575519c6b21b89b1951ad63575263f71fe3",
+      "last_transition": "2026-04-28T10:37:27.830034+00:00"
     },
     {
       "id": "P1-T2",
       "phase": 1,
-      "status": "proposed"
+      "status": "validated",
+      "last_sha": "f2176575519c6b21b89b1951ad63575263f71fe3",
+      "last_transition": "2026-04-28T10:37:55.071675+00:00"
     },
     {
       "id": "P2-T1",
       "phase": 2,
-      "status": "proposed"
+      "status": "validated",
+      "last_sha": "f2176575519c6b21b89b1951ad63575263f71fe3",
+      "last_transition": "2026-04-28T10:38:34.199623+00:00"
     },
     {
       "id": "P2-T2",
       "phase": 2,
-      "status": "proposed"
+      "status": "validated",
+      "last_sha": "f2176575519c6b21b89b1951ad63575263f71fe3",
+      "last_transition": "2026-04-28T10:39:22.054320+00:00"
     },
     {
       "id": "P99-T1",
@@ -96,17 +110,23 @@
           "smoke_command": "bun --version"
         },
         {
+          "kind": "tool_binary",
+          "lane_bound": false,
+          "name": "agent-browser",
+          "smoke_command": "agent-browser --version"
+        },
+        {
           "kind": "command_smoke",
           "lane_bound": true,
-          "command": "PORT=4000 bun run dev",
+          "command": "bash -lc 'PORT=3090 bun run dev:server >/tmp/r001-s5-server-smoke.log 2>&1 & server_pid=$!; PORT=3090 bun run dev:web >/tmp/r001-s5-web-smoke.log 2>&1 & web_pid=$!; trap \"kill $server_pid $web_pid 2>/dev/null || true\" EXIT; for _ in $(seq 1 30); do curl -sf http://localhost:3090/api/health >/dev/null && curl -sf http://localhost:5173/ >/dev/null && exit 0; sleep 2; done; tail -20 /tmp/r001-s5-server-smoke.log; tail -20 /tmp/r001-s5-web-smoke.log; exit 1'",
           "cwd_policy": "repo_root",
           "expected_exit_code": 0
         },
         {
           "kind": "browser_smoke",
           "lane_bound": true,
-          "runner": "playwright",
-          "entry_artifact": "artifacts/workflow/tmp/r001-s5-ui-home.html",
+          "runner": "agent-browser",
+          "entry_artifact": "artifacts/workflow/tmp/r001-s5-ui-snapshot.txt",
           "export_artifact": "artifacts/workflow/tmp/r001-s5-ui-notes.md",
           "expected_artifact": "artifacts/workflow/e2e-reports/<plan-slug>-<YYYY-MM-DD>-e2e.json"
         }
@@ -117,7 +137,7 @@
     {
       "id": "LBA1",
       "kind": "lba",
-      "checked": false,
+      "checked": true,
       "section": "blockers",
       "blocks_phases": [
         1,
@@ -126,40 +146,40 @@
       ],
       "summary": "S5 must execute from integration/r001-archon-piv-loop-codex-v2 or another lane that already contains .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml; the root dev checkout alone is not a valid execution base for this slice.",
       "verify": "`git show integration/r001-archon-piv-loop-codex-v2:.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml | sed -n '1,20p'`",
-      "evidence": "`git branch --list \"integration/r001-archon-piv-loop-codex-v2\"` returned the integration branch, `git show integration/r001-archon-piv-loop-codex-v2:.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml` returned the V2 workflow content, and local `sed -n '1,20p' .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml` failed in the root checkout on 2026-04-28."
+      "evidence": "`git branch --show-current` returned `slice/r001-archon-piv-loop-codex-v2/s5`, `test -f .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml` returned `PRESENT`, and `git merge-base --is-ancestor integration/r001-archon-piv-loop-codex-v2 HEAD` returned `YES` on 2026-04-28."
     },
     {
       "id": "LBA2",
       "kind": "lba",
-      "checked": false,
+      "checked": true,
       "section": "blockers",
       "blocks_phases": [
         99
       ],
       "summary": "The execution lane can run Codex-backed Archon smoke workflows with a writable ARCHON_HOME and the credentials required for real workflow runs before S5 claims PASS live evidence.",
       "verify": "`ARCHON_HOME=\"$PWD/.tmp/archon-home\" bun run cli workflow run e2e-codex-smoke --no-worktree \"smoke test\"`",
-      "evidence": "TBD during Phase 99; if this preflight cannot run, the slice may still implement the gate but cannot claim PASS live evidence without an explicit waiver outcome."
+      "evidence": "After creating `.tmp/archon-home`, `BUN_INSTALL_CACHE_DIR=/private/tmp/archon-bun-cache ARCHON_HOME=\"$PWD/.tmp/archon-home\" bun run cli workflow run e2e-codex-smoke --no-worktree \"smoke test\"` exited 0 on 2026-04-28. Output included `Workflow completed successfully` and `PASS: simple='4' structured='{category:math}'`."
     }
   ],
   "snapshot_gate": {
-    "branch": "dev",
+    "branch": "slice/r001-archon-piv-loop-codex-v2/s5",
     "checked_at": "2026-04-28T10:18:11+00:00",
     "default_branch": "dev",
-    "dirty_before_snapshot": true,
-    "lane_branch": "dev",
+    "dirty_before_snapshot": false,
+    "lane_branch": "slice/r001-archon-piv-loop-codex-v2/s5",
     "lane_decision_basis": "deterministic",
-    "lane_decision_reason": "repo_dirty_before_implementation",
-    "lane_type": "branch",
-    "lane_worktree_path": null,
-    "next_command": "git checkout -b r001-archon-piv-loop-codex-v2-s5-plan",
+    "lane_decision_reason": "clean_feature_lane_before_implementation",
+    "lane_type": "worktree",
+    "lane_worktree_path": "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s5",
+    "next_command": null,
     "plan_path": "docs/plans/r001-archon-piv-loop-codex-v2-s5_plan.md",
-    "reason": "running_on_default_branch",
-    "snapshot_commit_message": null,
-    "snapshot_commit_sha": null,
-    "snapshot_created_at": null,
-    "status": "missing",
-    "worktree_count": 1,
-    "worktree_present": false,
-    "worktree_required": true
+    "reason": "snapshot_commit_created",
+    "snapshot_commit_message": "chore(workflow): snapshot before implementing r001-archon-piv-loop-codex-v2-s5-plan\n\nPlan: docs/plans/r001-archon-piv-loop-codex-v2-s5_plan.md\nFeature: r001-archon-piv-loop-codex-v2-s5-plan\nPurpose: rollback anchor before implementation\nLane: branch=slice/r001-archon-piv-loop-codex-v2/s5 worktree=/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s5\n",
+    "snapshot_commit_sha": "f2176575519c6b21b89b1951ad63575263f71fe3",
+    "snapshot_created_at": "2026-04-28T10:18:11+00:00",
+    "status": "current",
+    "worktree_count": 2,
+    "worktree_present": true,
+    "worktree_required": false
   }
 }
