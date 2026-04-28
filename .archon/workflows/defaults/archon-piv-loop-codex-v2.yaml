@@ -1767,7 +1767,7 @@ nodes:
 
       plan_file = os.environ["PLAN_FILE"].strip()
       plan_name = Path(plan_file).name
-      slug = re.sub(r"_plan\\.md$", "", plan_name)
+      slug = re.sub(r"_plan\.md$", "", plan_name)
       pr_result = json.loads(Path(os.environ["PR_RESULT_PATH"]).read_text(encoding="utf-8"))
 
       pr_is_draft = bool(pr_result.get("isDraft"))

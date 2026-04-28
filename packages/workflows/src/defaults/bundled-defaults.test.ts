@@ -205,6 +205,8 @@ describe('bundled-defaults', () => {
       expect(content).toContain('autonomous_merge_claim');
       expect(content).toContain('pr-result.json');
       expect(content).toContain('pr-ready.md');
+      expect(content).toContain('re.sub(r"_plan\\.md$", "", plan_name)');
+      expect(content).not.toContain('re.sub(r"_plan\\\\.md$", "", plan_name)');
 
       const artifactsDir =
         process.env.ARTIFACTS_DIR ??
