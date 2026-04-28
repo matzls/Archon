@@ -157,6 +157,26 @@ describe('bundled-defaults', () => {
       expect(content).not.toContain('deferred to later V2 slices');
     });
 
+    it('archon-piv-loop-codex-v2 should preserve Slice 6 review-gate contracts', () => {
+      const content = BUNDLED_WORKFLOWS['archon-piv-loop-codex-v2'];
+
+      expect(content).toContain('id: planning-review');
+      expect(content).toContain('depends_on: [refine-plan, create-plan]');
+      expect(content).toContain('id: implementation-review');
+      expect(content).toContain('depends_on: [code-review, implement-setup, detect-project]');
+      expect(content).toContain('peer_review:');
+      expect(content).toContain('advisory_sidecar: ""');
+      expect(content).toContain('frozen_plan_sidecar: ""');
+      expect(content).toContain('implementation_review_artifact: ""');
+      expect(content).toContain('docs/plans/_advisory-reviews/');
+      expect(content).toContain('docs/plans/_peer-reviews/');
+      expect(content).toContain('review_needed');
+      expect(content).toContain('review_revisions');
+      expect(content).toContain('complete_on_user_input:');
+      expect(content).toContain('gate_message: |');
+      expect(content).toContain('max_iterations: 3');
+    });
+
     it('should have valid YAML structure', () => {
       for (const content of Object.values(BUNDLED_WORKFLOWS)) {
         expect(content).toContain('name:');

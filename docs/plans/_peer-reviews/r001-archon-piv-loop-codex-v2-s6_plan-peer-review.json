@@ -1,0 +1,237 @@
+{
+  "schema_version": "peer-review-v1",
+  "review_id": "peer-review-ae317ecc715b",
+  "plan_path": "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s6/docs/plans/r001-archon-piv-loop-codex-v2-s6_plan.md",
+  "plan_sha256": "e88d048b9249b3809911aaf25a4268930c77d63556774d39dbd704662cd4c2c0",
+  "mode": "workflow-plan-gate",
+  "sidecar_dir": "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s6/docs/plans/_peer-reviews",
+  "engine": "Claude",
+  "requested_engine": "auto",
+  "origin_runtime": "codex",
+  "engine_policy": "opposite_preferred",
+  "resolved_primary_engine": "claude",
+  "preferred_engine": "claude",
+  "fallback_engine": null,
+  "final_engine": "claude",
+  "reviewer_match": "opposite",
+  "gate_quality": "preferred",
+  "artifact_role": "canonical",
+  "canonical_sidecar_path": "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s6/docs/plans/_peer-reviews/r001-archon-piv-loop-codex-v2-s6_plan-peer-review.json",
+  "fallback_used": false,
+  "fallback_reason": null,
+  "attempt_chain": [
+    {
+      "engine": "claude",
+      "phase": "primary",
+      "attempt": 1,
+      "timeout_seconds": 300,
+      "result": "timeout",
+      "elapsed_seconds": 300.456
+    },
+    {
+      "engine": "claude",
+      "phase": "primary",
+      "attempt": 2,
+      "timeout_seconds": 600,
+      "result": "completed",
+      "elapsed_seconds": 502.539,
+      "returncode": 0
+    }
+  ],
+  "review_round": 3,
+  "max_rounds": 3,
+  "prior_review_id": "peer-review-6e95a53350d7",
+  "caller_disposition_summary": "",
+  "addressed_issues": [],
+  "deferred_issues": [],
+  "recheck_requests": [],
+  "model": "claude-opus-4-6",
+  "verdict": "Sound-with-issues",
+  "stance": null,
+  "issues_count": 3,
+  "ran_at": "2026-04-28T15:22:59.477512+00:00",
+  "raw_review_excerpt": "Round 3/3 freeze-readiness review of r001-archon-piv-loop-codex-v2-s6_plan.md. The plan is materially sound: scope aligns with PRD \u00a76.5 and design doc \u00a78.1/\u00a78.2, verify commands are executable (bun test, bun run cli validate, rg), phased structure is coherent, and LBA1 is resolved with evidence. One WARN: the architecture diagram and P1-T1 scope leave implementation-review's exact position relative to fix-feedback ambiguous. Two NOTEs: (1) grounding snapshot flags fix-feedback max_iterations: 10 without explicit disposition, (2) state.json authoring_state 'drafted' vs markdown status 'draft' cosmetic mismatch.\n\nIssues:\n- 1. [WARN] Implementation-review position relative to fix-feedback is ambiguous\n- 2. [NOTE] Grounding snapshot flags fix-feedback max_iterations: 10 without disposition\n- 3. [NOTE] State.json authoring_state vs markdown status cosmetic mismatch",
+  "error": null,
+  "closure_verification": "Prior-round individual issue resolution could not be verified because the prior packet (peer-review-6e95a53350d7) did not enumerate specific issues in the available context. The current artifact was assessed independently per the current-artifact-first rule. All findings in this round are based on cross-referencing the plan against PRD, design doc, workflow YAML, and test files.",
+  "prior_round_closure": [
+    {
+      "title": "Prior round findings (peer-review-6e95a53350d7)",
+      "severity": "NOTE",
+      "caller_claim": "Prior review referenced but specific carried issues not enumerated in available context",
+      "verification_status": "not-proven",
+      "verification_notes": "The prior-round review ID was provided but the specific issues from that round were not available in the current context. The current artifact was assessed on its own merits per the current-artifact-first rule."
+    }
+  ],
+  "rerun_recommendation": "stop",
+  "review": {
+    "mode": "workflow-plan-gate",
+    "summary": "Round 3/3 freeze-readiness review of r001-archon-piv-loop-codex-v2-s6_plan.md. The plan is materially sound: scope aligns with PRD \u00a76.5 and design doc \u00a78.1/\u00a78.2, verify commands are executable (bun test, bun run cli validate, rg), phased structure is coherent, and LBA1 is resolved with evidence. One WARN: the architecture diagram and P1-T1 scope leave implementation-review's exact position relative to fix-feedback ambiguous. Two NOTEs: (1) grounding snapshot flags fix-feedback max_iterations: 10 without explicit disposition, (2) state.json authoring_state 'drafted' vs markdown status 'draft' cosmetic mismatch.",
+    "rubric_cards": [
+      {
+        "title": "Plan-PRD Alignment",
+        "anchor": "PRD \u00a76.5, \u00a76.3; Design \u00a78.1, \u00a78.2",
+        "claim": "Plan scope covers planning-review and implementation-review gates per PRD S6 mandate, with sidecar paths matching \u00a76.3 artifact contract and 3-iteration cap matching \u00a76.5.",
+        "evidence": "P1-T1 adds planning-review and implementation-review nodes. Plan references docs/plans/_advisory-reviews/ and _peer-reviews/ matching PRD \u00a76.3. Plan peer_review metadata block (workflow YAML lines 530-536) already includes max_iterations: 3. Architecture diagram shows refine-plan \u2192 planning-review \u2192 implement-setup \u2192 code-review \u2192 implementation-review \u2192 live-validate \u2192 compose-finalize.",
+        "disposition": "present \u2014 scope and artifact paths align with PRD and design doc requirements"
+      },
+      {
+        "title": "Verify Command Sufficiency",
+        "anchor": "P1-T1, P1-T2, P2-T1 verify commands",
+        "claim": "All verify commands are executable and non-prose: workflow validation CLI, ripgrep node ID checks, bun test for bundled-defaults and loader tests.",
+        "evidence": "P1-T1: 'bun run cli validate workflows archon-piv-loop-codex-v2 --json' and 'rg -n id: planning-review|... .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml'. P1-T2: 'bun test packages/workflows/src/defaults/bundled-defaults.test.ts' and 'bun test packages/workflows/src/loader.test.ts'. Both test files confirmed to exist with relevant coverage (loader.test.ts line 1630-1664 covers loop parsing, bundled-defaults.test.ts lines 36-71 cover bundle drift).",
+        "disposition": "present \u2014 all commands are grounded and executable"
+      },
+      {
+        "title": "Implementation-Review Positioning Clarity",
+        "anchor": "Architecture diagram, P1-T1 AC",
+        "claim": "The plan's architecture diagram and task description leave ambiguous whether implementation-review sits before or after fix-feedback iterations.",
+        "evidence": "Architecture diagram chain: code-review \u2192 implementation-review \u2192 live-validate. But fix-feedback node (workflow YAML lines 1220-1363, max_iterations: 10) sits between code-review and live-validate in the current YAML. The plan does not specify whether implementation-review precedes or follows fix-feedback. PRD \u00a76.5 says 'implementation review is required after code validation and before final closeout' \u2014 design doc \u00a78.2 clarifies 'after code is written and code validation has run, but before final closeout', which is consistent with post-fix-feedback placement but the plan doesn't make this explicit.",
+        "disposition": "partial \u2014 position is inferrable from PRD/design but not stated in the plan artifact itself"
+      }
+    ],
+    "disposition_matrix": {
+      "rows": [
+        "artifact",
+        "conversation",
+        "campaign"
+      ],
+      "columns": [
+        "present",
+        "partial",
+        "missing"
+      ],
+      "cells": [
+        [
+          "Plan scope, phased structure, verify commands, LBA1 resolution, sidecar paths, architecture diagram",
+          "Implementation-review vs fix-feedback ordering, fix-feedback max_iterations disposition",
+          "Nothing material missing"
+        ],
+        [
+          "Prior-round context referenced (peer-review-6e95a53350d7)",
+          "Prior-round specific issues not enumerable from packet",
+          "N/A"
+        ],
+        [
+          "S6 scope matches PRD execution map row, integration branch contract carried",
+          "S1-S5 prerequisite surfaces verified via LBA1 only",
+          "S7 handoff dependency not assessed (out of scope)"
+        ]
+      ]
+    },
+    "conversation_evidence": {
+      "used": true,
+      "sources": [
+        "Plan state.json (P0-T1/T2 done, P1/P2 proposed)",
+        "PRD \u00a76.3 artifact contract lines 167-183",
+        "PRD \u00a76.5 review/validation contract lines 196-203",
+        "PRD execution map lines 340-354",
+        "Design doc \u00a78.1 lines 360-390",
+        "Design doc \u00a78.2 lines 391-408",
+        "Workflow YAML lines 530-536 (peer_review metadata)",
+        "Workflow YAML lines 664-765 (refine-plan)",
+        "Workflow YAML line 772 (implement-setup depends_on)",
+        "Workflow YAML lines 1098-1363 (code-review, fix-feedback)",
+        "bundled-defaults.test.ts lines 36-71",
+        "loader.test.ts lines 1630-1664"
+      ],
+      "summary": "All load-bearing plan claims were cross-referenced against PRD, design doc, current workflow YAML, test files, and state.json. No fabricated or ungrounded claims found.",
+      "gaps": [
+        "Prior-round specific issue list not available for individual resolution verification"
+      ]
+    },
+    "campaign_coverage": {
+      "scope": "slice-only",
+      "covered": [
+        "S6 review-gate scope per PRD execution map",
+        "Integration branch prerequisite (LBA1 verified)",
+        "Sidecar path conventions from PRD \u00a76.3",
+        "Review iteration cap from PRD \u00a76.5",
+        "Planning-review and implementation-review node additions"
+      ],
+      "missing": [
+        "S7 PR handoff dependency surface (out of S6 scope)"
+      ],
+      "gaps": [
+        "fix-feedback max_iterations: 10 inherited from S1-S5 \u2014 plan notes it in grounding but does not disposition whether S6 should change it"
+      ]
+    },
+    "issues": [
+      {
+        "title": "Implementation-review position relative to fix-feedback is ambiguous",
+        "details": "The architecture diagram shows code-review \u2192 implementation-review \u2192 live-validate but omits fix-feedback from the chain entirely. The current workflow YAML has fix-feedback (max_iterations: 10) between code-review and live-validate. P1-T1 does not specify whether the new implementation-review node should precede or follow fix-feedback iterations. PRD \u00a76.5 says 'after code validation and before final closeout'; design doc \u00a78.2 says 'after code is written and code validation has run, but before final closeout' \u2014 both are consistent with post-fix-feedback placement but the plan should make this explicit.",
+        "suggested_fix": "Add one sentence to P1-T1 specifying implementation-review depends_on fix-feedback (or code-review if pre-loop), and update the architecture diagram to include fix-feedback in the node chain.",
+        "severity": "WARN"
+      },
+      {
+        "title": "Grounding snapshot flags fix-feedback max_iterations: 10 without disposition",
+        "details": "The plan's grounding section correctly identifies that fix-feedback has max_iterations: 10 on the integration base, but does not state whether S6 should change this value (PRD \u00a76.5 caps material review/fix loops at 3 iterations) or leave it for a separate scope.",
+        "suggested_fix": "Add a one-line disposition in the grounding or non-goals section: either 'fix-feedback iteration cap is out of S6 scope' or 'P1-T1 will also set fix-feedback max_iterations to 3 per PRD \u00a76.5'.",
+        "severity": "NOTE"
+      },
+      {
+        "title": "State.json authoring_state vs markdown status cosmetic mismatch",
+        "details": "state.json has authoring_state: 'drafted' while the markdown frontmatter has status: 'draft'. These likely represent the same state but use different terms. This is cosmetic and not a freeze blocker.",
+        "suggested_fix": "No action required unless the workflow tooling enforces exact term parity.",
+        "severity": "NOTE"
+      }
+    ],
+    "verification_gaps": [
+      "Prior-round (peer-review-6e95a53350d7) individual issue resolution cannot be verified \u2014 the prior packet did not enumerate specific carried issues in the available context",
+      "Whether gate_message and complete_on_user_input fields are already parsed by the workflow engine was not runtime-verified (loader.test.ts covers YAML parsing generically but no dedicated field-level tests exist)"
+    ],
+    "recommended_fixes": [
+      "Add one sentence to P1-T1 clarifying implementation-review's depends_on target (fix-feedback or code-review) and update the architecture diagram to include fix-feedback in the node chain",
+      "Optionally add a one-line disposition for fix-feedback max_iterations: 10 in the plan's grounding or non-goals section"
+    ],
+    "evidence_sources": [
+      "docs/plans/r001-archon-piv-loop-codex-v2-s6_plan.md (full, 284 lines)",
+      "docs/plans/r001-archon-piv-loop-codex-v2-s6_plan.state.json (full, 77 lines)",
+      "docs/prd/r001-archon-piv-loop-codex-v2.md (\u00a76.3 lines 167-183, \u00a76.5 lines 196-203, execution map lines 340-354)",
+      "docs/design/codex-piv-v2-workflow-design.md (\u00a78.1-\u00a78.2 lines 360-408)",
+      ".archon/workflows/defaults/archon-piv-loop-codex-v2.yaml (lines 1-50, 495-1500+)",
+      "packages/workflows/src/defaults/bundled-defaults.test.ts (full, 189 lines)",
+      "packages/workflows/src/loader.test.ts (full, ~2000 lines)"
+    ],
+    "error": null,
+    "verdict": "Sound-with-issues",
+    "workflow_compliance": [
+      "Plan follows PRD \u00a76.5 review/validation contract for planning-review and implementation-review gates",
+      "Plan follows PRD \u00a76.3 artifact contract for sidecar paths under _advisory-reviews/ and _peer-reviews/",
+      "Plan follows design doc \u00a78.1 advisory and frozen-plan review conventions",
+      "Plan follows design doc \u00a78.2 implementation review timing (after code validation, before closeout)",
+      "Verify commands are all executable (bun test, bun run cli validate, rg) rather than prose placeholders"
+    ],
+    "technical_reality": [
+      "No planning-review or implementation-review nodes exist in the current workflow YAML \u2014 plan correctly identifies these as the S6 gap to fill",
+      "fix-feedback node exists at lines 1220-1363 with max_iterations: 10 and until: VALIDATED \u2014 plan acknowledges this in grounding",
+      "refine-plan node exists at lines 664-765 with max_iterations: 10 and until: PLAN_APPROVED \u2014 provides the model for review-gate loop nodes",
+      "Plan template peer_review metadata block (lines 530-536) already includes max_iterations: 3 \u2014 aligns with PRD \u00a76.5 cap",
+      "bundled-defaults.test.ts and loader.test.ts both exist with relevant coverage for P1-T2 verify commands"
+    ],
+    "assumptions_to_verify": [
+      "gate_message and complete_on_user_input fields are parseable by the workflow engine (plan assumes these for review-gate nodes but no dedicated field-level parser tests exist)",
+      "fix-feedback max_iterations: 10 is acceptable for S6 scope or should be reduced to 3 per PRD \u00a76.5"
+    ],
+    "verification_sufficiency": [
+      "P1-T1 verify commands cover both CLI validation and structural grep \u2014 sufficient for confirming node existence and DAG validity",
+      "P1-T2 verify commands cover both bundle drift and loader parsing \u2014 sufficient for confirming regression safety",
+      "P2-T1 verify commands not detailed in the plan sections read but the phase is validation/doc-sync which typically uses the same test surface"
+    ],
+    "downstream_risks": [
+      "If implementation-review is placed before fix-feedback, it reviews unvalidated code; if after, it may duplicate code-review concerns \u2014 the plan should specify",
+      "If fix-feedback max_iterations stays at 10 while PRD \u00a76.5 caps at 3, there is a PRD compliance gap that may surface in later review rounds"
+    ],
+    "freeze_recommendation": "Safe to freeze. Carry the remaining WARN/NOTE items as explicit follow-ups or implementation-time checks.",
+    "prior_round_closure": [
+      {
+        "title": "Prior round findings (peer-review-6e95a53350d7)",
+        "severity": "NOTE",
+        "caller_claim": "Prior review referenced but specific carried issues not enumerated in available context",
+        "verification_status": "not-proven",
+        "verification_notes": "The prior-round review ID was provided but the specific issues from that round were not available in the current context. The current artifact was assessed on its own merits per the current-artifact-first rule."
+      }
+    ],
+    "closure_verification": "Prior-round individual issue resolution could not be verified because the prior packet (peer-review-6e95a53350d7) did not enumerate specific issues in the available context. The current artifact was assessed independently per the current-artifact-first rule. All findings in this round are based on cross-referencing the plan against PRD, design doc, workflow YAML, and test files.",
+    "rerun_recommendation": "stop"
+  }
+}

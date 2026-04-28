@@ -589,8 +589,10 @@ nodes:
 
       ## Peer Review Gate
       - Planning review status: not_started
+      - Advisory review sidecar: {docs/plans/_advisory-reviews/<slug>-planning-review.md or "(not created yet)"}
       - Frozen-plan review sidecar: {path or "(not created yet)"}
       - Implementation review status: not_started
+      - Implementation review artifact: {docs/plans/_peer-reviews/<slug>-implementation-review.md or "(not created yet)"}
       - Max review/fix iterations: 3
 
       ## Phased Task Plan
@@ -764,12 +766,133 @@ nodes:
         or say "approved" to begin implementation.
 
   # ═══════════════════════════════════════════════════════════════
+  # PHASE 2c: REVIEW — Frozen planning review checkpoint
+  # Implementation must not start until this gate resolves.
+  # ═══════════════════════════════════════════════════════════════
+
+  - id: planning-review
+    depends_on: [refine-plan, create-plan]
+    output_format:
+      type: object
+      properties:
+        decision:
+          type: string
+          enum: [continue, advance]
+      required: [decision]
+      additionalProperties: false
+    loop:
+      prompt: |
+        # PIV Loop — Planning Review
+
+        The plan is refined. Perform the explicit planning-review checkpoint before
+        implementation can begin.
+
+        **Planning review input** (empty on first iteration): "$LOOP_USER_INPUT"
+        **Create-plan output**:
+        $create-plan.output
+
+        ---
+
+        ## Step 1: Resolve The Frozen Plan
+
+        Parse the exact `PLAN_FILE=...` line from the create-plan output above and use
+        THAT path for this entire node. Do not search the repo for a newer or different
+        plan file.
+
+        Read the plan file from that exact path and CLAUDE.md for conventions.
+
+        ## Step 2: Manage Review State And Sidecars
+
+        Use the plan's `peer_review` fields explicitly.
+
+        - On entry, set `peer_review.planning_status` to `review_needed` unless the
+          plan is already in a later planning-review state.
+        - Record advisory findings in the canonical sidecar family under
+          `docs/plans/_advisory-reviews/`.
+        - When review feedback requires plan edits, update the plan directly and set
+          `peer_review.planning_status` to `review_revisions`.
+        - Do not allow implementation to start until every review finding is accepted,
+          fixed, or explicitly deferred.
+        - When the plan is approved, preserve the frozen-plan review sidecar under
+          `docs/plans/_peer-reviews/` and update `peer_review.frozen_plan_sidecar`
+          to that path.
+
+        ## Step 3: Process Review Input
+
+        **If there is no review input yet** (first iteration, `$LOOP_USER_INPUT` is empty):
+        - Summarize the frozen plan briefly
+        - Surface the current planning-review status and sidecar paths
+        - Ask the reviewer for approval or concrete revisions
+        - Do NOT emit the completion signal on the first iteration
+
+        **If the reviewer explicitly approved** (said "approved", "looks good", "ship it", etc.):
+        - Confirm the frozen-plan sidecar path under `docs/plans/_peer-reviews/`
+        - Output exactly this sentence: "Planning review approved. Proceeding to implementation."
+        - Then emit `<promise>PLANNING_REVIEW_APPROVED</promise>` on its own line.
+
+        **If the reviewer provided findings or requested changes:**
+        - Update the plan directly
+        - Update or append the advisory sidecar under `docs/plans/_advisory-reviews/`
+        - Keep `peer_review.planning_status` at `review_revisions` until the findings
+          are accepted, fixed, or explicitly deferred
+
+        **SIGNAL EMISSION CONTRACT** — emit `<promise>PLANNING_REVIEW_APPROVED</promise>`
+        only when ALL of these are true:
+          1. The reviewer explicitly approved in the latest message
+          2. The latest message does NOT contain new findings or requested changes
+          3. This is NOT the first iteration (empty `$LOOP_USER_INPUT`)
+          4. The frozen-plan sidecar under `docs/plans/_peer-reviews/` is identified
+             and the planning findings are accepted, fixed, or explicitly deferred
+
+        If ANY condition is false, DO NOT emit the tag. When referencing this contract
+        in your output, write "the PLANNING_REVIEW_APPROVED signal" (no angle brackets).
+
+        **TYPED DECISION CONTRACT** — set structured `decision` to `advance` only
+        when the PLANNING_REVIEW_APPROVED signal contract is satisfied. Otherwise set
+        structured `decision` to `continue`.
+
+        ## Step 4: Report
+
+        ```
+        ## Planning Review Status
+
+        Planning status: {review_needed / review_revisions / approved}
+        Advisory sidecar: {path or "(not created yet)"}
+        Frozen-plan sidecar: {path or "(not created yet)"}
+
+        Findings:
+        - {finding 1 or "None"}
+
+        Reply with revisions, or say "approved" once findings are accepted, fixed,
+        or explicitly deferred.
+        ```
+      until: PLANNING_REVIEW_APPROVED
+      max_iterations: 3
+      interactive: true
+      decision_gate:
+        gate_kind: phase_decision
+        decisions:
+          - id: continue
+            resume_reason: loop_feedback
+          - id: advance
+            transition_intent: phase_advance
+      complete_on_user_input:
+        - approved
+        - looks good
+        - ship it
+        - let's go
+        - proceed
+      gate_message: |
+        Review the frozen plan and record planning findings. Say "approved" only
+        when findings are accepted, fixed, or explicitly deferred.
+
+  # ═══════════════════════════════════════════════════════════════
   # PHASE 3: IMPLEMENT — Setup
   # Read the plan, prepare the environment
   # ═══════════════════════════════════════════════════════════════
 
   - id: implement-setup
-    depends_on: [refine-plan, create-plan, detect-project]
+    depends_on: [planning-review, create-plan, detect-project]
     bash: |
       set -e
 
@@ -1212,12 +1335,12 @@ nodes:
       ```
 
   # ═══════════════════════════════════════════════════════════════
-  # PHASE 4b: VALIDATE — Iterative human feedback & fixes
-  # The user tests the implementation and provides feedback.
+  # PHASE 4b: REVIEW — Iterative implementation review & fixes
+  # The user reviews post-code-validation results before live validation.
   # Loops until the user approves.
   # ═══════════════════════════════════════════════════════════════
 
-  - id: fix-feedback
+  - id: implementation-review
     depends_on: [code-review, implement-setup, detect-project]
     output_format:
       type: object
@@ -1229,9 +1352,10 @@ nodes:
       additionalProperties: false
     loop:
       prompt: |
-        # PIV Loop — Address Validation Feedback
+        # PIV Loop — Implementation Review
 
-        The human has reviewed the implementation and provided feedback.
+        The human is performing the explicit implementation-review checkpoint after
+        code validation and before live validation.
 
         **Human's feedback** (empty on first iteration): "$LOOP_USER_INPUT"
 
@@ -1252,11 +1376,16 @@ nodes:
         different plan file.
 
         Read the plan file from that exact path and CLAUDE.md for conventions.
+        Use the plan's `peer_review.implementation_review_artifact` field explicitly
+        and keep this review artifact separate from final live-validation evidence.
 
         ## Step 2: Process Feedback
 
         **If there is no user feedback yet** (first iteration, `$LOOP_USER_INPUT` is empty):
-        - Present the code review results and ask the user to test the implementation
+        - Present the code review results
+        - Ask the reviewer to inspect the implementation after code validation
+        - Record or confirm the implementation-review artifact path, typically under
+          `docs/plans/_peer-reviews/`
         - Do NOT emit the completion signal on the first iteration
 
         **If the user EXPLICITLY approved** (said "approved", "looks good", "ship it", etc.):
@@ -1283,6 +1412,8 @@ nodes:
         2. Understand each issue
         3. Make the fixes
         4. Type-check after each change
+        5. Update the implementation-review artifact so the accepted/fixed/deferred
+           findings stay durable
 
         ## Step 3: Validation (conditional — only when fixes were made)
 
@@ -1331,18 +1462,19 @@ nodes:
         ## Step 5: Report
 
         ```
-        ## Feedback Addressed
+        ## Implementation Review Status
 
         Changes made:
         - {fix 1}
         - {fix 2}
 
+        Implementation review artifact: {path}
         Validation: {PASS / FAIL with details}
 
         Review again, or say "approved" to finalize.
         ```
       until: VALIDATED
-      max_iterations: 10
+      max_iterations: 3
       interactive: true
       decision_gate:
         gate_kind: phase_decision
@@ -1358,8 +1490,8 @@ nodes:
         - let's go
         - proceed
       gate_message: |
-        Test the implementation yourself and review the code changes.
-        Provide specific feedback on what needs fixing, or say "approved" to finalize.
+        Review the post-code-validation implementation and record findings before
+        live validation. Provide fixes, or say "approved" to finalize this review gate.
 
   # ═══════════════════════════════════════════════════════════════
   # PHASE 4c: LIVE VALIDATION — Evidence or explicit waiver
@@ -1367,7 +1499,7 @@ nodes:
   # ═══════════════════════════════════════════════════════════════
 
   - id: live-validate
-    depends_on: [fix-feedback, implement-setup, detect-project]
+    depends_on: [implementation-review, implement-setup, detect-project]
     context: fresh
     output_format:
       type: object
@@ -1389,7 +1521,7 @@ nodes:
       The implementation has been approved by the feedback gate. Before PR
       artifact composition, record live validation evidence or an explicit waiver.
 
-      **Feedback output**: $fix-feedback.output
+      **Implementation review output**: $implementation-review.output
 
       **Project detection** (validation commands for this repo):
       $detect-project.output

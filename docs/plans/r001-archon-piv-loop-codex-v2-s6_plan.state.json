@@ -1,38 +1,87 @@
 {
   "$schema": "plan-state-v1",
   "plan": {
-    "status": "draft",
-    "current_phase": 0,
-    "authoring_state": "unknown",
-    "updated": "2026-04-27T14:33:15.061772+00:00"
+    "status": "accepted",
+    "current_phase": 2,
+    "authoring_state": "drafted",
+    "updated": "2026-04-28T15:38:56.272476+00:00"
   },
   "tasks": [
     {
       "id": "P0-T1",
       "phase": 0,
-      "status": "proposed"
+      "status": "done",
+      "last_sha": "34ea5f887bddabdab6e74e896178defa26af9127",
+      "last_transition": "2026-04-28T15:07:12.035271+00:00"
     },
     {
       "id": "P0-T2",
       "phase": 0,
-      "status": "proposed"
+      "status": "done",
+      "last_sha": "34ea5f887bddabdab6e74e896178defa26af9127",
+      "last_transition": "2026-04-28T15:07:42.825160+00:00"
     },
     {
       "id": "P1-T1",
       "phase": 1,
-      "status": "proposed"
+      "status": "done",
+      "last_sha": "34ea5f887bddabdab6e74e896178defa26af9127",
+      "last_transition": "2026-04-28T15:37:10.283731+00:00"
     },
     {
       "id": "P1-T2",
       "phase": 1,
-      "status": "proposed"
+      "status": "done",
+      "last_sha": "34ea5f887bddabdab6e74e896178defa26af9127",
+      "last_transition": "2026-04-28T15:37:10.283731+00:00"
     },
     {
       "id": "P2-T1",
       "phase": 2,
-      "status": "proposed"
+      "status": "done",
+      "last_sha": "34ea5f887bddabdab6e74e896178defa26af9127",
+      "last_transition": "2026-04-28T15:37:10.283731+00:00"
     }
   ],
   "task_contracts": {},
-  "unresolved_items": []
+  "unresolved_items": [
+    {
+      "id": "LBA1",
+      "kind": "lba",
+      "checked": true,
+      "section": "blockers",
+      "blocks_phases": [
+        1,
+        2
+      ],
+      "summary": "The S6 execution lane must be based on integration/r001-archon-piv-loop-codex-v2 or an equivalent branch containing the S1-S5 V2 workflow surfaces before P1 changes start.",
+      "verify": "P0-T1 commands recorded in artifacts/workflow/implementation-reports/commands.json: branch existence plus git show reads of .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml review-gate regions.",
+      "evidence": "Checked on 2026-04-28: integration/r001-archon-piv-loop-codex-v2 exists; git show of the V2 workflow review-gate regions succeeded; plan records the S6 gap as missing planning-review / implementation-review nodes and fix-feedback max_iterations: 10 on the integration base."
+    }
+  ],
+  "snapshot_gate": {
+    "branch": "slice/r001-archon-piv-loop-codex-v2/s6",
+    "checked_at": "2026-04-28T15:05:32+00:00",
+    "default_branch": "dev",
+    "dirty_before_snapshot": false,
+    "lane_branch": "slice/r001-archon-piv-loop-codex-v2/s6",
+    "lane_decision_basis": "deterministic",
+    "lane_decision_reason": "clean_feature_lane_before_implementation",
+    "lane_type": "worktree",
+    "lane_worktree_path": "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s6",
+    "next_command": null,
+    "plan_path": "docs/plans/r001-archon-piv-loop-codex-v2-s6_plan.md",
+    "reason": "snapshot_commit_created",
+    "snapshot_commit_message": "chore(workflow): snapshot before implementing r001-archon-piv-loop-codex-v2-s6-plan\n\nPlan: docs/plans/r001-archon-piv-loop-codex-v2-s6_plan.md\nFeature: r001-archon-piv-loop-codex-v2-s6-plan\nPurpose: rollback anchor before implementation\nLane: branch=slice/r001-archon-piv-loop-codex-v2/s6 worktree=/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s6\n",
+    "snapshot_commit_sha": "c9f01779692e33e4268923e0518fde715575a7a6",
+    "snapshot_created_at": "2026-04-28T15:05:32+00:00",
+    "status": "current",
+    "worktree_count": 2,
+    "worktree_present": true,
+    "worktree_required": false
+  },
+  "lifecycle": {
+    "status": "closed",
+    "updated": "2026-04-28T15:38:56.272537+00:00"
+  }
 }

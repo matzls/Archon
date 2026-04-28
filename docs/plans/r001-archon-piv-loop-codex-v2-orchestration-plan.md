@@ -46,4 +46,5 @@ Rules:
 - (none)
 
 ### FYI / Later (does not block freeze)
-- (none)
+- [ ] [Q] Q1 (Blocks: none) — Follow-on/stretch after the original V2 merge: decide whether Web workflow runs need source-branch/start-point isolation parity with CLI `--from`.
+  - Answer: Deferred out of S5 unless the user explicitly requires Web-source-branch parity before the first V2 merge. After V2 artifacts land on `dev`, rerun the UI smoke from `/workflows`. If the UI-created worker still starts from stale `origin/dev` or another wrong source branch, create a focused follow-on slice that adds optional `fromBranch` to the Web run API/UI, passes it through `dispatchToOrchestrator`, `dispatchOrchestratorWorkflow`, and `dispatchBackgroundWorkflow`, and makes worker isolation consume that hint with server/core regression tests.

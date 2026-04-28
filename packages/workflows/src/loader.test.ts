@@ -2468,6 +2468,76 @@ nodes:
         'interactive_loop_in_non_interactive_workflow'
       );
     });
+
+    it('should parse Slice 6 review gates in archon-piv-loop-codex-v2', async () => {
+      const workflowDir = join(testDir, '.archon', 'workflows');
+      await mkdir(workflowDir, { recursive: true });
+
+      await writeFile(
+        join(workflowDir, 'archon-piv-loop-codex-v2.yaml'),
+        bundledDefaults.BUNDLED_WORKFLOWS['archon-piv-loop-codex-v2']
+      );
+
+      const result = await discoverWorkflows(testDir, { loadDefaults: false });
+      expect(result.errors).toHaveLength(0);
+      expect(result.workflows).toHaveLength(1);
+
+      const workflow = result.workflows[0].workflow;
+      expect(workflow.name).toBe('archon-piv-loop-codex-v2');
+
+      const nodeIds = workflow.nodes.map(node => node.id);
+      const refinePlanIndex = nodeIds.indexOf('refine-plan');
+      const planningReviewIndex = nodeIds.indexOf('planning-review');
+      const implementSetupIndex = nodeIds.indexOf('implement-setup');
+      const codeReviewIndex = nodeIds.indexOf('code-review');
+      const implementationReviewIndex = nodeIds.indexOf('implementation-review');
+      const liveValidateIndex = nodeIds.indexOf('live-validate');
+
+      expect(planningReviewIndex).toBeGreaterThan(refinePlanIndex);
+      expect(implementSetupIndex).toBeGreaterThan(planningReviewIndex);
+      expect(implementationReviewIndex).toBeGreaterThan(codeReviewIndex);
+      expect(liveValidateIndex).toBeGreaterThan(implementationReviewIndex);
+
+      const planningReviewNode = workflow.nodes.find(node => node.id === 'planning-review');
+      expect(planningReviewNode).toBeDefined();
+      expect(isLoopNode(planningReviewNode)).toBe(true);
+      if (isLoopNode(planningReviewNode)) {
+        expect(planningReviewNode.depends_on).toEqual(['refine-plan', 'create-plan']);
+        expect(planningReviewNode.loop.max_iterations).toBe(3);
+        expect(planningReviewNode.loop.gate_message).toContain('Review the frozen plan');
+        expect(planningReviewNode.loop.complete_on_user_input).toEqual([
+          'approved',
+          'looks good',
+          'ship it',
+          "let's go",
+          'proceed',
+        ]);
+      }
+
+      const implementationReviewNode = workflow.nodes.find(
+        node => node.id === 'implementation-review'
+      );
+      expect(implementationReviewNode).toBeDefined();
+      expect(isLoopNode(implementationReviewNode)).toBe(true);
+      if (isLoopNode(implementationReviewNode)) {
+        expect(implementationReviewNode.depends_on).toEqual([
+          'code-review',
+          'implement-setup',
+          'detect-project',
+        ]);
+        expect(implementationReviewNode.loop.max_iterations).toBe(3);
+        expect(implementationReviewNode.loop.gate_message).toContain(
+          'Review the post-code-validation implementation'
+        );
+        expect(implementationReviewNode.loop.complete_on_user_input).toEqual([
+          'approved',
+          'looks good',
+          'ship it',
+          "let's go",
+          'proceed',
+        ]);
+      }
+    });
   });
 
   // -------------------------------------------------------------------------
