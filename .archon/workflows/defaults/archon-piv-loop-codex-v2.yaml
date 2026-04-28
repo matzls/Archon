@@ -1349,7 +1349,7 @@ nodes:
           enum: [continue, advance]
         artifact_path:
           type: string
-      required: [decision, artifact_path]
+      required: [decision]
       additionalProperties: false
     loop:
       prompt: |
