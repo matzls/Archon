@@ -1,10 +1,10 @@
 {
   "$schema": "plan-state-v1",
   "plan": {
-    "status": "active",
-    "current_phase": 1,
+    "status": "accepted",
+    "current_phase": 2,
     "authoring_state": "drafted",
-    "updated": "2026-04-28T09:22:00.488584+00:00"
+    "updated": "2026-04-28T09:33:46.271195+00:00"
   },
   "tasks": [
     {
@@ -24,17 +24,23 @@
     {
       "id": "P1-T1",
       "phase": 1,
-      "status": "approved"
+      "status": "validated",
+      "last_sha": "f69b8c0ba115a4b4cc7310b8072b7770e44b8dee",
+      "last_transition": "2026-04-28T09:27:21.087272+00:00"
     },
     {
       "id": "P1-T2",
       "phase": 1,
-      "status": "approved"
+      "status": "validated",
+      "last_sha": "f69b8c0ba115a4b4cc7310b8072b7770e44b8dee",
+      "last_transition": "2026-04-28T09:28:22.553481+00:00"
     },
     {
       "id": "P2-T1",
       "phase": 2,
-      "status": "approved"
+      "status": "validated",
+      "last_sha": "f69b8c0ba115a4b4cc7310b8072b7770e44b8dee",
+      "last_transition": "2026-04-28T09:29:19.694361+00:00"
     }
   ],
   "task_contracts": {},

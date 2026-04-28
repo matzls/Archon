@@ -3,7 +3,7 @@ title: Lessons Learned
 kind: reference
 status: active
 created: 2026-04-27
-updated: 2026-04-27
+updated: 2026-04-28
 ---
 
 # Lessons Learned
@@ -38,3 +38,9 @@ Plan: `docs/plans/r001-archon-piv-loop-codex-v2-s1_plan.md`
 
 - Plan: `docs/plans/r001-archon-piv-loop-codex-v2-s4_plan.md`
 - LBA resolution must update the plan state sidecar via `state_manager.py --action set_unresolved`; markdown-only evidence is not enough for deterministic readiness gates.
+
+## 2026-04-28 — r001-archon-piv-loop-codex-v2-s4
+
+- Plan: `docs/plans/r001-archon-piv-loop-codex-v2-s4_plan.md`
+- When Bun cannot write `$HOME/.bun/install/cache` from a sandboxed worktree, set `BUN_INSTALL_CACHE_DIR` to a writable path before running targeted workflow validation commands.
+- S4 Mode B intake is safest as a pre-explore branch: classify large/PRD input, create or refresh the design doc, create the slice map, enforce exactly one selected slice, then pass the selected slice into the existing one-slice lane.

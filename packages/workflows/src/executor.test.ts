@@ -61,9 +61,11 @@ registerBuiltinProviders();
 
 // --- Import after mocks ---
 import { executeWorkflow } from './executor';
+import { parseWorkflow } from './loader';
+import { BUNDLED_WORKFLOWS } from './defaults/bundled-defaults';
 import type { WorkflowDeps, IWorkflowPlatform, WorkflowConfig } from './deps';
 import type { IWorkflowStore } from './store';
-import type { WorkflowDefinition, WorkflowRun } from './schemas';
+import type { DagNode, WorkflowDefinition, WorkflowRun } from './schemas';
 
 // --- Helpers ---
 
@@ -131,6 +133,35 @@ function makeRun(overrides: Partial<WorkflowRun> = {}): WorkflowRun {
     metadata: {},
     ...overrides,
   };
+}
+
+function loadBundledV2Workflow(): WorkflowDefinition {
+  const parsed = parseWorkflow(
+    BUNDLED_WORKFLOWS['archon-piv-loop-codex-v2'],
+    'archon-piv-loop-codex-v2.yaml'
+  );
+  if (parsed.error !== null) {
+    throw new Error(parsed.error.error);
+  }
+  return parsed.workflow;
+}
+
+function findNode(workflow: WorkflowDefinition, id: string): DagNode {
+  const node = workflow.nodes.find(n => n.id === id);
+  if (node === undefined) {
+    throw new Error(`Missing workflow node: ${id}`);
+  }
+  return node;
+}
+
+function promptOf(node: DagNode): string {
+  if ('prompt' in node && typeof node.prompt === 'string') return node.prompt;
+  if ('loop' in node && typeof node.loop.prompt === 'string') return node.loop.prompt;
+  return '';
+}
+
+function bashOf(node: DagNode): string {
+  return 'bash' in node && typeof node.bash === 'string' ? node.bash : '';
 }
 
 describe('executeWorkflow', () => {
@@ -553,6 +584,91 @@ describe('executeWorkflow', () => {
       expect(mockExecuteDagWorkflow).toHaveBeenCalledTimes(1);
       const docsDir = mockExecuteDagWorkflow.mock.calls[0]?.[11];
       expect(docsDir).toBe('packages/docs-web/src/content/docs');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Bundled V2 Mode B intake contract
+  // -------------------------------------------------------------------------
+
+  describe('bundled V2 Mode B intake contract', () => {
+    it('dispatches design-doc and slice-map intake before the one-slice lane', async () => {
+      const workflow = loadBundledV2Workflow();
+      const deps = makeDeps();
+      await executeWorkflow(
+        deps,
+        makePlatform(),
+        'conv-1',
+        '/tmp',
+        workflow,
+        'docs/prd/large-platform-change.prd.md',
+        'db-conv-1'
+      );
+
+      const dispatchedWorkflow = mockExecuteDagWorkflow.mock.calls[0]?.[4] as
+        | WorkflowDefinition
+        | undefined;
+      expect(dispatchedWorkflow).toBeDefined();
+      if (dispatchedWorkflow === undefined) return;
+
+      const nodeIds = dispatchedWorkflow.nodes.map(n => n.id);
+      expect(nodeIds.indexOf('intake-classifier')).toBeLessThan(nodeIds.indexOf('explore'));
+      expect(nodeIds.indexOf('mode-b-design-doc')).toBeLessThan(nodeIds.indexOf('explore'));
+      expect(nodeIds.indexOf('mode-b-slice-map')).toBeLessThan(nodeIds.indexOf('explore'));
+      expect(nodeIds.indexOf('mode-b-intake-summary')).toBeLessThan(nodeIds.indexOf('explore'));
+
+      const classifier = findNode(dispatchedWorkflow, 'intake-classifier');
+      expect(promptOf(classifier)).toContain('large_or_prd');
+      expect(classifier.output_format).toEqual(
+        expect.objectContaining({
+          properties: expect.objectContaining({
+            mode: expect.objectContaining({ enum: ['direct_one_slice', 'large_or_prd'] }),
+            slug: expect.objectContaining({ pattern: '^[a-z0-9]+(-[a-z0-9]+)*$' }),
+          }),
+        })
+      );
+
+      const designDoc = findNode(dispatchedWorkflow, 'mode-b-design-doc');
+      expect(designDoc.depends_on).toEqual(['intake-classifier']);
+      expect(designDoc.when).toBe("$intake-classifier.output.mode == 'large_or_prd'");
+      expect(promptOf(designDoc)).toContain('Create or refresh a design doc');
+      expect(promptOf(designDoc)).toContain('docs/design/$intake-classifier.output.slug.md');
+
+      const sliceMap = findNode(dispatchedWorkflow, 'mode-b-slice-map');
+      expect(sliceMap.depends_on).toEqual(['mode-b-design-doc']);
+      expect(sliceMap.when).toBe("$intake-classifier.output.mode == 'large_or_prd'");
+      expect(promptOf(sliceMap)).toContain('docs/plans/$intake-classifier.output.slug_slice_map.md');
+      expect(promptOf(sliceMap)).toContain('mark exactly one slice as selected');
+      expect(sliceMap.output_format).toEqual(
+        expect.objectContaining({
+          required: expect.arrayContaining([
+            'slice_map_path',
+            'selected_slice_id',
+            'selected_slice_title',
+            'exactly_one_selected',
+          ]),
+        })
+      );
+
+      const summary = findNode(dispatchedWorkflow, 'mode-b-intake-summary');
+      expect(summary.depends_on).toEqual([
+        'intake-classifier',
+        'mode-b-design-doc',
+        'mode-b-slice-map',
+      ]);
+      expect(summary.trigger_rule).toBe('all_done');
+      expect(bashOf(summary)).toContain('Mode B design doc was not created');
+      expect(bashOf(summary)).toContain('Mode B slice map was not created');
+      expect(bashOf(summary)).toContain('Mode B must select exactly one slice');
+
+      const explore = findNode(dispatchedWorkflow, 'explore');
+      expect(explore.depends_on).toEqual(['mode-b-intake-summary']);
+      expect(promptOf(explore)).toContain('Mode B intake summary');
+
+      const createPlan = findNode(dispatchedWorkflow, 'create-plan');
+      expect(promptOf(createPlan)).toContain('Mode B intake summary');
+      expect(promptOf(createPlan)).toContain('plan MUST implement only');
+      expect(promptOf(createPlan)).toContain('that selected slice');
     });
   });
 
