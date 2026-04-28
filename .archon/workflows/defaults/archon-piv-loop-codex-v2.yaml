@@ -1705,3 +1705,114 @@ nodes:
     script: github-pr
     runtime: bun
     depends_on: [compose-finalize]
+
+  - id: pr-review-handoff
+    depends_on: [finalize, compose-finalize, live-validate, implementation-review, implement-setup]
+    bash: |
+      set -euo pipefail
+
+      if [ -z "${ARTIFACTS_DIR:-}" ]; then
+        echo "ERROR: ARTIFACTS_DIR is required" >&2
+        exit 1
+      fi
+
+      PLAN_FILE=$(printf '%s\n' "$implement-setup.output" | sed -n 's/^PLAN_FILE=//p' | head -n 1)
+      if [ -z "$PLAN_FILE" ]; then
+        echo "ERROR: PLAN_FILE missing from implement-setup output" >&2
+        exit 1
+      fi
+
+      PR_RESULT_PATH="$ARTIFACTS_DIR/pr-result.json"
+      PR_READY_PATH="$ARTIFACTS_DIR/pr-ready.md"
+      PR_TITLE_PATH="$ARTIFACTS_DIR/pr-title.txt"
+      PR_SUMMARY_PATH="$ARTIFACTS_DIR/pr-summary.md"
+      HANDOFF_PATH="$ARTIFACTS_DIR/pr-review-handoff.json"
+
+      for path in "$PR_RESULT_PATH" "$PR_READY_PATH" "$PR_TITLE_PATH" "$PR_SUMMARY_PATH"; do
+        if [ ! -f "$path" ]; then
+          echo "ERROR: missing finalize artifact $path" >&2
+          exit 1
+        fi
+      done
+
+      export PLAN_FILE PR_RESULT_PATH PR_READY_PATH PR_TITLE_PATH PR_SUMMARY_PATH HANDOFF_PATH
+      export LIVE_VALIDATE_STATUS="$live-validate.output.status"
+      export LIVE_VALIDATE_EVIDENCE_PATH="$live-validate.output.evidence_path"
+      export LIVE_VALIDATE_WAIVER_REASON="$live-validate.output.waiver_reason"
+      export LIVE_VALIDATE_SUMMARY="$live-validate.output.summary"
+      export IMPLEMENTATION_REVIEW_DECISION="$implementation-review.output.decision"
+
+      python3 - <<'PY'
+      import json
+      import os
+      import re
+      import sys
+      from pathlib import Path
+
+      validation_status = os.environ["LIVE_VALIDATE_STATUS"].strip()
+      evidence_path = os.environ["LIVE_VALIDATE_EVIDENCE_PATH"].strip()
+      waiver_reason = os.environ["LIVE_VALIDATE_WAIVER_REASON"].strip()
+      validation_summary = os.environ["LIVE_VALIDATE_SUMMARY"].strip()
+      implementation_review_decision = os.environ["IMPLEMENTATION_REVIEW_DECISION"].strip()
+
+      if validation_status not in {"pass", "waived"}:
+          print(f"ERROR: unsupported live validation status {validation_status!r}", file=sys.stderr)
+          raise SystemExit(1)
+      if validation_status == "pass" and not evidence_path:
+          print("ERROR: live validation pass requires evidence_path", file=sys.stderr)
+          raise SystemExit(1)
+      if validation_status == "waived" and not waiver_reason:
+          print("ERROR: live validation waiver requires waiver_reason", file=sys.stderr)
+          raise SystemExit(1)
+
+      plan_file = os.environ["PLAN_FILE"].strip()
+      plan_name = Path(plan_file).name
+      slug = re.sub(r"_plan\\.md$", "", plan_name)
+      pr_result = json.loads(Path(os.environ["PR_RESULT_PATH"]).read_text(encoding="utf-8"))
+
+      pr_is_draft = bool(pr_result.get("isDraft"))
+      handoff_type = "pr_ready" if pr_is_draft else "pr_review"
+      next_action = (
+          "Review the PR-ready packet and decide whether to run the downstream remote Codex PR review workflow."
+          if pr_is_draft
+          else "Run the downstream remote Codex PR review workflow against the ready-for-review PR."
+      )
+
+      payload = {
+          "schema_version": "archon.pr-review-handoff.v1",
+          "handoff_type": handoff_type,
+          "branch": pr_result["branch"],
+          "base": pr_result["baseBranch"],
+          "plan_file": plan_file,
+          "validation": {
+              "status": validation_status,
+              "evidence_path": evidence_path,
+              "waiver_reason": waiver_reason,
+              "summary": validation_summary,
+          },
+          "review": {
+              "planning_status": "approved",
+              "implementation_status": (
+                  "approved" if implementation_review_decision == "advance" else "recorded"
+              ),
+              "implementation_review_artifact": (
+                  f"docs/plans/_peer-reviews/{slug}-implementation-review.md"
+              ),
+          },
+          "pr": {
+              "url": pr_result["url"],
+              "number": pr_result["number"],
+              "state": "draft" if pr_is_draft else "ready_for_review",
+              "ready_artifact_path": os.environ["PR_READY_PATH"],
+              "title_artifact_path": os.environ["PR_TITLE_PATH"],
+              "summary_artifact_path": os.environ["PR_SUMMARY_PATH"],
+          },
+          "next_action": next_action,
+          "remote_codex_pr_review_recommended": not pr_is_draft,
+          "autonomous_merge_claim": False,
+      }
+
+      handoff_path = Path(os.environ["HANDOFF_PATH"])
+      handoff_path.write_text(f"{json.dumps(payload, indent=2)}\n", encoding="utf-8")
+      print(json.dumps(payload, indent=2))
+      PY

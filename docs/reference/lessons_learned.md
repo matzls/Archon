@@ -63,3 +63,12 @@ Plan: `docs/plans/r001-archon-piv-loop-codex-v2-s1_plan.md`
 - Plan: `docs/plans/r001-archon-piv-loop-codex-v2-s7_plan.md`
 - In post-freeze lanes that only validate LBAs and contract boundaries, regenerate the implementation manifest after validation state transitions; otherwise `assert_complete` can reject the stale state-after snapshot even when the task evidence is correct.
 - Contract-lock work is enough to unblock a later freeze only when both the unresolved item and the plan ledger reflect the same checked/validated state.
+
+## 2026-04-28 — r001-archon-piv-loop-codex-v2-s7_plan
+
+- Plan: `docs/plans/r001-archon-piv-loop-codex-v2-s7_plan.md`
+- Validation refreshed deterministic workflow evidence for this slice.
+- Validation mode: `fast`.
+- Worker verdict before `assert_complete`: `pass`.
+- Command evidence ok: `true`.
+- E2E gate ok before `assert_complete`: `true`.

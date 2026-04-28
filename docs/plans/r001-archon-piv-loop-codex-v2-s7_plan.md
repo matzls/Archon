@@ -114,8 +114,8 @@ Rules:
 | Phase | Phase Status | Tasks (ID: Title — Status) |
 |------:|--------------|----------------------------|
 | P0 | Validated | - P0-T1: Ground the current slice boundary against repo reality — validated<br>- P0-T2: Lock the slice contract and doc surface — validated |
-| P1 | Proposed | - P1-T1: Implement the smallest load-bearing `S7` surface — proposed<br>- P1-T2: Add or update focused validation for the touched surface — proposed |
-| P2 | Proposed | - P2-T1: Reconcile docs and prove final slice evidence — proposed |
+| P1 | Done | - P1-T1: Implement the smallest load-bearing `S7` surface — done<br>- P1-T2: Add or update focused validation for the touched surface — done |
+| P2 | Done | - P2-T1: Reconcile docs and prove final slice evidence — done |
 
 ## 6) Phased Execution Plan
 
@@ -155,7 +155,7 @@ Rules:
 
 ### Phase 1 — Scoped Implementation
 
-- [ ] P1-T1: Add the structured S7 PR-ready / PR-review handoff surface
+- [x] P1-T1: Add the structured S7 PR-ready / PR-review handoff surface
   - Test Impact: update
   - Commands to Run:
     - in the `S7` execution worktree created from `integration/r001-archon-piv-loop-codex-v2`, update `.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml`
@@ -173,7 +173,7 @@ Rules:
     - `ARTIFACTS_DIR=artifacts/workflow/tmp/r001-s7-handoff-fixture python3 -c 'import json,os,pathlib; p=pathlib.Path(os.environ["ARTIFACTS_DIR"])/"pr-review-handoff.json"; d=json.loads(p.read_text()); assert d["schema_version"]=="archon.pr-review-handoff.v1"; assert d["handoff_type"] in {"pr_ready","pr_review"}; assert d["branch"]; assert d["base"]; v=d["validation"]; assert v["status"] in {"pass","waived"}; assert (v["status"]=="pass" and v["evidence_path"]) or (v["status"]=="waived" and v["waiver_reason"]); r=d["review"]; assert r["planning_status"]; assert r["implementation_status"]; assert r["implementation_review_artifact"]; pr=d["pr"]; assert pr["url"]; assert pr["number"]; assert pr["state"]; assert d["next_action"]; assert isinstance(d["remote_codex_pr_review_recommended"], bool); assert d["autonomous_merge_claim"] is False'`
     - `rg -n "pr-review-handoff.json|pr-ready|pr-review handoff|branch.*base|validation evidence|review state|next action|autonomous_merge_claim|remote Codex PR review|pr-result.json|pr-ready.md" .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml .archon/scripts/github-pr.ts`
 
-- [ ] P1-T2: Add handoff packet regression coverage
+- [x] P1-T2: Add handoff packet regression coverage
   - Test Impact: add
   - Commands to Run:
     - extend `packages/workflows/src/defaults/bundled-defaults.test.ts` with assertions that the bundled V2 workflow contains `$ARTIFACTS_DIR/pr-review-handoff.json` and the required field names
@@ -190,7 +190,7 @@ Rules:
 
 ### Phase 2 — Validation And Doc Sync
 
-- [ ] P2-T1: Reconcile docs and prove final slice evidence
+- [x] P2-T1: Reconcile docs and prove final slice evidence
   - Test Impact: N/A
   - Commands to Run:
     - sync the touched docs, plan state, and validation evidence after implementation
@@ -280,3 +280,4 @@ Explicit exclusions (handled outside the PIV loop closeout): Project Brief, Feat
 - 2026-04-27: Seeded focused slice draft from the PRD execution map so the orchestrator can refine from a concrete boundary instead of a blank template.
 - 2026-04-28: Refined S7 after Codex fallback plan-gate review; replaced generic row references and placeholder validation with concrete PRD/design locators, the `$ARTIFACTS_DIR/pr-review-handoff.json` output contract, LBAs, and proof commands.
 - 2026-04-28: Completed Phase 0 grounding. Checked both LBAs against repo evidence, locked the S7 handoff packet boundary to `$ARTIFACTS_DIR/pr-review-handoff.json`, and left Phase 1/2 proposed for the next freeze gate.
+- 2026-04-28: Completed Phase 1 and Phase 2. The bundled workflow regression coverage now asserts the S7 handoff field set, the fixture-backed `pr-review-handoff.json` proof reads from `artifacts/workflow/tmp/r001-s7-handoff-fixture`, and workflow validation plus the default-workflow, loader, and script-discovery suites passed. Remote Codex PR-review automation remains a follow-on handoff decision, not hidden S7 scope.
