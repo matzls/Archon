@@ -150,7 +150,10 @@ nodes:
 
       Requirements:
       - list the full slice inventory needed for the larger request or PRD
-      - mark exactly one slice as selected for this run
+      - mark exactly one slice as selected for this run using a Markdown task
+        marker line that starts `- [x] Slice <id>:`
+      - mark every non-selected slice with a line that starts `- [ ] Slice <id>:`
+      - do not use `[x]` anywhere else in the slice map
       - keep adjacent slices explicitly out of scope for this run
       - include the design doc path and parent request/PRD as anchors
       - do not create or execute the focused implementation plan here
@@ -185,6 +188,30 @@ nodes:
           echo "ERROR: Mode B must select exactly one slice" >&2
           exit 1
         fi
+        python3 - "$SLICE_MAP" "$SELECTED_SLICE_ID" <<'PY'
+      import re
+      import sys
+      from pathlib import Path
+
+      path = Path(sys.argv[1])
+      selected_id = sys.argv[2].strip()
+      lines = path.read_text(encoding="utf-8").splitlines()
+      selected_lines = [line for line in lines if re.match(r"^\s*-\s*\[[xX]\]\s+", line)]
+
+      if len(selected_lines) != 1:
+          print(
+              f"ERROR: Mode B slice map must contain exactly one selected marker; found {len(selected_lines)}",
+              file=sys.stderr,
+          )
+          raise SystemExit(1)
+
+      if selected_id and selected_id not in selected_lines[0]:
+          print(
+              "ERROR: Mode B selected_slice_id does not match the selected slice-map line",
+              file=sys.stderr,
+          )
+          raise SystemExit(1)
+      PY
       fi
 
       export MODE SLUG DESIGN_DOC SLICE_MAP SELECTED_SLICE_ID SELECTED_SLICE_TITLE

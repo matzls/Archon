@@ -639,6 +639,8 @@ describe('executeWorkflow', () => {
       expect(sliceMap.when).toBe("$intake-classifier.output.mode == 'large_or_prd'");
       expect(promptOf(sliceMap)).toContain('docs/plans/$intake-classifier.output.slug-slice-map.md');
       expect(promptOf(sliceMap)).toContain('mark exactly one slice as selected');
+      expect(promptOf(sliceMap)).toContain('line that starts `- [x] Slice <id>:`');
+      expect(promptOf(sliceMap)).toContain('do not use `[x]` anywhere else');
       expect(sliceMap.output_format).toEqual(
         expect.objectContaining({
           required: expect.arrayContaining([
@@ -660,6 +662,9 @@ describe('executeWorkflow', () => {
       expect(bashOf(summary)).toContain('Mode B design doc was not created');
       expect(bashOf(summary)).toContain('Mode B slice map was not created');
       expect(bashOf(summary)).toContain('Mode B must select exactly one slice');
+      expect(bashOf(summary)).toContain('selected_lines = [line for line in lines');
+      expect(bashOf(summary)).toContain('Mode B slice map must contain exactly one selected marker');
+      expect(bashOf(summary)).toContain('selected_slice_id does not match');
 
       const explore = findNode(dispatchedWorkflow, 'explore');
       expect(explore.depends_on).toEqual(['mode-b-intake-summary']);
