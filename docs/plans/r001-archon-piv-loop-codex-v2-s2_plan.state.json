@@ -2,45 +2,45 @@
   "$schema": "plan-state-v1",
   "plan": {
     "status": "accepted",
-    "current_phase": 0,
+    "current_phase": 2,
     "authoring_state": "drafted",
-    "updated": "2026-04-27T17:28:16.216089+00:00"
+    "updated": "2026-04-28T17:35:01+00:00"
   },
   "tasks": [
     {
       "id": "P0-T1",
       "phase": 0,
-      "status": "done",
-      "last_sha": "2a520a4c8498bccce72d66871cdbbf800e094d33",
-      "last_transition": "2026-04-27T17:19:34.059435+00:00"
+      "status": "validated",
+      "last_sha": "343b92aee3e90f27a1ec9f01fc1da2e5ab003bcb",
+      "last_transition": "2026-04-28T17:35:01+00:00"
     },
     {
       "id": "P0-T2",
       "phase": 0,
-      "status": "done",
-      "last_sha": "2a520a4c8498bccce72d66871cdbbf800e094d33",
-      "last_transition": "2026-04-27T17:20:39.928562+00:00"
+      "status": "validated",
+      "last_sha": "343b92aee3e90f27a1ec9f01fc1da2e5ab003bcb",
+      "last_transition": "2026-04-28T17:35:01+00:00"
     },
     {
       "id": "P1-T1",
       "phase": 1,
-      "status": "done",
-      "last_sha": "2a520a4c8498bccce72d66871cdbbf800e094d33",
-      "last_transition": "2026-04-27T17:22:37.035264+00:00"
+      "status": "validated",
+      "last_sha": "343b92aee3e90f27a1ec9f01fc1da2e5ab003bcb",
+      "last_transition": "2026-04-28T17:35:01+00:00"
     },
     {
       "id": "P1-T2",
       "phase": 1,
-      "status": "done",
-      "last_sha": "2a520a4c8498bccce72d66871cdbbf800e094d33",
-      "last_transition": "2026-04-27T17:23:55.006457+00:00"
+      "status": "validated",
+      "last_sha": "343b92aee3e90f27a1ec9f01fc1da2e5ab003bcb",
+      "last_transition": "2026-04-28T17:35:01+00:00"
     },
     {
       "id": "P2-T1",
       "phase": 2,
-      "status": "done",
-      "last_sha": "2a520a4c8498bccce72d66871cdbbf800e094d33",
-      "last_transition": "2026-04-27T17:24:59.296586+00:00"
+      "status": "validated",
+      "last_sha": "343b92aee3e90f27a1ec9f01fc1da2e5ab003bcb",
+      "last_transition": "2026-04-28T17:35:01+00:00"
     }
   ],
   "task_contracts": {},

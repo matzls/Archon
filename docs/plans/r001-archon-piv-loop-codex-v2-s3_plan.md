@@ -3,7 +3,7 @@ title: "Archon PIV Loop Codex V2 S3 — typed phase-gate support where runtime p
 kind: plan
 status: accepted
 created: 2026-04-27
-updated: "2026-04-27"
+updated: "2026-04-28"
 origin_prd: "docs/prd/r001-archon-piv-loop-codex-v2.md"
 origin: "focused slice seed from docs/plans/r001-archon-piv-loop-codex-v2-orchestration-plan.md using docs/prd/r001-archon-piv-loop-codex-v2.md Execution Map row S3"
 version: "0.1"
@@ -62,8 +62,8 @@ flowchart LR
 ## Plan Status & Controls
 - Plan Status: Accepted (as of 2026-04-27)
 - Current Phase: P2 - Validation And Doc Sync
-- Last Updated: 2026-04-27
-- Last Reviewed: 2026-04-27
+- Last Updated: 2026-04-28
+- Last Reviewed: 2026-04-28
 - Next Checkpoint: peer-review this refined slice after the execution-base correction, then freeze only if the loop contract and V2 pilot target are both explicit
 - Execution-base note: the root `dev` checkout may not contain S1/S2 implementation files until the integration branch is merged back, but S3 execution runs from `integration/r001-archon-piv-loop-codex-v2`, where `.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml` is present.
 - Deterministic grounding snapshot: prompt nodes already pass `output_format` through `buildNodeOptions()`, structured output is normalized in `dag-executor.ts`, `condition-evaluator.ts` supports `$node.output.field`, but loop nodes currently drop `output_format` in `dag-node.ts`, `buildLoopNodeOptions()` does not pass `outputFormat`, and `executeLoopNode()` only completes on `until` / `until_bash`
@@ -326,4 +326,4 @@ Explicit exclusions (handled outside the PIV loop closeout): Project Brief, Feat
 - 2026-04-27: Seeded focused slice draft from the PRD execution map so the orchestrator can refine from a concrete boundary instead of a blank template.
 - 2026-04-27: Refined `S3` around the verified runtime boundary: prompt nodes already support structured output, loop nodes do not yet, and the V2 pilot target must be read from the campaign integration branch.
 - 2026-04-27: Corrected the S3 pilot-target grounding to use the campaign integration branch, where S1/S2 have already landed, instead of the root `dev` checkout that intentionally trails integration work during the umbrella campaign.
-- 2026-04-27: Implemented additive loop-node `output_format` plus `loop.decision_gate` support, piloted it on V2 `explore`, `refine-plan`, and `fix-feedback`, and kept `implement` on the existing `COMPLETE` sentinel fallback. Focused schema/loop executor/loader tests, V2 workflow validation, type-check, bundled-defaults check, and format check pass. The full `packages/workflows/src/dag-executor.test.ts` file still has one unrelated approval-node failure recorded in `artifacts/workflow/implementation-reports/dag-executor-full-file-caveat.json`.
+- 2026-04-27: Implemented additive loop-node `output_format` plus `loop.decision_gate` support, piloted it on V2 `explore`, `refine-plan`, and `fix-feedback`, and kept `implement` on the existing `COMPLETE` sentinel fallback. Focused schema/loop executor/loader tests, V2 workflow validation, type-check, bundled-defaults check, and format check pass. Initial slice closeout recorded one unrelated full-file `packages/workflows/src/dag-executor.test.ts` caveat in `artifacts/workflow/implementation-reports/dag-executor-full-file-caveat.json`; that caveat was cleared after final campaign integration when `bun test packages/workflows/src/dag-executor.test.ts` and full `bun run validate` passed on `dev`.

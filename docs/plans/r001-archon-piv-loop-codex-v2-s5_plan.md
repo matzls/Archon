@@ -1,7 +1,7 @@
 ---
 title: "Archon PIV Loop Codex V2 S5 — live E2E evidence convention — Plan"
 kind: plan
-status: active
+status: accepted
 created: 2026-04-27
 updated: "2026-04-28"
 origin_prd: "docs/prd/r001-archon-piv-loop-codex-v2.md"
@@ -15,7 +15,7 @@ version: "0.2"
 - Why we're doing it: the current V2 workflow on the campaign integration branch still defers live E2E evidence conventions and jumps from implementation approval straight to PR artifact composition.
 - What "done" looks like: `archon-piv-loop-codex-v2` has an explicit post-review live-validation gate, writes or references run-scoped evidence under `$ARTIFACTS_DIR/e2e-reports/*`, records a waiver only when live proof is genuinely not possible, and proves the contract with focused workflow validation plus real smoke evidence.
 - How we'll do it: ground the current workflow gap on the integration base, freeze the smallest live-validation contract around the existing `e2e_report_manager.py` helper, update the V2 workflow and bundled assertions, then run real CLI and UI smoke with canonical evidence recording.
-- Next step / resume point: keep the remaining Phase 99 UI proof as an explicit waiver/follow-on rather than widening S5. The CLI/backend proof passed, but the UI proof cannot honestly claim PASS until the UI-created isolated worktree uses the merged V2/S5 branch surface instead of stale `origin/dev`; rerun this proof after the V2 artifacts merge back to `dev`.
+- Next step / resume point: keep the remaining Phase 99 UI proof as an explicit waiver/follow-on rather than widening S5. The CLI/backend proof passed, but the UI proof cannot honestly claim PASS until the UI-created isolated worktree uses the merged V2/S5 branch surface instead of stale `origin/dev`; after the V2 artifacts merged to `dev`, rerun this proof from the merged branch before closing the UI-isolation follow-on.
 
 ### Optional Mental Model
 
@@ -26,7 +26,7 @@ version: "0.2"
 
 ## 2) Solution Concept (High-Level)
 - Keep `S5` anchored to `Execution Map row` plus the row note: live E2E evidence convention.
-- Treat `integration/r001-archon-piv-loop-codex-v2` as the execution base for this slice until the earlier V2 slices are merged back, because the root `dev` checkout does not currently contain `.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml`.
+- Historical S5 execution-base note: this slice originally used `integration/r001-archon-piv-loop-codex-v2` because root `dev` did not yet contain `.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml`. After final campaign integration, `dev` contains the V2 workflow surface; the remaining follow-on is rerunning the UI proof from that merged branch.
 - Insert one explicit post-`fix-feedback`, pre-`compose-finalize` gate in the V2 workflow that either records PASS evidence through `e2e_report_manager.py` or records an explicit waiver with reason before finalization can continue.
 - Keep code review findings, live-validation evidence, and PR artifacts as separate outputs: `code-review` stays the scoped code-quality gate, `live-validate` owns run-scoped proof under `$ARTIFACTS_DIR/e2e-reports/*`, and finalization only summarizes those results.
 - Reuse the existing Archon/Codex smoke surfaces where they already exist instead of inventing a second E2E artifact dialect.
@@ -45,7 +45,7 @@ version: "0.2"
 S5 is allowed to finish with an explicit UI-proof waiver because the backend/CLI live-validation proof passed and the browser-launched workflow did reach the real `/workflows` launch path, but the UI-created worker checkout was based on stale `origin/dev` and lacked the S5 plan/workflow files. That is a Web isolation/source-branch problem, not a failure of the S5 `live-validate` workflow gate itself.
 
 Follow-on trigger after the original V2 merge:
-- Merge the V2 slice artifacts into `dev` or the campaign integration branch that `origin/dev` will eventually receive.
+- V2 slice artifacts have merged into `dev`; rerun from that merged branch.
 - Start the Archon Web UI from that merged branch.
 - Launch `archon-piv-loop-codex-v2` from `/workflows`.
 - Confirm whether the UI-created worker checkout contains the merged V2 workflow and S5 plan artifacts.
@@ -90,7 +90,7 @@ flowchart LR
 - Last Updated: 2026-04-28
 - Last Reviewed: 2026-04-28
 - Next Checkpoint: close S5 with backend/CLI live evidence plus accepted UI waiver, then rerun the `/workflows` UI smoke from merged `dev` before treating the UI-isolation follow-on as resolved.
-- Execution-base note: the root `dev` checkout still lacks `.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml`, but the current slice branch `slice/r001-archon-piv-loop-codex-v2/s5` already descends from `integration/r001-archon-piv-loop-codex-v2` and contains the V2 workflow surface locally. Keep implementation on this slice branch or an equivalent descendant lane that preserves those S1-S4 artifacts.
+- Execution-base note: S5 originally ran from `slice/r001-archon-piv-loop-codex-v2/s5`, which descended from `integration/r001-archon-piv-loop-codex-v2` and contained the V2 workflow surface before root `dev` did. After final campaign integration, `dev` contains `.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml`; the remaining UI proof should be rerun from merged `dev`.
 - Deterministic grounding snapshot: PRD row `S5` requires “enforced final live validation contract and evidence path” with “real CLI/API/browser smoke evidence under run artifacts”; the design doc requires proof under `$ARTIFACTS_DIR/e2e-reports/`; before this S5 implementation, the V2 workflow still said live E2E evidence was deferred and `compose-finalize` still depended directly on `fix-feedback`; `e2e_report_manager.py` already exists as the smallest deterministic writer for `*-e2e.{md,json}` artifacts; and this repo's bundled-workflow contract means any default-workflow YAML edit must also keep `packages/workflows/src/defaults/bundled-defaults.generated.ts` passing `bun run check:bundled`.
 - E2E Gate: required
 - E2E Waiver Category: review_required
@@ -148,7 +148,7 @@ Rules:
     - `git show integration/r001-archon-piv-loop-codex-v2:.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml | sed -n '1090,1460p'`
     - `sed -n '1,220p' "${CODEX_HOME:-$HOME/.codex}/skills/.shared/workflow/scripts/e2e_report_manager.py"`
     - `sed -n '68,92p' packages/docs-web/src/content/docs/reference/troubleshooting.md`
-    - record in this plan that the root checkout lacks the V2 workflow file, the integration branch contains it, the pre-S5 workflow still defers live E2E evidence conventions, and the existing deterministic helper for `*-e2e.{md,json}` artifacts already exists
+    - record the historical S5 execution-base fact that the root checkout lacked the V2 workflow file before final campaign integration, while the integration branch contained it; after the merge to `dev`, the remaining follow-on is rerunning the UI proof against the merged V2 workflow surface
   - Exit Criteria:
     - this plan names the exact current gap in the V2 workflow instead of describing live validation abstractly
     - this plan records the exact execution base for `S5` with branch-backed evidence
@@ -682,7 +682,7 @@ Explicit exclusions (handled outside the PIV loop closeout): Project Brief, Feat
 
 ## Doc Sync Log
 - 2026-04-27: Seeded focused slice draft from the PRD execution map so the orchestrator can refine from a concrete boundary instead of a blank template.
-- 2026-04-28: Completed Phase 0 grounding for the refine pass. Verified that the root `dev` checkout lacks the V2 workflow file, grounded `S5` against the integration-branch workflow, recorded the current post-review -> finalization gap, and froze the live-validation/evidence-path contract around `e2e_report_manager.py`.
+- 2026-04-28: Completed Phase 0 grounding for the refine pass. At S5 start, root `dev` lacked the V2 workflow file, so the slice was grounded against the integration-branch workflow. After final campaign integration, merged `dev` contains the V2 workflow file; the remaining proof gap is the post-merge UI isolation rerun. The slice recorded the post-review -> finalization gap and froze the live-validation/evidence-path contract around `e2e_report_manager.py`.
 - 2026-04-28: Executed approved Phase 0 post-freeze tasks. Recorded deterministic command evidence for the integration-base grounding, locked `live-validate` evidence contract, and E2E smoke prerequisite lane.
 - 2026-04-28: Executed approved Phase 1/2 post-freeze tasks. Added the `live-validate` gate before finalization, refreshed bundled defaults and regression assertions, captured focused proof evidence, and left Phase 99 live smoke as the remaining proposed E2E gate.
 - 2026-04-28: Ran the Phase 99 live UI proof from the parent Browser Use surface. The UI-started workflow reached `create-plan`, proving the Web UI can launch the V2 workflow, but the run was cancelled because the isolated worker checkout used stale `origin/dev` and lacked the S5 plan/workflow files. Phase 99 remains blocked with explicit waiver evidence rather than PASS.

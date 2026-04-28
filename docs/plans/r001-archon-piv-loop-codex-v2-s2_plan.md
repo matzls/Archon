@@ -1,9 +1,9 @@
 ---
 title: "Archon PIV Loop Codex V2 S2 — V2 plan template and coordinated plan-path contract — Plan"
 kind: plan
-status: draft
+status: accepted
 created: 2026-04-27
-updated: "2026-04-27"
+updated: "2026-04-28"
 origin_prd: "docs/prd/r001-archon-piv-loop-codex-v2.md"
 origin: ""
 version: "0.2"
@@ -56,11 +56,11 @@ flowchart LR
 **Choice:** [x] A1  [ ] A2
 
 ## Plan Status & Controls
-- Plan Status: Draft (as of 2026-04-27)
-- Current Phase: Complete — Ready For Validation
-- Last Updated: 2026-04-27
-- Last Reviewed: 2026-04-27
-- Next Checkpoint: run `$workflow-validate docs/plans/r001-archon-piv-loop-codex-v2-s2_plan.md mode=fast`
+- Plan Status: Accepted (as of 2026-04-28)
+- Current Phase: P2 — Validation And Doc Sync
+- Last Updated: 2026-04-28
+- Last Reviewed: 2026-04-28
+- Next Checkpoint: accepted after focused validation and campaign integration; no further S2 slice action required
 - E2E Gate: not_required
 - E2E Waiver Category: internal_tooling
 - E2E Waiver Rationale: This seeded slice targets contract, workflow, or internal runtime surfaces. Focused repo-local validation is the required proof shape before any broader end-to-end coverage is considered.
