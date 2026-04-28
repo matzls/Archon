@@ -4,7 +4,7 @@
     "status": "active",
     "current_phase": 99,
     "authoring_state": "drafted",
-    "updated": "2026-04-28T11:09:00.514322+00:00"
+    "updated": "2026-04-28T11:38:30.812186+00:00"
   },
   "tasks": [
     {
@@ -59,12 +59,12 @@
     {
       "id": "P99-T1",
       "phase": 99,
-      "status": "proposed"
+      "status": "approved"
     },
     {
       "id": "P99-T2",
       "phase": 99,
-      "status": "proposed"
+      "status": "approved"
     }
   ],
   "task_contracts": {
