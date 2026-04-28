@@ -1,8 +1,8 @@
 {
   "schema_version": "peer-review-v1",
-  "review_id": "peer-review-31082ef5a501",
+  "review_id": "peer-review-71051b81a18b",
   "plan_path": "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s5/docs/plans/r001-archon-piv-loop-codex-v2-s5_plan.md",
-  "plan_sha256": "8a08cc7f64c6eff496b61593e4ab71f74ff32783fd3bed912dfd4d9172a22396",
+  "plan_sha256": "07cacf6ee497d7a18ac6b6c75c9f2f80ac46d6ab01344656bc92031e769c82de",
   "mode": "workflow-plan-gate",
   "sidecar_dir": "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s5/docs/plans/_peer-reviews",
   "engine": "GPT",
@@ -27,56 +27,54 @@
       "returncode": 0
     }
   ],
-  "review_round": 3,
+  "review_round": 4,
   "max_rounds": 3,
-  "prior_review_id": "peer-review-b0340cd86c09",
+  "prior_review_id": "peer-review-31082ef5a501",
   "caller_disposition_summary": "",
   "addressed_issues": [],
   "deferred_issues": [],
-  "recheck_requests": [
-    "P99-T1 still validates a latest token-matching CLI run instead of the exact launched run id"
-  ],
+  "recheck_requests": [],
   "model": "codex",
   "verdict": "Sound",
   "stance": null,
   "issues_count": 0,
-  "ran_at": "2026-04-28T11:37:31.288883+00:00",
-  "raw_review_excerpt": "Current-artifact review of the supplied plan text finds the narrowed P99-T1 concern resolved. P99-T1 no longer selects the latest token-matching CLI run; its embedded assertion script fails unless exactly one UUID-derived token match exists for the target workflow run, then checks that run for `live-validate` completion before `compose-finalize` plus either an existing evidence path or an explicit waiver.",
+  "ran_at": "2026-04-28T11:45:38.792560+00:00",
+  "raw_review_excerpt": "For the narrow question asked, the current artifact is freeze-safe: P99-T2 no longer needs a separate `browser_smoke` prerequisite because the plan already encodes browser readiness and proof through `tool_binary: agent-browser`, explicit `/workflows` UI automation steps, concrete verify commands, and a manual/waiver fallback that prevents ungrounded automated PASS.",
   "error": null,
-  "closure_verification": "Verified against the current plan artifact text supplied via stdin. Prior-round material was treated only as a claim to test, not as evidence of truth.",
+  "closure_verification": "The carried browser prerequisite concern is resolved in the current artifact.",
   "prior_round_closure": [
     {
-      "title": "P99-T1 latest token-matching run selection",
-      "severity": "BLOCK",
-      "caller_claim": "P99-T1 still validates a latest token-matching CLI run instead of the exact launched run id.",
+      "title": "Separate browser_smoke prerequisite for P99-T2",
+      "severity": "WARN",
+      "caller_claim": "Removing the `browser_smoke` prerequisite is acceptable because P99-T2 already has `tool_binary agent-browser` and explicit run-linked UI commands and verify steps.",
       "verification_status": "resolved",
-      "verification_notes": "In the current artifact, P99-T1 no longer picks the latest match. The embedded assertion script fails unless exactly one token-matching run exists, then validates that single run's `live-validate` ordering and evidence-or-waiver output."
+      "verification_notes": "Verified against the current artifact. P99-T2 declares `tool_binary` `agent-browser`, runs a concrete browser flow from `/workflows`, requires run-linked URL/snapshot/screenshot/proof outputs, and explicitly converts `agent-browser` unavailability or connection failure into manual/waiver handling rather than automated PASS."
     }
   ],
   "rerun_recommendation": "stop",
   "review": {
     "mode": "workflow-plan-gate",
-    "summary": "Current-artifact review of the supplied plan text finds the narrowed P99-T1 concern resolved. P99-T1 no longer selects the latest token-matching CLI run; its embedded assertion script fails unless exactly one UUID-derived token match exists for the target workflow run, then checks that run for `live-validate` completion before `compose-finalize` plus either an existing evidence path or an explicit waiver.",
+    "summary": "For the narrow question asked, the current artifact is freeze-safe: P99-T2 no longer needs a separate `browser_smoke` prerequisite because the plan already encodes browser readiness and proof through `tool_binary: agent-browser`, explicit `/workflows` UI automation steps, concrete verify commands, and a manual/waiver fallback that prevents ungrounded automated PASS.",
     "rubric_cards": [
       {
-        "title": "Claim Anchoring",
-        "anchor": "P99-T1 embedded `assert-r001-s5-cli-live-validate.py` in the current plan artifact",
-        "claim": "The load-bearing run-selection claim is anchored in the artifact itself and is specific enough to review without relying on caller narrative.",
-        "evidence": "The script queries token-matching `archon-piv-loop-codex-v2` runs, aborts when `len(runs) != 1`, then inspects that single run's events and requires `live-validate` proof or waiver.",
+        "title": "Claim anchoring",
+        "anchor": "P99-T2",
+        "claim": "The browser prerequisite concern is resolved by the current artifact itself, not by caller narrative.",
+        "evidence": "P99-T2 `Prerequisite Contract` declares `tool_binary` `agent-browser`; `Commands to Run` execute the browser flow end to end; `Verify Commands` require run-linked artifacts and proof JSON; fallback text disallows automated PASS if browser automation is unavailable.",
         "disposition": "pass"
       },
       {
-        "title": "Disposition Matrix",
-        "anchor": "Current plan artifact plus prior-round re-check request",
-        "claim": "Artifact evidence is present for the narrow run-selection question; conversation and campaign coverage are intentionally limited.",
-        "evidence": "The current plan text provides the exact P99-T1 commands and assertion logic. Prior-round context was used only to identify the carried issue to verify.",
+        "title": "Disposition matrix",
+        "anchor": "review-scope",
+        "claim": "Artifact evidence is present; conversation and campaign evidence are limited and treated separately.",
+        "evidence": "Current plan text was reviewed directly; prior-round context was used only as a claim packet; no full campaign replay or live tooling inspection was performed.",
         "disposition": "pass"
       },
       {
-        "title": "Coverage Scope",
-        "anchor": "Review focus constraint in the user prompt",
-        "claim": "This review covers only the P99-T1 run-selection/proof logic in the current plan artifact, not full plan or campaign freeze readiness.",
-        "evidence": "No broader phase, sidecar, code, or workflow-file audit was performed; the conclusion is limited to the narrowed P99-T1 criterion.",
+        "title": "Coverage scope",
+        "anchor": "scope",
+        "claim": "This review covers only the S5 plan slice and only the browser prerequisite question.",
+        "evidence": "Reviewed the supplied plan text with emphasis on Phase 99 / P99-T2. Did not assess full campaign freeze readiness.",
         "disposition": "pass"
       }
     ],
@@ -93,95 +91,91 @@
       ],
       "cells": [
         [
-          "p99t1-script-logic-reviewed",
-          "no-code-or-state-cross-check",
-          "no-other-artifact-surfaces"
+          "current-plan-text",
+          "tool-runtime-not-rechecked",
+          "none"
         ],
         [
-          "prior-round-recheck-used",
-          "no-full-thread-review",
-          "no-extra-conversation-evidence"
+          "prior-claim-packet",
+          "full-thread-not-reviewed",
+          "none"
         ],
         [
-          "p99t1-slice-covered",
-          "full-campaign-not-assessed",
-          "no-sidecar-or-broader-campaign-audit"
+          "S5-slice-reviewed",
+          "campaign-context-limited",
+          "full-campaign-not-assessed"
         ]
       ]
     },
     "conversation_evidence": {
       "used": true,
       "sources": [
-        "Prior-round context block in the prompt: explicit re-check request for P99-T1",
-        "Current-turn focus constraint in the prompt"
+        "Prior-round claim packet in the user prompt: peer-review-31082ef5a501"
       ],
-      "summary": "Conversation evidence was used only to define the carried issue and the narrow review scope. The substantive judgment was based on the current artifact text supplied via stdin.",
+      "summary": "Used only to verify the caller claim about removing a separate `browser_smoke` prerequisite against the current artifact.",
       "gaps": [
-        "No broader thread history was inspected.",
-        "No external campaign packet was treated as authoritative."
+        "The full prior review body was not provided.",
+        "No broader thread history was inspected."
       ]
     },
     "campaign_coverage": {
       "scope": "slice-only",
       "covered": [
-        "Current plan artifact section `P99-T1`",
-        "Prior-round carried issue closure for the P99-T1 latest-run-selection concern"
+        "Current plan artifact `docs/plans/r001-archon-piv-loop-codex-v2-s5_plan.md`, especially `Phase 99 \u2014 End-to-End Gate` and `P99-T2`."
       ],
       "missing": [
-        "P99-T2",
-        "Other phases and tasks",
-        "Companion `.state.json`",
-        "Underlying workflow/code artifacts outside the supplied plan text",
-        "Full campaign/thread review"
+        "Companion `.state.json` state file.",
+        "Referenced workflow YAML/tests/docs.",
+        "Any broader campaign or cross-slice artifacts."
       ],
       "gaps": [
-        "This verdict does not certify full freeze readiness for the whole plan or campaign.",
-        "This review does not verify implementation reality beyond the supplied artifact text."
+        "This does not certify full-campaign readiness; it answers only the narrow browser prerequisite question."
       ]
     },
     "issues": [],
     "verification_gaps": [
-      "No direct inspection of the companion `.state.json` was performed.",
-      "No direct inspection of workflow YAML, tests, or runtime DB schema was performed.",
-      "The review does not assess whether exact run-id capture would be preferable beyond the narrowed token-uniqueness criterion."
+      "No live command execution or tool inspection was performed in this review.",
+      "Referenced repo files outside the supplied plan text were not re-opened under this narrow, artifact-first pass."
     ],
     "recommended_fixes": [],
     "evidence_sources": [
-      "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s5/docs/plans/r001-archon-piv-loop-codex-v2-s5_plan.md (supplied via stdin)",
-      "Prior-round context block in the user prompt"
+      "Supplied current artifact text for `/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s5/docs/plans/r001-archon-piv-loop-codex-v2-s5_plan.md`",
+      "Sections inspected in that artifact: `P99-T2 Prerequisite Contract`, `P99-T2 Prerequisites`, `P99-T2 Commands to Run`, `P99-T2 Verify Commands`, and the manual fallback paragraph",
+      "Prior-round claim packet in the user prompt: peer-review-31082ef5a501"
     ],
     "error": null,
     "verdict": "Sound",
     "workflow_compliance": [
-      "P99-T1 now uses an explicit unique-token selection contract instead of latest-match selection.",
-      "P99-T1 exit criteria and verify commands align with the embedded assertion script's single-run requirement.",
-      "The task remains within workflow-plan-gate scope for the narrowed re-check."
+      "P99-T2 keeps browser automation explicit in the plan through a declared `agent-browser` binary prerequisite and a concrete `/workflows` execution path.",
+      "P99-T2 verify steps are run-linked and evidence-linked, not just screenshot-based.",
+      "The fallback text preserves freeze safety by requiring manual/waiver handling instead of allowing an implicit automated PASS."
     ],
     "technical_reality": [
-      "Run token generation is UUID-derived (`uuid.uuid4().hex`) and persisted before the workflow launch command.",
-      "The assertion query scopes to workflow name, working path, and token-bearing user message.",
-      "The script aborts unless exactly one matching run exists.",
-      "The script then requires `node_completed` for `live-validate`, rejects `compose-finalize` occurring earlier, and requires either an existing evidence path or explicit waiver metadata."
+      "A separate named `browser_smoke` prerequisite is not load-bearing when the task itself already performs the browser smoke and ties success to DB-backed run proof.",
+      "The current artifact requires `assert-r001-s5-ui-live-validate.py` and concrete URL/artifact outputs, which is stronger than a standalone binary check alone."
     ],
-    "assumptions_to_verify": [],
+    "assumptions_to_verify": [
+      "`agent-browser` still supports the scripted commands and session behavior at execution time.",
+      "The current UI labels/selectors used in P99-T2 still match the running application."
+    ],
     "verification_sufficiency": [
-      "The supplied artifact text is sufficient to judge the narrowed P99-T1 run-selection logic because it includes the exact command sequence and embedded assertion code.",
-      "No blocker depends on uninspected external files for this narrow question."
+      "Sufficient for the narrow workflow-plan-gate decision requested here.",
+      "Not sufficient to prove runtime availability or selector correctness, because no live execution was performed."
     ],
     "downstream_risks": [
-      "Broader Phase 99 or full-plan freeze readiness could still have issues outside this narrowed P99-T1 concern."
+      "If `agent-browser` connectivity or UI selectors drift, P99-T2 may fail during execution, but the documented manual/waiver fallback prevents false automated PASS evidence."
     ],
     "freeze_recommendation": "Safe to freeze. No blocker-level issues were identified.",
     "prior_round_closure": [
       {
-        "title": "P99-T1 latest token-matching run selection",
-        "severity": "BLOCK",
-        "caller_claim": "P99-T1 still validates a latest token-matching CLI run instead of the exact launched run id.",
+        "title": "Separate browser_smoke prerequisite for P99-T2",
+        "severity": "WARN",
+        "caller_claim": "Removing the `browser_smoke` prerequisite is acceptable because P99-T2 already has `tool_binary agent-browser` and explicit run-linked UI commands and verify steps.",
         "verification_status": "resolved",
-        "verification_notes": "In the current artifact, P99-T1 no longer picks the latest match. The embedded assertion script fails unless exactly one token-matching run exists, then validates that single run's `live-validate` ordering and evidence-or-waiver output."
+        "verification_notes": "Verified against the current artifact. P99-T2 declares `tool_binary` `agent-browser`, runs a concrete browser flow from `/workflows`, requires run-linked URL/snapshot/screenshot/proof outputs, and explicitly converts `agent-browser` unavailability or connection failure into manual/waiver handling rather than automated PASS."
       }
     ],
-    "closure_verification": "Verified against the current plan artifact text supplied via stdin. Prior-round material was treated only as a claim to test, not as evidence of truth.",
+    "closure_verification": "The carried browser prerequisite concern is resolved in the current artifact.",
     "rerun_recommendation": "stop"
   }
 }

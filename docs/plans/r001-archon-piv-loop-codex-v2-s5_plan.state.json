@@ -4,7 +4,7 @@
     "status": "active",
     "current_phase": 99,
     "authoring_state": "drafted",
-    "updated": "2026-04-28T11:38:30.812186+00:00"
+    "updated": "2026-04-28T11:45:54.797397+00:00"
   },
   "tasks": [
     {
@@ -87,7 +87,7 @@
         {
           "kind": "command_smoke",
           "lane_bound": true,
-          "command": "ARCHON_HOME=\"$PWD/.tmp/archon-home\" bun run cli workflow run e2e-codex-smoke --no-worktree \"smoke test\"",
+          "command": "BUN_INSTALL_CACHE_DIR=/private/tmp/archon-bun-cache ARCHON_HOME=\"$PWD/.tmp/archon-home\" bun run cli workflow run e2e-codex-smoke --no-worktree \"smoke test\"",
           "cwd_policy": "repo_root",
           "expected_exit_code": 0
         },
@@ -118,17 +118,9 @@
         {
           "kind": "command_smoke",
           "lane_bound": true,
-          "command": "bash -lc 'PORT=3090 bun run dev:server >/tmp/r001-s5-server-smoke.log 2>&1 & server_pid=$!; PORT=3090 bun run dev:web >/tmp/r001-s5-web-smoke.log 2>&1 & web_pid=$!; trap \"kill $server_pid $web_pid 2>/dev/null || true\" EXIT; for _ in $(seq 1 30); do curl -sf http://localhost:3090/api/health >/dev/null && curl -sf http://localhost:5173/ >/dev/null && exit 0; sleep 2; done; tail -20 /tmp/r001-s5-server-smoke.log; tail -20 /tmp/r001-s5-web-smoke.log; exit 1'",
+          "command": "bash -lc 'PORT=3090 bun run dev:server >/tmp/r001-s5-server-smoke.log 2>&1 & server_pid=$!; bun --filter @archon/web dev --host 127.0.0.1 --port 5173 >/tmp/r001-s5-web-smoke.log 2>&1 & web_pid=$!; trap \"kill $server_pid $web_pid 2>/dev/null || true\" EXIT; for _ in $(seq 1 30); do curl -sf http://localhost:3090/api/health >/dev/null && curl -sf http://localhost:5173/ >/dev/null && exit 0; sleep 2; done; tail -20 /tmp/r001-s5-server-smoke.log; tail -20 /tmp/r001-s5-web-smoke.log; exit 1'",
           "cwd_policy": "repo_root",
           "expected_exit_code": 0
-        },
-        {
-          "kind": "browser_smoke",
-          "lane_bound": true,
-          "runner": "agent-browser",
-          "entry_artifact": "artifacts/workflow/tmp/r001-s5-ui-snapshot.txt",
-          "export_artifact": "artifacts/workflow/tmp/r001-s5-ui-notes.md",
-          "expected_artifact": "artifacts/workflow/e2e-reports/<plan-slug>-<YYYY-MM-DD>-e2e.json"
         }
       ]
     }

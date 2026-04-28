@@ -432,14 +432,6 @@ PY`
         "cwd_policy": "repo_root",
         "expected_exit_code": 0,
         "lane_bound": true
-      },
-      {
-        "kind": "browser_smoke",
-        "runner": "agent-browser",
-        "entry_artifact": "artifacts/workflow/tmp/r001-s5-ui-run-snapshot.txt",
-        "export_artifact": "artifacts/workflow/tmp/r001-s5-ui-notes.md",
-        "expected_artifact": "artifacts/workflow/e2e-reports/<plan-slug>-<YYYY-MM-DD>-e2e.json",
-        "lane_bound": true
       }
     ]
     ```
