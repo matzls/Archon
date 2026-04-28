@@ -118,6 +118,12 @@ describe('bundled-defaults', () => {
     it('archon-piv-loop-codex-v2 should preserve Slice 2 focused-plan contracts', () => {
       const content = BUNDLED_WORKFLOWS['archon-piv-loop-codex-v2'];
       expect(content).toContain('name: archon-piv-loop-codex-v2');
+      expect(content).toContain('id: intake-classifier');
+      expect(content).toContain('id: mode-b-design-doc');
+      expect(content).toContain('id: mode-b-slice-map');
+      expect(content).toContain('id: mode-b-intake-summary');
+      expect(content).toContain('Mode B must select exactly one slice');
+      expect(content).toContain('Mode B slice map must contain exactly one selected marker');
       expect(content).toContain('docs/plans/{slug}_plan.md');
       expect(content).toContain('PLAN_FILE=docs/plans/{slug}_plan.md');
       expect(content).toContain('## ELI5 Summary');

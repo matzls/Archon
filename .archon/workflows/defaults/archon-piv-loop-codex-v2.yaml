@@ -21,9 +21,11 @@ description: |
     * Explicit negative guardrails on the implement loop's COMPLETE signal
     * Tightened refine-plan approval branch (no tool use on approval)
     * Stronger focused-plan template stored under `docs/plans/{slug}_plan.md`
-    * Slice 3 pilots typed gates on the phase-transition loops while design-doc
-      or slice-map intake, review automation, live E2E evidence conventions, and
-      PR handoff remain deferred to later V2 slices
+    * Slice 3 pilots typed gates on the phase-transition loops
+    * Slice 4 adds Mode B intake for large requests and PRDs: create or refresh
+      a design doc, create a slice map, select exactly one slice, then return to
+      the normal one-slice lane. Review automation, live E2E evidence
+      conventions, and PR handoff remain deferred to later V2 slices
 
   Interactive PIV loop workflow — the foundational AI coding methodology:
   1. EXPLORE: Iterative conversation with human to understand the problem (arbitrary rounds)
@@ -40,12 +42,206 @@ interactive: true
 
 nodes:
   # ═══════════════════════════════════════════════════════════════
+  # MODE B INTAKE — Large Request / PRD triage before one-slice lane
+  # Direct one-slice requests skip the artifact nodes and enter explore.
+  # Large requests or PRDs create durable scope artifacts first, select
+  # exactly one slice, then continue through the same one-slice PIV path.
+  # ═══════════════════════════════════════════════════════════════
+
+  - id: intake-classifier
+    output_format:
+      type: object
+      properties:
+        mode:
+          type: string
+          enum: [direct_one_slice, large_or_prd]
+        slug:
+          type: string
+          pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
+        reason:
+          type: string
+      required: [mode, slug, reason]
+      additionalProperties: false
+    prompt: |
+      # PIV Loop V2 — Intake Classifier
+
+      Classify the user's request before the normal one-slice PIV lane starts.
+
+      **User's request**: $ARGUMENTS
+
+      Return `large_or_prd` only when the input is a PRD path/content, an umbrella
+      feature, a multi-slice campaign request, or otherwise too broad to safely
+      execute as one focused slice immediately.
+
+      Return `direct_one_slice` when the input is already one focused feature,
+      bug fix, plan path, or issue-sized request.
+
+      Produce a stable kebab-case `slug` for artifact paths. Do not write files
+      in this classifier node.
+
+  - id: mode-b-design-doc
+    depends_on: [intake-classifier]
+    when: "$intake-classifier.output.mode == 'large_or_prd'"
+    context: fresh
+    output_format:
+      type: object
+      properties:
+        design_doc_path:
+          type: string
+        refreshed_existing:
+          type: boolean
+        summary:
+          type: string
+      required: [design_doc_path, refreshed_existing, summary]
+      additionalProperties: false
+    prompt: |
+      # PIV Loop V2 — Mode B Design Doc
+
+      The intake classifier selected Mode B for a large request or PRD.
+
+      **User's request**: $ARGUMENTS
+      **Classifier output**: $intake-classifier.output
+
+      Create or refresh a design doc at:
+      `docs/design/$intake-classifier.output.slug.md`
+
+      Requirements:
+      - preserve existing user-authored content if the file already exists
+      - document the problem, scope boundaries, architecture notes, risks, and
+        slicing strategy at a design level
+      - keep this as architecture and slicing context, not an implementation plan
+      - do not create a focused slice plan here
+
+      After writing the file, return structured output with the exact path,
+      whether you refreshed an existing file, and a concise summary.
+
+  - id: mode-b-slice-map
+    depends_on: [mode-b-design-doc]
+    when: "$intake-classifier.output.mode == 'large_or_prd'"
+    context: fresh
+    output_format:
+      type: object
+      properties:
+        slice_map_path:
+          type: string
+        selected_slice_id:
+          type: string
+        selected_slice_title:
+          type: string
+        exactly_one_selected:
+          type: boolean
+        summary:
+          type: string
+      required:
+        [slice_map_path, selected_slice_id, selected_slice_title, exactly_one_selected, summary]
+      additionalProperties: false
+    prompt: |
+      # PIV Loop V2 — Mode B Slice Map
+
+      Create a slice map from the design doc and select exactly one slice for
+      the rest of this PIV run.
+
+      **User's request**: $ARGUMENTS
+      **Classifier output**: $intake-classifier.output
+      **Design doc output**: $mode-b-design-doc.output
+
+      Write the slice map at:
+      `docs/plans/$intake-classifier.output.slug-slice-map.md`
+
+      Requirements:
+      - list the full slice inventory needed for the larger request or PRD
+      - mark exactly one slice as selected for this run using a Markdown task
+        marker line that starts `- [x] Slice <id>:`
+      - mark every non-selected slice with a line that starts `- [ ] Slice <id>:`
+      - do not use `[x]` anywhere else in the slice map
+      - keep adjacent slices explicitly out of scope for this run
+      - include the design doc path and parent request/PRD as anchors
+      - do not create or execute the focused implementation plan here
+
+      Return structured output containing the slice map path, selected slice id,
+      selected slice title, `exactly_one_selected: true`, and a concise summary.
+
+  - id: mode-b-intake-summary
+    depends_on: [intake-classifier, mode-b-design-doc, mode-b-slice-map]
+    trigger_rule: all_done
+    bash: |
+      set -euo pipefail
+
+      MODE=$intake-classifier.output.mode
+      SLUG=$intake-classifier.output.slug
+      DESIGN_DOC=$mode-b-design-doc.output.design_doc_path
+      SLICE_MAP=$mode-b-slice-map.output.slice_map_path
+      SELECTED_SLICE_ID=$mode-b-slice-map.output.selected_slice_id
+      SELECTED_SLICE_TITLE=$mode-b-slice-map.output.selected_slice_title
+      EXACTLY_ONE_SELECTED=$mode-b-slice-map.output.exactly_one_selected
+
+      if [ "$MODE" = "large_or_prd" ]; then
+        if [ -z "$DESIGN_DOC" ] || [ ! -f "$DESIGN_DOC" ]; then
+          echo "ERROR: Mode B design doc was not created at $DESIGN_DOC" >&2
+          exit 1
+        fi
+        if [ -z "$SLICE_MAP" ] || [ ! -f "$SLICE_MAP" ]; then
+          echo "ERROR: Mode B slice map was not created at $SLICE_MAP" >&2
+          exit 1
+        fi
+        if [ -z "$SELECTED_SLICE_ID" ] || [ "$EXACTLY_ONE_SELECTED" != "true" ]; then
+          echo "ERROR: Mode B must select exactly one slice" >&2
+          exit 1
+        fi
+        python3 - "$SLICE_MAP" "$SELECTED_SLICE_ID" <<'PY'
+      import re
+      import sys
+      from pathlib import Path
+
+      path = Path(sys.argv[1])
+      selected_id = sys.argv[2].strip()
+      lines = path.read_text(encoding="utf-8").splitlines()
+      selected_lines = [line for line in lines if re.match(r"^\s*-\s*\[[xX]\]\s+", line)]
+
+      if len(selected_lines) != 1:
+          print(
+              f"ERROR: Mode B slice map must contain exactly one selected marker; found {len(selected_lines)}",
+              file=sys.stderr,
+          )
+          raise SystemExit(1)
+
+      if selected_id and selected_id not in selected_lines[0]:
+          print(
+              "ERROR: Mode B selected_slice_id does not match the selected slice-map line",
+              file=sys.stderr,
+          )
+          raise SystemExit(1)
+      PY
+      fi
+
+      export MODE SLUG DESIGN_DOC SLICE_MAP SELECTED_SLICE_ID SELECTED_SLICE_TITLE
+      python3 - <<'PY'
+      import json
+      import os
+
+      print(
+          json.dumps(
+              {
+                  "mode": os.environ["MODE"],
+                  "slug": os.environ["SLUG"],
+                  "design_doc_path": os.environ["DESIGN_DOC"],
+                  "slice_map_path": os.environ["SLICE_MAP"],
+                  "selected_slice_id": os.environ["SELECTED_SLICE_ID"],
+                  "selected_slice_title": os.environ["SELECTED_SLICE_TITLE"],
+              },
+              sort_keys=True,
+          )
+      )
+      PY
+
+  # ═══════════════════════════════════════════════════════════════
   # PHASE 1: EXPLORE — Iterative exploration with human
   # Understand the idea, explore the codebase, converge on approach
   # Loops until the user says they're ready to create the plan.
   # ═══════════════════════════════════════════════════════════════
 
   - id: explore
+    depends_on: [mode-b-intake-summary]
     output_format:
       type: object
       properties:
@@ -62,6 +258,7 @@ nodes:
         Your goal: DEEPLY UNDERSTAND what to build before any code is written.
 
         **User's request**: $ARGUMENTS
+        **Mode B intake summary**: $mode-b-intake-summary.output
         **User's latest input** (empty on first iteration): "$LOOP_USER_INPUT"
 
         ---
@@ -75,6 +272,13 @@ nodes:
         ### Step 1: Parse the Input
 
         Determine what the user provided:
+
+        **If Mode B intake summary says `large_or_prd`:**
+        - Treat `selected_slice_id` and `selected_slice_title` as the focused
+          scope for this one PIV run
+        - Read the design doc and slice map named in the intake summary
+        - Do not create a second slice map, select additional slices, or widen
+          this run beyond the one selected slice
 
         **If it's a file path** (ends in `.md`, `.plan.md`, or `.prd.md`):
         - Read the file
@@ -249,13 +453,17 @@ nodes:
       **Original request**: $ARGUMENTS
       **Final exploration summary**: $explore.output
 
-      **V2 Slice 3 boundary**: create exactly one focused implementation plan.
+      **Mode B intake summary**: $mode-b-intake-summary.output
+
+      **V2 Slice 4 boundary**: create exactly one focused implementation plan.
       Use the stronger V2 template and the coordinated `docs/plans/{slug}_plan.md`
-      path contract in this slice. The workflow may use typed phase gates for its
-      own cross-phase transitions, but do not introduce design-doc or slice-map
-      intake, review automation, live E2E evidence conventions, or PR handoff
-      mechanics into the generated plan unless the user explicitly narrows this
-      run to one of those later V2 slices.
+      path contract. If Mode B selected a slice, the plan MUST implement only
+      that selected slice, include the design doc and slice map paths as anchors,
+      and keep adjacent slices out of scope. The workflow may use typed phase
+      gates for its own cross-phase transitions, but do not introduce review
+      automation, live E2E evidence conventions, or PR handoff mechanics into
+      the generated plan unless the user explicitly narrows this run to one of
+      those later V2 slices.
 
       **Project detection output** (used ONLY to fill in the informational Validation Commands section of the plan):
       $detect-project.output
@@ -414,6 +622,7 @@ nodes:
       |------|-----------|--------|-------|
       | Plan | `docs/plans/{slug}_plan.md` | must-edit | Canonical focused implementation plan |
       | PRD / design doc | `{path}` | review-only | Keep scope and contract language aligned |
+      | Slice map | `{docs/plans/<feature>_slice_map.md if Mode B ran}` | review-only | Selected slice boundary for this run |
       | Tests / references | `{path}` | review-only | Update only if this slice touches that contract |
 
       ## Risks
@@ -652,10 +861,12 @@ nodes:
 
         **User's original request**: $USER_MESSAGE
 
-        **V2 Slice 3 boundary**: implement only the selected task from the exact
-        `PLAN_FILE` focused plan. This implement task loop remains sentinel-based on
-        COMPLETE; do not create slice maps, add review automation, introduce live E2E
-        evidence conventions, or add PR handoff behavior as part of this loop iteration.
+        **V2 Slice 4 boundary**: implement only the selected task from the exact
+        `PLAN_FILE` focused plan. Mode B design-doc and slice-map intake already ran
+        before exploration when needed. This implement task loop remains sentinel-based
+        on COMPLETE; do not create additional slice maps, add review automation,
+        introduce live E2E evidence conventions, or add PR handoff behavior as part
+        of this loop iteration.
 
         The `VALIDATE_CMD`, `TYPECHECK_CMD`, `LINT_CMD`, `TEST_CMD`, `FORMAT_CMD` values
         from detect-project are **informational only**. The implement loop does **NOT**
