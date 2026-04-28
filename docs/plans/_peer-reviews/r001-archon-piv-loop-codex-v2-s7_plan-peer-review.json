@@ -1,8 +1,8 @@
 {
   "schema_version": "peer-review-v1",
-  "review_id": "peer-review-2f31f89f7a74",
+  "review_id": "peer-review-5cf8f3365c76",
   "plan_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/r001-archon-piv-loop-codex-v2-s7_plan.md",
-  "plan_sha256": "c2db5302c75bc7279b2fb8f2aa4e57b1f9067767f76d08803dfc70548e340c29",
+  "plan_sha256": "402abc013b8e17d754bdd45c2ecd863197028318bd98e59073f9923fb95b6ca8",
   "mode": "workflow-plan-gate",
   "sidecar_dir": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/_peer-reviews",
   "engine": "GPT",
@@ -27,57 +27,67 @@
       "returncode": 0
     }
   ],
-  "review_round": 1,
+  "review_round": 2,
   "max_rounds": 3,
-  "prior_review_id": "None",
-  "caller_disposition_summary": "Codex fallback review is being written to canonical sidecar because Claude review is quota/runtime blocked. Remaining blocker was resolved by pinning /pr-review-handoff.json and adding a full JSON field assertion proof command.",
+  "prior_review_id": "peer-review-5cb364298a62",
+  "caller_disposition_summary": "Addressed latest findings by adding ARTIFACTS_DIR=artifacts/workflow/tmp/r001-s7-handoff-fixture to the P1-T1 fixture test and JSON assertion, and by using the same explicit ARTIFACTS_DIR setup in P2-T1.",
   "addressed_issues": [
-    "S7 proof step does not yet verify the declared handoff artifact contract"
+    "P1-T1 verify commands do not prove the core S7 behavior",
+    "P2 final artifact assertion depends on an unstated artifact-path setup"
   ],
   "deferred_issues": [],
-  "recheck_requests": [],
+  "recheck_requests": [
+    "P1-T1 verify commands do not prove the core S7 behavior"
+  ],
   "model": "codex",
   "verdict": "Sound",
   "stance": null,
   "issues_count": 0,
-  "ran_at": "2026-04-28T16:21:11.742794+00:00",
-  "raw_review_excerpt": "Narrow recheck only: the current plan artifact still pins S7 to `$ARTIFACTS_DIR/pr-review-handoff.json`, and the P2-T1 proof command now asserts the full declared handoff field contract plus the conditional validation semantics and `autonomous_merge_claim === false`. On this scoped concern, the prior blocker is resolved.",
+  "ran_at": "2026-04-28T16:34:34.726097+00:00",
+  "raw_review_excerpt": "Narrow recheck passes on the two carried findings. The current plan now gives P1-T1 a concrete deterministic handoff-proof path via a named fixture test plus explicit `pr-review-handoff.json` field assertions, and P2-T1 now sets `ARTIFACTS_DIR` on the final JSON assertion. Coverage was slice-only and did not re-grade the rest of the plan or campaign.",
   "error": null,
-  "closure_verification": "Current-artifact-first check passed for the carried blocker: the plan still names one pinned S7 output artifact and now includes a concrete proof command that covers the declared handoff contract.",
+  "closure_verification": "Verified against the current artifact first. Both caller-claimed fixes are supported by the current plan text; neither carried issue remains open in this narrow recheck.",
   "prior_round_closure": [
     {
-      "title": "S7 proof step verifies declared handoff artifact contract",
+      "title": "P1-T1 verify commands do not prove the core S7 behavior",
       "severity": "BLOCK",
-      "caller_claim": "The remaining blocker was resolved by pinning `/pr-review-handoff.json` and adding a full JSON field assertion proof command.",
+      "caller_claim": "Addressed by adding a deterministic fixture/test path in P1-T1 with explicit `ARTIFACTS_DIR` and direct handoff-field assertions.",
       "verification_status": "resolved",
-      "verification_notes": "The current artifact consistently pins S7 to `$ARTIFACTS_DIR/pr-review-handoff.json`, and the P2-T1 proof command asserts every declared required field plus the conditional validation semantics, boolean recommendation flag, and `autonomous_merge_claim is False`."
+      "verification_notes": "Verified in the current artifact at `docs/plans/r001-archon-piv-loop-codex-v2-s7_plan.md:170-173`, with the deterministic fixture/helper test intent also stated at `:182`."
+    },
+    {
+      "title": "P2 final artifact assertion depends on an unstated artifact-path setup",
+      "severity": "BLOCK",
+      "caller_claim": "Addressed by using the same explicit `ARTIFACTS_DIR=artifacts/workflow/tmp/r001-s7-handoff-fixture` setup in P2-T1.",
+      "verification_status": "resolved",
+      "verification_notes": "Verified in the current artifact at `docs/plans/r001-archon-piv-loop-codex-v2-s7_plan.md:202-207`, where the final JSON assertion now sets `ARTIFACTS_DIR` explicitly."
     }
   ],
   "rerun_recommendation": "stop",
   "review": {
     "mode": "workflow-plan-gate",
-    "summary": "Narrow recheck only: the current plan artifact still pins S7 to `$ARTIFACTS_DIR/pr-review-handoff.json`, and the P2-T1 proof command now asserts the full declared handoff field contract plus the conditional validation semantics and `autonomous_merge_claim === false`. On this scoped concern, the prior blocker is resolved.",
+    "summary": "Narrow recheck passes on the two carried findings. The current plan now gives P1-T1 a concrete deterministic handoff-proof path via a named fixture test plus explicit `pr-review-handoff.json` field assertions, and P2-T1 now sets `ARTIFACTS_DIR` on the final JSON assertion. Coverage was slice-only and did not re-grade the rest of the plan or campaign.",
     "rubric_cards": [
       {
         "title": "Claim Anchoring",
-        "anchor": "Plan Status & Controls; Phase 2 / P2-T1 Verify Commands",
-        "claim": "The load-bearing S7 claim is anchored in the current artifact: one pinned output artifact and one concrete proof command for that artifact.",
-        "evidence": "The plan repeats `Concrete S7 output artifact: $ARTIFACTS_DIR/pr-review-handoff.json` and P2-T1 reads that exact file and asserts the declared fields and semantics.",
-        "disposition": "present"
+        "anchor": "claim-anchoring",
+        "claim": "The two rechecked claims are anchored in the current artifact, not the caller narrative.",
+        "evidence": "`docs/plans/r001-archon-piv-loop-codex-v2-s7_plan.md:170-173,182,200,202-207` show the targeted fixture test, explicit JSON assertions, deterministic fixture intent, and explicit `ARTIFACTS_DIR` in P2.",
+        "disposition": "pass"
       },
       {
         "title": "Disposition Matrix",
-        "anchor": "Current artifact + prior-round packet",
-        "claim": "Artifact evidence is present for the narrow recheck; conversation evidence is used only to verify the carried issue; campaign coverage is slice-only.",
-        "evidence": "The supplied plan text contains the pinned path and proof command. The prior-round context is used only as a hypothesis about the carried blocker.",
-        "disposition": "present"
+        "anchor": "disposition-matrix",
+        "claim": "Artifact evidence is present for the narrow recheck; conversation and campaign evidence are only partial by scope.",
+        "evidence": "Current plan artifact was inspected directly; prior-round context was used only to identify what to recheck.",
+        "disposition": "slice-only"
       },
       {
         "title": "Coverage Scope",
-        "anchor": "User focus constraint",
-        "claim": "This review covers only the S7 canonical output/proof-contract recheck and does not assess broader freeze readiness or reopen previously resolved issues.",
-        "evidence": "The prompt explicitly narrows scope to confirming the pinned output and full field-contract proof command.",
-        "disposition": "present"
+        "anchor": "coverage-scope",
+        "claim": "This review covered only the two latest findings in the current plan artifact.",
+        "evidence": "No broader thread, full campaign history, command execution, or implementation correctness review was performed.",
+        "disposition": "limited-but-sufficient-for-carried-issues"
       }
     ],
     "disposition_matrix": {
@@ -93,98 +103,105 @@
       ],
       "cells": [
         [
-          "pin-output;assert-field-contract",
-          "",
-          "runtime-code-check;state-sidecar-check"
+          "p1t1+p2 evidence",
+          "plan-only check",
+          "none"
         ],
         [
-          "carried-issue-verified",
-          "",
-          "full-thread-history"
+          "prior-claims rechecked",
+          "no-full-thread",
+          "none"
         ],
         [
-          "",
-          "slice-only-review",
-          "full-campaign-audit"
+          "none",
+          "slice-only coverage",
+          "full-campaign unchecked"
         ]
       ]
     },
     "conversation_evidence": {
       "used": true,
       "sources": [
-        "Prior-round context block in the user prompt"
+        "Prior round context in the user prompt"
       ],
-      "summary": "Used only to identify the carried issue to verify against the current artifact; not treated as authoritative truth.",
+      "summary": "Used only as a list of caller claims to verify. It was not treated as proof of correctness.",
       "gaps": [
-        "No full thread transcript or earlier review packets were inspected beyond the supplied prior-round summary."
+        "No full thread transcript beyond the prior-round packet was reviewed."
       ]
     },
     "campaign_coverage": {
       "scope": "slice-only",
       "covered": [
-        "The current plan artifact on the narrow question of the pinned S7 output path",
-        "The current plan artifact on the narrow question of whether the proof command asserts the declared handoff contract",
-        "The carried prior-round blocker about proof coverage"
+        "Current artifact narrow recheck of the P1-T1 proof-command fix",
+        "Current artifact narrow recheck of the P2 ARTIFACTS_DIR fix"
       ],
       "missing": [
-        "Referenced PRD/design files",
-        "Workflow YAML and script files",
-        "Companion `.state.json`",
-        "Broader campaign history and previously resolved issues outside this narrow recheck"
+        "Full-plan freeze readiness across all tasks/phases",
+        "Campaign-wide closure across earlier rounds",
+        "Execution evidence from running the verify commands"
       ],
       "gaps": [
-        "Do not treat this result as a full-campaign or full-freeze review."
+        "No broader campaign or implementation review was performed.",
+        "No command execution was performed in this review."
       ]
     },
     "issues": [],
     "verification_gaps": [
-      "No repo files beyond the supplied plan text were inspected.",
-      "The referenced PRD/design/code locators and command executability were not verified in-repo.",
-      "The companion `.state.json` alignment was not inspected.",
-      "Runtime emission of `$ARTIFACTS_DIR/pr-review-handoff.json` was not executed or observed."
+      "The listed verify commands were not executed; this is a plan-text and repo-surface inspection only.",
+      "The broader plan, companion state file, and campaign history were not re-reviewed because the requested scope was limited to the two carried findings."
     ],
     "recommended_fixes": [],
     "evidence_sources": [
-      "Supplied artifact text for `/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/r001-archon-piv-loop-codex-v2-s7_plan.md`",
-      "Prior-round context block in the user prompt",
-      "Scope/focus instructions in the user prompt"
+      "docs/plans/r001-archon-piv-loop-codex-v2-s7_plan.md:170-173",
+      "docs/plans/r001-archon-piv-loop-codex-v2-s7_plan.md:182",
+      "docs/plans/r001-archon-piv-loop-codex-v2-s7_plan.md:200-207",
+      "packages/workflows/src/defaults/bundled-defaults.test.ts:118-170",
+      "packages/workflows/src/loader.test.ts (existence checked)",
+      "packages/workflows/src/script-discovery.test.ts (existence checked)",
+      "Prior round context in the user prompt"
     ],
     "error": null,
     "verdict": "Sound",
     "workflow_compliance": [
-      "The plan pins S7 to one concrete artifact path throughout the artifact.",
-      "The plan keeps remote Codex PR-review execution out of scope and limits S7 to a handoff contract.",
-      "The proof step is concrete and artifact-specific rather than generic."
+      "P1-T1 now includes a targeted verification path: workflow validation, a named fixture test, and a direct JSON field assertion against `pr-review-handoff.json`.",
+      "P1-T2 explicitly retains the deterministic fixture/helper test requirement for generating and asserting the handoff packet without a live GitHub PR.",
+      "P2-T1 now explicitly sets `ARTIFACTS_DIR` for the final JSON assertion, removing the previously unstated artifact-path dependency."
     ],
     "technical_reality": [
-      "The P2-T1 Python command reads `$ARTIFACTS_DIR/pr-review-handoff.json` directly.",
-      "That command asserts `schema_version`, `handoff_type`, `branch`, `base`, nested `validation`, `review`, and `pr` fields, `next_action`, boolean `remote_codex_pr_review_recommended`, and `autonomous_merge_claim is False`.",
-      "The validation assertion is conditional in the same way the plan declares the semantics: `evidence_path` for `pass`, `waiver_reason` for `waived`."
+      "`packages/workflows/src/defaults/bundled-defaults.test.ts` exists and already contains `archon-piv-loop-codex-v2` contract tests, so the planned S7-focused named test is grounded in a real test surface.",
+      "`packages/workflows/src/loader.test.ts` and `packages/workflows/src/script-discovery.test.ts` exist, so the plan's verify targets are real repo files.",
+      "No implementation or test run was executed here, so this review confirms plan concreteness rather than runtime success."
     ],
     "assumptions_to_verify": [
-      "The referenced PRD/design citations still resolve as written.",
-      "The workflow implementation actually writes the pinned artifact at the declared path after finalization.",
-      "The canonical `.state.json` reflects any blocker-status changes before freeze."
+      "The eventual fixture test is implemented under the named Bun test pattern `S7 pr-review-handoff fixture` and writes `pr-review-handoff.json` to the explicit `ARTIFACTS_DIR`.",
+      "The implemented deterministic fixture populates the asserted handoff fields consistently with the contract encoded in the inline Python assertions."
     ],
     "verification_sufficiency": [
-      "Sufficient for the narrow carried issue: the current artifact now contains a full field-contract proof command for the pinned S7 output.",
-      "Not sufficient for full freeze readiness because runtime behavior, referenced-file accuracy, and state-sidecar alignment were not inspected."
+      "Sufficient to close the two carried plan-text findings requested for this round.",
+      "Not sufficient to certify full-plan freeze readiness or implementation correctness without executing the verify commands."
     ],
     "downstream_risks": [
-      "If workflow YAML or helper script drifted from the plan, this narrow artifact-only review would not catch it.",
-      "If the `.state.json` still records unresolved blockers, freeze bookkeeping could remain inconsistent despite the plan text being corrected."
+      "If the future fixture test lands under a different file or name than the P1-T1 verify command assumes, that command will drift.",
+      "If implementation only produces the handoff JSON in a live GitHub path rather than the deterministic fixture path, the explicit `ARTIFACTS_DIR` assertions will fail."
     ],
     "freeze_recommendation": "Safe to freeze. No blocker-level issues were identified.",
     "prior_round_closure": [
       {
-        "title": "S7 proof step verifies declared handoff artifact contract",
+        "title": "P1-T1 verify commands do not prove the core S7 behavior",
         "severity": "BLOCK",
-        "caller_claim": "The remaining blocker was resolved by pinning `/pr-review-handoff.json` and adding a full JSON field assertion proof command.",
+        "caller_claim": "Addressed by adding a deterministic fixture/test path in P1-T1 with explicit `ARTIFACTS_DIR` and direct handoff-field assertions.",
         "verification_status": "resolved",
-        "verification_notes": "The current artifact consistently pins S7 to `$ARTIFACTS_DIR/pr-review-handoff.json`, and the P2-T1 proof command asserts every declared required field plus the conditional validation semantics, boolean recommendation flag, and `autonomous_merge_claim is False`."
+        "verification_notes": "Verified in the current artifact at `docs/plans/r001-archon-piv-loop-codex-v2-s7_plan.md:170-173`, with the deterministic fixture/helper test intent also stated at `:182`."
+      },
+      {
+        "title": "P2 final artifact assertion depends on an unstated artifact-path setup",
+        "severity": "BLOCK",
+        "caller_claim": "Addressed by using the same explicit `ARTIFACTS_DIR=artifacts/workflow/tmp/r001-s7-handoff-fixture` setup in P2-T1.",
+        "verification_status": "resolved",
+        "verification_notes": "Verified in the current artifact at `docs/plans/r001-archon-piv-loop-codex-v2-s7_plan.md:202-207`, where the final JSON assertion now sets `ARTIFACTS_DIR` explicitly."
       }
     ],
-    "closure_verification": "Current-artifact-first check passed for the carried blocker: the plan still names one pinned S7 output artifact and now includes a concrete proof command that covers the declared handoff contract.",
+    "closure_verification": "Verified against the current artifact first. Both caller-claimed fixes are supported by the current plan text; neither carried issue remains open in this narrow recheck.",
     "rerun_recommendation": "stop"
   }
 }

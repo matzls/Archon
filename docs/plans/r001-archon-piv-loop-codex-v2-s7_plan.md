@@ -3,7 +3,7 @@ title: "Archon PIV Loop Codex V2 S7 — PR or PR-review handoff — Plan"
 kind: plan
 status: draft
 created: 2026-04-27
-updated: 2026-04-27
+updated: "2026-04-28"
 origin_prd: "docs/prd/r001-archon-piv-loop-codex-v2.md"
 origin: "focused slice seed from docs/plans/r001-archon-piv-loop-codex-v2-orchestration-plan.md using docs/prd/r001-archon-piv-loop-codex-v2.md Execution Map row S7"
 version: "0.1"
@@ -100,12 +100,12 @@ Rules:
 - Default scope is phases `P1+` unless explicitly tagged.
 
 ### Blockers (must resolve before freeze)
-- [ ] [LBA] LBA1 (Blocks: P1 freeze, P2 freeze) — The S7 execution lane must be based on integration/r001-archon-piv-loop-codex-v2 or an equivalent branch containing the accepted S1-S6 V2 workflow surfaces.
+- [x] [LBA] LBA1 (Blocks: P1 freeze, P2 freeze) — The S7 execution lane must be based on integration/r001-archon-piv-loop-codex-v2 or an equivalent branch containing the accepted S1-S6 V2 workflow surfaces.
   - Verify: git branch --list integration/r001-archon-piv-loop-codex-v2 plus git show integration/r001-archon-piv-loop-codex-v2:.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml | rg -n "id: compose-finalize|id: finalize|id: planning-review|id: implementation-review|id: live-validate"
-  - Evidence: Pending P0-T1 execution.
-- [ ] [LBA] LBA2 (Blocks: P1 freeze) — S7 first pass should emit a structured handoff packet and not embed the full remote Codex PR-review loop.
+  - Evidence: Verified during P0-T1: integration branch exposes compose-finalize and finalize, with compose-finalize writing commit-message.txt, pr-title.txt, pr-body.md, pr-request.json, and pr-summary.md before github-pr writes pr-result.json, .pr-number, .pr-url, and pr-ready.md. Evidence: artifacts/workflow/implementation-reports/command-logs/cmd-04.stdout.txt through cmd-06.stdout.txt.
+- [x] [LBA] LBA2 (Blocks: P1 freeze) — S7 first pass should emit a structured handoff packet and not embed the full remote Codex PR-review loop.
   - Verify: nl -ba docs/design/codex-piv-v2-workflow-design.md | sed -n 466,484p and nl -ba docs/design/codex-piv-v2-workflow-design.md | sed -n 564,568p
-  - Evidence: Pending P0-T2 contract lock.
+  - Evidence: Verified during P0-T2: design doc §10 says V2 should first create a PR or PR-ready payload and emit PR URL, branch, validation evidence, and whether remote Codex PR review is recommended, while the full remote review loop remains downstream. The focused plan pins S7 to pr-review-handoff.json with the required fields and no autonomous merge claim. Evidence: artifacts/workflow/implementation-reports/command-logs-p0t2/cmd-01.stdout.txt through cmd-04.stdout.txt.
 
 ### FYI / Later (does not block freeze)
 - (none)
@@ -113,7 +113,7 @@ Rules:
 
 | Phase | Phase Status | Tasks (ID: Title — Status) |
 |------:|--------------|----------------------------|
-| P0 | Proposed | - P0-T1: Ground the current slice boundary against repo reality — proposed<br>- P0-T2: Lock the slice contract and doc surface — proposed |
+| P0 | Validated | - P0-T1: Ground the current slice boundary against repo reality — validated<br>- P0-T2: Lock the slice contract and doc surface — validated |
 | P1 | Proposed | - P1-T1: Implement the smallest load-bearing `S7` surface — proposed<br>- P1-T2: Add or update focused validation for the touched surface — proposed |
 | P2 | Proposed | - P2-T1: Reconcile docs and prove final slice evidence — proposed |
 
@@ -121,7 +121,7 @@ Rules:
 
 ### Phase 0 — Grounding And Contract Lock
 
-- [ ] P0-T1: Ground the current S7 handoff boundary against repo reality
+- [x] **Validated** P0-T1: Ground the current S7 handoff boundary against repo reality
   - Resolves: LBA1
   - Test Impact: N/A
   - Commands to Run:
@@ -138,7 +138,7 @@ Rules:
     - `git show integration/r001-archon-piv-loop-codex-v2:.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml | rg -n "id: compose-finalize|id: finalize|pr-request.json|pr-summary.md|pr-result.json|pr-ready.md"`
     - `python3 "${CODEX_HOME:-$HOME/.codex}/skills/.shared/workflow/scripts/plan_readiness.py" --plan-path docs/plans/r001-archon-piv-loop-codex-v2-s7_plan.md --format markdown`
 
-- [ ] P0-T2: Lock the slice contract and doc surface
+- [x] **Validated** P0-T2: Lock the slice contract and doc surface
   - Resolves: LBA2
   - Test Impact: N/A
   - Commands to Run:
@@ -169,6 +169,8 @@ Rules:
     - the implementation boundary still matches PRD row S7 and does not run the remote review loop
   - Verify Commands:
     - `bun run cli validate workflows archon-piv-loop-codex-v2 --json`
+    - `ARTIFACTS_DIR=artifacts/workflow/tmp/r001-s7-handoff-fixture bun test packages/workflows/src/defaults/bundled-defaults.test.ts --test-name-pattern "S7 pr-review-handoff fixture"`
+    - `ARTIFACTS_DIR=artifacts/workflow/tmp/r001-s7-handoff-fixture python3 -c 'import json,os,pathlib; p=pathlib.Path(os.environ["ARTIFACTS_DIR"])/"pr-review-handoff.json"; d=json.loads(p.read_text()); assert d["schema_version"]=="archon.pr-review-handoff.v1"; assert d["handoff_type"] in {"pr_ready","pr_review"}; assert d["branch"]; assert d["base"]; v=d["validation"]; assert v["status"] in {"pass","waived"}; assert (v["status"]=="pass" and v["evidence_path"]) or (v["status"]=="waived" and v["waiver_reason"]); r=d["review"]; assert r["planning_status"]; assert r["implementation_status"]; assert r["implementation_review_artifact"]; pr=d["pr"]; assert pr["url"]; assert pr["number"]; assert pr["state"]; assert d["next_action"]; assert isinstance(d["remote_codex_pr_review_recommended"], bool); assert d["autonomous_merge_claim"] is False'`
     - `rg -n "pr-review-handoff.json|pr-ready|pr-review handoff|branch.*base|validation evidence|review state|next action|autonomous_merge_claim|remote Codex PR review|pr-result.json|pr-ready.md" .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml .archon/scripts/github-pr.ts`
 
 - [ ] P1-T2: Add handoff packet regression coverage
@@ -202,7 +204,7 @@ Rules:
     - `bun test packages/workflows/src/defaults/bundled-defaults.test.ts`
     - `bun test packages/workflows/src/loader.test.ts`
     - `bun test packages/workflows/src/script-discovery.test.ts`
-    - `python3 -c 'import json,os,pathlib; p=pathlib.Path(os.environ["ARTIFACTS_DIR"])/"pr-review-handoff.json"; d=json.loads(p.read_text()); assert d["schema_version"]=="archon.pr-review-handoff.v1"; assert d["handoff_type"] in {"pr_ready","pr_review"}; assert d["branch"]; assert d["base"]; v=d["validation"]; assert v["status"] in {"pass","waived"}; assert (v["status"]=="pass" and v["evidence_path"]) or (v["status"]=="waived" and v["waiver_reason"]); r=d["review"]; assert r["planning_status"]; assert r["implementation_status"]; assert r["implementation_review_artifact"]; pr=d["pr"]; assert pr["url"]; assert pr["number"]; assert pr["state"]; assert d["next_action"]; assert isinstance(d["remote_codex_pr_review_recommended"], bool); assert d["autonomous_merge_claim"] is False'`
+    - `ARTIFACTS_DIR=artifacts/workflow/tmp/r001-s7-handoff-fixture python3 -c 'import json,os,pathlib; p=pathlib.Path(os.environ["ARTIFACTS_DIR"])/"pr-review-handoff.json"; d=json.loads(p.read_text()); assert d["schema_version"]=="archon.pr-review-handoff.v1"; assert d["handoff_type"] in {"pr_ready","pr_review"}; assert d["branch"]; assert d["base"]; v=d["validation"]; assert v["status"] in {"pass","waived"}; assert (v["status"]=="pass" and v["evidence_path"]) or (v["status"]=="waived" and v["waiver_reason"]); r=d["review"]; assert r["planning_status"]; assert r["implementation_status"]; assert r["implementation_review_artifact"]; pr=d["pr"]; assert pr["url"]; assert pr["number"]; assert pr["state"]; assert d["next_action"]; assert isinstance(d["remote_codex_pr_review_recommended"], bool); assert d["autonomous_merge_claim"] is False'`
     - `python3 "${CODEX_HOME:-$HOME/.codex}/skills/.shared/workflow/scripts/plan_readiness.py" --plan-path docs/plans/r001-archon-piv-loop-codex-v2-s7_plan.md --format markdown`
 
 ## Current Inputs (single source of truth)
@@ -277,3 +279,4 @@ Explicit exclusions (handled outside the PIV loop closeout): Project Brief, Feat
 ## Doc Sync Log
 - 2026-04-27: Seeded focused slice draft from the PRD execution map so the orchestrator can refine from a concrete boundary instead of a blank template.
 - 2026-04-28: Refined S7 after Codex fallback plan-gate review; replaced generic row references and placeholder validation with concrete PRD/design locators, the `$ARTIFACTS_DIR/pr-review-handoff.json` output contract, LBAs, and proof commands.
+- 2026-04-28: Completed Phase 0 grounding. Checked both LBAs against repo evidence, locked the S7 handoff packet boundary to `$ARTIFACTS_DIR/pr-review-handoff.json`, and left Phase 1/2 proposed for the next freeze gate.
