@@ -15,7 +15,7 @@ version: "0.2"
 - Why we're doing it: the current V2 workflow on the campaign integration branch still defers live E2E evidence conventions and jumps from implementation approval straight to PR artifact composition.
 - What "done" looks like: `archon-piv-loop-codex-v2` has an explicit post-review live-validation gate, writes or references run-scoped evidence under `$ARTIFACTS_DIR/e2e-reports/*`, records a waiver only when live proof is genuinely not possible, and proves the contract with focused workflow validation plus real smoke evidence.
 - How we'll do it: ground the current workflow gap on the integration base, freeze the smallest live-validation contract around the existing `e2e_report_manager.py` helper, update the V2 workflow and bundled assertions, then run real CLI and UI smoke with canonical evidence recording.
-- Next step / resume point: resolve the remaining Phase 99 UI proof blocker, or keep the slice blocked with the recorded waiver evidence. The CLI/backend proof passed, but the UI proof cannot honestly claim PASS until the UI-created isolated worktree uses the S5 branch surface instead of stale `origin/dev`.
+- Next step / resume point: keep the remaining Phase 99 UI proof as an explicit waiver/follow-on rather than widening S5. The CLI/backend proof passed, but the UI proof cannot honestly claim PASS until the UI-created isolated worktree uses the merged V2/S5 branch surface instead of stale `origin/dev`; rerun this proof after the V2 artifacts merge back to `dev`.
 
 ### Optional Mental Model
 
@@ -38,6 +38,30 @@ version: "0.2"
 - Non-goal: planning review or implementation review automation (`S6`).
 - Non-goal: PR or PR-review handoff behavior (`S7`).
 - Non-goal: broad workflow-engine changes unrelated to the V2 workflow contract.
+- Non-goal for S5: adding a general Web UI source-branch selector or changing global isolation semantics. That belongs to the follow-on/stretch item below if the post-merge UI smoke proves it is still needed.
+
+## Follow-On / Stretch: Web UI Isolation Source Branch
+
+S5 is allowed to finish with an explicit UI-proof waiver because the backend/CLI live-validation proof passed and the browser-launched workflow did reach the real `/workflows` launch path, but the UI-created worker checkout was based on stale `origin/dev` and lacked the S5 plan/workflow files. That is a Web isolation/source-branch problem, not a failure of the S5 `live-validate` workflow gate itself.
+
+Follow-on trigger after the original V2 merge:
+- Merge the V2 slice artifacts into `dev` or the campaign integration branch that `origin/dev` will eventually receive.
+- Start the Archon Web UI from that merged branch.
+- Launch `archon-piv-loop-codex-v2` from `/workflows`.
+- Confirm whether the UI-created worker checkout contains the merged V2 workflow and S5 plan artifacts.
+
+If that post-merge UI run still creates a worker from stale `origin/dev` or another wrong start point, create a focused follow-on/stretch slice named along these lines:
+
+`S8 / Stretch — Web workflow source-branch isolation parity`
+
+Expected implementation boundary for that follow-on:
+- Add an optional source-branch/start-point input equivalent to CLI `--from` for Web workflow runs.
+- Thread it through `packages/web/src/lib/api.ts`, `packages/web/src/components/sidebar/WorkflowInvoker.tsx`, `packages/server/src/routes/schemas/workflow.schemas.ts`, and `packages/server/src/routes/api.ts`.
+- Preserve it through `dispatchToOrchestrator`, `dispatchOrchestratorWorkflow`, and `dispatchBackgroundWorkflow`.
+- Make background worker isolation use the same start-point hint instead of silently falling back to `origin/<default>`.
+- Add server/core tests proving a Web run can pass `fromBranch` into worker isolation without changing normal default behavior.
+
+Do not block S5 on this follow-on unless the user explicitly decides that Web-source-branch parity is required before the first V2 merge.
 
 ## 4) Architecture Overview
 
@@ -100,7 +124,8 @@ Rules:
   - Evidence: After creating `.tmp/archon-home`, `BUN_INSTALL_CACHE_DIR=/private/tmp/archon-bun-cache ARCHON_HOME="$PWD/.tmp/archon-home" bun run cli workflow run e2e-codex-smoke --no-worktree "smoke test"` exited 0 on 2026-04-28. Output included `Workflow completed successfully` and `PASS: simple='4' structured='{category:math}'`.
 
 ### FYI / Later (does not block freeze)
-- (none)
+- [ ] [Q] Q1 (Blocks: none) — Follow-on after the original V2 merge: decide whether Web workflow runs need source-branch/start-point isolation parity with CLI `--from`.
+  - Answer: Recommendation as of 2026-04-28: do not widen S5. Rerun the UI smoke from merged `dev` first. If the UI worker still starts from stale `origin/dev` or another wrong source branch, create a focused follow-on/stretch slice that threads optional `fromBranch` through Web UI/API/orchestrator/background-worker isolation.
 ## Phase Summary (Quick View)
 
 | Phase | Phase Status | Tasks (ID: Title — Status) |
@@ -650,6 +675,7 @@ Explicit exclusions (handled outside the PIV loop closeout): Project Brief, Feat
 | The workflow YAML changes but bundled defaults are not regenerated, causing binary drift or failing validation | HIGH | Treat `bun run generate:bundled` and `bun run check:bundled` as part of the slice contract, not optional cleanup. |
 | Live smoke prerequisites are unavailable, leading to fake PASS evidence | HIGH | Keep `LBA2` explicit, require real smoke preflight, and use explicit waiver recording when proof is genuinely unavailable. |
 | `S5` widens into review automation or PR handoff | MED | Keep tasks and assertions scoped to the live-validation gate, evidence path, and finalization summary only. |
+| Browser-launched workflow proof is attempted before V2 artifacts exist on the branch used by UI worker isolation | MED | Allow an explicit S5 UI-proof waiver, rerun UI smoke after the V2 merge to `dev`, and use Q1 as the follow-on trigger for Web source-branch isolation parity if still needed. |
 
 ## Doc Sync Log
 - 2026-04-27: Seeded focused slice draft from the PRD execution map so the orchestrator can refine from a concrete boundary instead of a blank template.
@@ -657,3 +683,4 @@ Explicit exclusions (handled outside the PIV loop closeout): Project Brief, Feat
 - 2026-04-28: Executed approved Phase 0 post-freeze tasks. Recorded deterministic command evidence for the integration-base grounding, locked `live-validate` evidence contract, and E2E smoke prerequisite lane.
 - 2026-04-28: Executed approved Phase 1/2 post-freeze tasks. Added the `live-validate` gate before finalization, refreshed bundled defaults and regression assertions, captured focused proof evidence, and left Phase 99 live smoke as the remaining proposed E2E gate.
 - 2026-04-28: Ran the Phase 99 live UI proof from the parent Browser Use surface. The UI-started workflow reached `create-plan`, proving the Web UI can launch the V2 workflow, but the run was cancelled because the isolated worker checkout used stale `origin/dev` and lacked the S5 plan/workflow files. Phase 99 remains blocked with explicit waiver evidence rather than PASS.
+- 2026-04-28: Recorded the Web UI isolation source-branch issue as a follow-on/stretch decision instead of widening S5. S5 may close with backend/CLI proof plus an explicit UI-proof waiver, then rerun the UI smoke after the V2 artifacts merge to `dev`.
