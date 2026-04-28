@@ -24,8 +24,9 @@ description: |
     * Slice 3 pilots typed gates on the phase-transition loops
     * Slice 4 adds Mode B intake for large requests and PRDs: create or refresh
       a design doc, create a slice map, select exactly one slice, then return to
-      the normal one-slice lane. Review automation, live E2E evidence
-      conventions, and PR handoff remain deferred to later V2 slices
+      the normal one-slice lane.
+    * Slice 5 adds a live-validation gate before PR artifact composition. Review
+      automation and PR handoff remain out of scope for this workflow slice.
 
   Interactive PIV loop workflow — the foundational AI coding methodology:
   1. EXPLORE: Iterative conversation with human to understand the problem (arbitrary rounds)
@@ -1361,16 +1362,102 @@ nodes:
         Provide specific feedback on what needs fixing, or say "approved" to finalize.
 
   # ═══════════════════════════════════════════════════════════════
+  # PHASE 4c: LIVE VALIDATION — Evidence or explicit waiver
+  # Runtime-changing slices must not finalize from approval alone.
+  # ═══════════════════════════════════════════════════════════════
+
+  - id: live-validate
+    depends_on: [fix-feedback, implement-setup, detect-project]
+    context: fresh
+    output_format:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pass, waived]
+        evidence_path:
+          type: string
+        waiver_reason:
+          type: string
+        summary:
+          type: string
+      required: [status, evidence_path, waiver_reason, summary]
+      additionalProperties: false
+    prompt: |
+      # PIV Loop — Final Live Validation
+
+      The implementation has been approved by the feedback gate. Before PR
+      artifact composition, record live validation evidence or an explicit waiver.
+
+      **Feedback output**: $fix-feedback.output
+
+      **Project detection** (validation commands for this repo):
+      $detect-project.output
+
+      **Implementation setup context** (contains `PLAN_FILE=...`):
+      $implement-setup.output
+
+      ---
+
+      ## Step 1: Resolve The Plan
+
+      Parse the exact `PLAN_FILE=...` line from the implementation setup context.
+      If that line is missing, stop and report `ERROR: PLAN_FILE missing from implement-setup output`.
+
+      Do not search for alternate plan files elsewhere in the repo. Use only the
+      exact `PLAN_FILE` path from the implementation setup context.
+
+      Read that plan and identify whether the slice changed runtime behavior or
+      requires E2E proof. Treat any plan with `E2E Gate: required` as requiring
+      live evidence unless live proof is genuinely unavailable.
+
+      ## Step 2: Produce Or Reference Live Evidence
+
+      When live evidence is required and available:
+      - run the plan's live-smoke command or the smallest equivalent command from
+        the plan's E2E section
+      - write or copy the run-scoped evidence under `$ARTIFACTS_DIR/e2e-reports/*`
+      - if the repo-local workflow evidence helper is available, record the same
+        outcome with:
+
+        ```bash
+        python3 "${CODEX_HOME:-$HOME/.codex}/skills/.shared/workflow/scripts/e2e_report_manager.py" --plan-path "$PLAN_FILE" --repo-root "$(pwd)" --verdict PASS --backend-mode automated --ui-mode manual
+        ```
+
+      If the live-smoke command cannot be run because credentials, local services,
+      or external dependencies are unavailable:
+      - do NOT treat missing proof as a pass
+      - record `status: waived`
+      - write a specific waiver reason that names the unavailable prerequisite
+      - include any attempted command and failure summary in `summary`
+
+      ## Step 3: Return Structured Outcome
+
+      Return:
+      - `status: pass` only when evidence was written or referenced under
+        `$ARTIFACTS_DIR/e2e-reports/*`
+      - `evidence_path`: the exact `$ARTIFACTS_DIR/e2e-reports/*` artifact path
+        when status is `pass`, or an empty string when waived
+      - `waiver_reason`: an empty string when status is `pass`, or the explicit
+        waiver reason when status is `waived`
+      - `summary`: concise result for the finalize artifacts
+
+      The finalization step consumes this output. It must not replace live
+      validation evidence with approval text.
+
+  # ═══════════════════════════════════════════════════════════════
   # PHASE 5: FINALIZE — Push, create PR, generate summary
   # ═══════════════════════════════════════════════════════════════
 
   - id: compose-finalize
-    depends_on: [fix-feedback, implement-setup]
+    depends_on: [live-validate, implement-setup]
     context: fresh
     prompt: |
       # PIV Loop — Compose Finalize
 
-      The implementation has been approved. Prepare deterministic PR artifacts.
+      The implementation has been approved and the final live-validation gate has
+      produced either evidence or an explicit waiver. Prepare deterministic PR
+      artifacts.
       Do not run `gh pr create`, `gh pr edit`, or `gh pr ready` in this step.
       A downstream script will push and apply the PR after these artifacts exist.
 
@@ -1386,6 +1473,9 @@ nodes:
 
       **Implementation setup context** (contains `PLAN_FILE=...`):
       $implement-setup.output
+
+      **Live validation output** (must be summarized in PR artifacts):
+      $live-validate.output
 
       ---
 
@@ -1406,6 +1496,11 @@ nodes:
       Read progress tracking from `$ARTIFACTS_DIR/progress.txt` for task completion
       context.
 
+      Read the live-validation output above. If it does not contain either
+      `status: pass` with an `$ARTIFACTS_DIR/e2e-reports/*` evidence path or
+      `status: waived` with a specific waiver reason, stop and report
+      `ERROR: live validation evidence or waiver missing`.
+
       ## Step 2: Check for a PR Template
 
       Read `.github/pull_request_template.md`, `.github/PULL_REQUEST_TEMPLATE.md`,
@@ -1424,7 +1519,8 @@ nodes:
       Requirements:
       - `commit-message.txt`: complete git commit message for any remaining uncommitted changes
       - `pr-title.txt`: one-line draft PR title from the exact `PLAN_FILE`
-      - `pr-body.md`: complete PR body summarizing the implementation
+      - `pr-body.md`: complete PR body summarizing the implementation and the
+        live-validation evidence path or waiver outcome
       - `pr-request.json`: exact JSON
 
       ```json
@@ -1441,6 +1537,7 @@ nodes:
         - `__PR_BRANCH__`
         - `__PR_BASE__`
         - `__PR_TITLE__`
+        - live-validation evidence path or explicit waiver state
 
       Recommended summary structure:
 
@@ -1466,7 +1563,7 @@ nodes:
       {git diff --stat output}
 
       -- Validation ----------------------------------------------------
-      All checks passed.
+      Live validation: {evidence path or explicit waiver reason from live-validate}
       ===============================================================
       ```
 
