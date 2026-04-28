@@ -1,0 +1,230 @@
+{
+  "schema_version": "peer-review-v1",
+  "review_id": "peer-review-6e95a53350d7",
+  "plan_path": "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s6/docs/plans/r001-archon-piv-loop-codex-v2-s6_plan.md",
+  "plan_sha256": "0bedce552b8c18ec9e411cda14a528369165d114f5a6d9c426c2cec32b5b2d19",
+  "mode": "workflow-plan-gate",
+  "sidecar_dir": "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s6/docs/plans/_peer-reviews",
+  "engine": "Claude",
+  "requested_engine": "auto",
+  "origin_runtime": "codex",
+  "engine_policy": "opposite_preferred",
+  "resolved_primary_engine": "claude",
+  "preferred_engine": "claude",
+  "fallback_engine": null,
+  "final_engine": "claude",
+  "reviewer_match": "opposite",
+  "gate_quality": "preferred",
+  "artifact_role": "canonical",
+  "canonical_sidecar_path": "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s6/docs/plans/_peer-reviews/r001-archon-piv-loop-codex-v2-s6_plan-peer-review.json",
+  "fallback_used": false,
+  "fallback_reason": null,
+  "attempt_chain": [
+    {
+      "engine": "claude",
+      "phase": "primary",
+      "attempt": 1,
+      "timeout_seconds": 300,
+      "result": "completed",
+      "elapsed_seconds": 238.709,
+      "returncode": 0
+    }
+  ],
+  "review_round": 2,
+  "max_rounds": 3,
+  "prior_review_id": "peer-review-ecfc4e4a9196",
+  "caller_disposition_summary": "",
+  "addressed_issues": [],
+  "deferred_issues": [],
+  "recheck_requests": [],
+  "model": "claude-opus-4-6",
+  "verdict": "Sound",
+  "stance": null,
+  "issues_count": 0,
+  "ran_at": "2026-04-28T15:05:30.821741+00:00",
+  "raw_review_excerpt": "The S6 plan is a well-grounded, narrowly scoped slice that adds two PRD-required review checkpoints (planning-review and implementation-review) to the V2 workflow. All load-bearing claims \u2014 PRD \u00a76.3/\u00a76.5 contract language, design doc \u00a78.1/\u00a78.2 review-gate model, sidecar path families, the 3-iteration cap, the absence of the V2 YAML on the root checkout, and the existence and shape of the named test surfaces \u2014 are verified against primary sources. Verify commands are executable and correctly shaped. LBA1 properly gates P1/P2 on integration-branch availability. The state.json is consistent with the markdown. No freeze blockers found.",
+  "error": null,
+  "closure_verification": "All three prior-round issues are resolved in the current artifact. The two BLOCKs (prose verify commands, unlocked contract) have been addressed with concrete executable commands and a detailed locked-contract section. The WARN (pre-populated grounding) is acceptable given the factual accuracy of the content and the LBA1 guard preventing execution without re-verification.",
+  "prior_round_closure": [
+    {
+      "title": "Verify commands were prose placeholders",
+      "severity": "BLOCK",
+      "caller_claim": "Prior round flagged P1-T1 and P1-T2 verify commands as prose placeholders; caller claims these were backfilled with concrete executable commands in the refinement pass.",
+      "verification_status": "resolved",
+      "verification_notes": "P1-T1 now has 'bun run cli validate workflows archon-piv-loop-codex-v2 --json' (confirmed real via CLI source inspection) and 'rg -n' with specific pattern strings. P1-T2 now has 'bun test' commands targeting the two named test files. No prose placeholders remain in any verify command across any phase."
+    },
+    {
+      "title": "Sidecar paths and contract fields not yet locked",
+      "severity": "BLOCK",
+      "caller_claim": "Prior round flagged that the planning-review/implementation-review contract lacked specific sidecar paths, metadata fields, and iteration cap; caller claims P0-T2 now locks these.",
+      "verification_status": "resolved",
+      "verification_notes": "P0-T2 'Locked Contract' section now explicitly names: id: planning-review, id: implementation-review, docs/plans/_advisory-reviews/*, docs/plans/_peer-reviews/*, peer_review.advisory_sidecar/frozen_plan_sidecar/implementation_review_artifact/max_iterations fields, and max_iterations: 3. All match PRD \u00a76.3/\u00a76.5 and design doc \u00a78.1/\u00a78.2."
+    },
+    {
+      "title": "Grounding Results pre-populated without execution",
+      "severity": "WARN",
+      "caller_claim": "Prior round noted P0-T1 Grounding Results were filled before P0-T1 commands actually ran; caller claims this is acceptable for a refined draft where the author grounded manually.",
+      "verification_status": "resolved",
+      "verification_notes": "The Grounding Results section accurately reflects what is verifiable from the PRD, design doc, and root checkout state. The content is factually correct against the inspected sources. P0-T1 commands will re-verify at execution time, and the LBA1 blocker prevents skipping that step."
+    }
+  ],
+  "rerun_recommendation": "stop",
+  "review": {
+    "mode": "workflow-plan-gate",
+    "summary": "The S6 plan is a well-grounded, narrowly scoped slice that adds two PRD-required review checkpoints (planning-review and implementation-review) to the V2 workflow. All load-bearing claims \u2014 PRD \u00a76.3/\u00a76.5 contract language, design doc \u00a78.1/\u00a78.2 review-gate model, sidecar path families, the 3-iteration cap, the absence of the V2 YAML on the root checkout, and the existence and shape of the named test surfaces \u2014 are verified against primary sources. Verify commands are executable and correctly shaped. LBA1 properly gates P1/P2 on integration-branch availability. The state.json is consistent with the markdown. No freeze blockers found.",
+    "rubric_cards": [
+      {
+        "title": "Claim anchoring",
+        "anchor": "PRD \u00a76.3, \u00a76.5, \u00a76.6 row S6; design doc \u00a78.1/\u00a78.2; bundled-defaults.test.ts; loader.test.ts; cli.ts validate dispatch",
+        "claim": "Plan claims PRD requires planning-review before implementation, implementation-review after code validation, 3-iteration cap, sidecar paths under _advisory-reviews/ and _peer-reviews/; that the V2 YAML is absent from root checkout; that bun run cli validate workflows archon-piv-loop-codex-v2 --json is a real executable command; that the two named test files are the correct proof surfaces.",
+        "evidence": "PRD lines 198-203 confirm all four review-contract requirements verbatim. PRD lines 175-176 name the sidecar path families. Design doc lines 366-408 specify \u00a78.1 and \u00a78.2 rules matching the plan's locked contract. Root .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml returns file-not-found, confirming the integration-branch requirement. CLI validate.ts exports validateWorkflowsCommand(cwd, name?, json?) and cli.ts:517-519 dispatches 'validate workflows <name>' with --json flag. bundled-defaults.test.ts and loader.test.ts both exist with the described test surfaces.",
+        "disposition": "PASS \u2014 every load-bearing claim traces to a directly inspected artifact or code file."
+      },
+      {
+        "title": "Disposition matrix",
+        "anchor": "artifact text, state.json, PRD, design doc, test files, CLI source",
+        "claim": "The plan text, state.json, PRD requirements, design doc model, existing test infrastructure, and CLI command shape are all consistent.",
+        "evidence": "State.json tasks (P0-T1 through P2-T1) match plan markdown. LBA1 blocks phases [1,2] in JSON, matching the blocker section. PRD \u00a76.5 and \u00a76.6 row S6 scope match plan scope. Design doc \u00a78.1/\u00a78.2 match the locked contract fields. CLI validate command accepts the exact invocation shape used in verify commands.",
+        "disposition": "PASS \u2014 no inconsistencies found between artifact, upstream contracts, and code reality."
+      },
+      {
+        "title": "Coverage scope",
+        "anchor": "Full plan artifact plus all referenced upstream docs and code files",
+        "claim": "This review covered the full plan artifact, the PRD sections governing S6, the relevant design doc sections, both named test files, the CLI validate command implementation, and the state.json companion.",
+        "evidence": "Inspected: plan text (full), PRD lines 160-223 and 360-397, design doc lines 0-60 and 300-465, bundled-defaults.test.ts (full 147 lines), loader.test.ts (lines 0-660), validate.ts (full), cli.ts dispatch (lines 60-520), state.json (full). Did not inspect the integration branch V2 YAML directly (which is the correct gap \u2014 the plan explicitly defers this to P0-T1 via LBA1).",
+        "disposition": "PASS \u2014 full plan coverage; integration-branch content correctly deferred to LBA1."
+      }
+    ],
+    "disposition_matrix": {
+      "rows": [
+        "artifact",
+        "conversation",
+        "campaign"
+      ],
+      "columns": [
+        "present",
+        "partial",
+        "missing"
+      ],
+      "cells": [
+        [
+          "Plan text, state.json, verify commands, locked contract, LBA1, exit criteria, doc surface map \u2014 all present and consistent",
+          "Grounding Results section pre-populated before P0-T1 execution (acceptable for refined draft)",
+          "Nothing material missing"
+        ],
+        [
+          "No conversation thread provided for this review",
+          "N/A",
+          "N/A"
+        ],
+        [
+          "PRD \u00a76.3/\u00a76.5/\u00a76.6-S6, design \u00a78.1/\u00a78.2, both test files, CLI validate command \u2014 all inspected",
+          "Integration-branch V2 YAML not inspected (correctly deferred to LBA1)",
+          "S1-S5 slice plans not reviewed (out of scope for S6 gate)"
+        ]
+      ]
+    },
+    "conversation_evidence": {
+      "used": false,
+      "sources": [],
+      "summary": "No conversation thread was provided with this review request. All evidence comes from the plan artifact and directly inspected repo files.",
+      "gaps": [
+        "No conversation thread available to cross-reference caller claims beyond the artifact itself."
+      ]
+    },
+    "campaign_coverage": {
+      "scope": "slice-only",
+      "covered": [
+        "S6 plan artifact",
+        "PRD \u00a76.3, \u00a76.5, \u00a76.6 row S6 requirements",
+        "Design doc \u00a78.1/\u00a78.2 review-gate model",
+        "bundled-defaults.test.ts (full)",
+        "loader.test.ts (lines 0-660)",
+        "CLI validate.ts and cli.ts dispatch",
+        "state.json companion"
+      ],
+      "missing": [
+        "S1-S5 slice plans (out of scope)",
+        "S7 slice plan (out of scope)",
+        "Integration-branch V2 YAML content (correctly deferred to LBA1)"
+      ],
+      "gaps": [
+        "Campaign-wide slice interaction was not assessed; only S6 in isolation was reviewed."
+      ]
+    },
+    "issues": [],
+    "verification_gaps": [
+      "The integration-branch V2 YAML was not directly inspected \u2014 this is intentional and guarded by LBA1, which blocks P1/P2 until P0-T1 verifies it."
+    ],
+    "recommended_fixes": [],
+    "evidence_sources": [
+      "docs/prd/r001-archon-piv-loop-codex-v2.md (lines 167-223, 360-397)",
+      "docs/design/codex-piv-v2-workflow-design.md (lines 0-60, 300-465)",
+      "packages/workflows/src/defaults/bundled-defaults.test.ts (full, 147 lines)",
+      "packages/workflows/src/loader.test.ts (lines 0-660)",
+      "packages/cli/src/commands/validate.ts (lines 1-160)",
+      "packages/cli/src/cli.ts (lines 60-520, especially 515-519 validate dispatch)",
+      "packages/cli/package.json (script 'cli' definition)",
+      "docs/plans/r001-archon-piv-loop-codex-v2-s6_plan.state.json (full)",
+      "Root .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml (confirmed absent)"
+    ],
+    "error": null,
+    "verdict": "Sound",
+    "workflow_compliance": [
+      "Plan status is draft, consistent with state.json authoring_state: drafted",
+      "LBA1 correctly blocks phases 1 and 2 in both markdown and state.json",
+      "E2E gate waiver is present with category and rationale",
+      "Verify commands in P0-T1, P0-T2, P1-T1, P1-T2, and P2-T1 are all concrete and executable",
+      "Exit criteria are specific and measurable for each task",
+      "Doc Surface Map correctly identifies must-edit vs review-only surfaces"
+    ],
+    "technical_reality": [
+      "bun run cli validate workflows archon-piv-loop-codex-v2 --json is a valid CLI invocation: package.json defines 'cli' as 'bun src/cli.ts', cli.ts:515-519 dispatches validate\u2192workflows with optional name and --json flag, and validate.ts:82-86 accepts (cwd, name?, json?)",
+      "bundled-defaults.test.ts already auto-asserts every on-disk YAML is bundled (line 43-48), so P1-T2 assertions will layer on top of an existing regression surface",
+      "loader.test.ts already covers depends_on, interactive, worktree, and loop parsing \u2014 suitable for extending with review-node gate structure tests",
+      "Root checkout confirmed to lack archon-piv-loop-codex-v2.yaml, validating the integration-branch execution-base requirement",
+      "PRD \u00a76.5 verbatim confirms all four review-contract requirements claimed by the plan",
+      "Design doc \u00a78.1/\u00a78.2 confirms the exact sidecar paths, status vocabulary, and iteration caps in the plan's locked contract"
+    ],
+    "assumptions_to_verify": [
+      "LBA1: integration/r001-archon-piv-loop-codex-v2 branch exists and contains the S1-S5 V2 workflow surfaces (deferred to P0-T1 execution, correctly guarded)"
+    ],
+    "verification_sufficiency": [
+      "All verify commands are concrete, executable shell commands \u2014 no prose placeholders remain",
+      "P1-T1 verify commands check both structural validation (CLI validate) and content presence (rg patterns)",
+      "P1-T2 verify commands exercise the two named test suites that serve as the PRD's primary proof surface",
+      "P2-T1 combines all three proof commands plus plan_readiness.py for slice-closeout evidence",
+      "The rg patterns in P0-T1 and P0-T2 verify commands correctly target the plan file itself for self-referential grounding checks"
+    ],
+    "downstream_risks": [
+      "If the integration branch is rebased or force-pushed before P0-T1 runs, LBA1 verification may need to re-ground against the new HEAD",
+      "bundled-defaults.test.ts auto-completeness assertion (line 43-48) means the V2 YAML must exist on disk before bun test will pass \u2014 P1-T2 test additions depend on P1-T1 YAML edits being on the same worktree"
+    ],
+    "freeze_recommendation": "Safe to freeze. No blocker-level issues were identified.",
+    "prior_round_closure": [
+      {
+        "title": "Verify commands were prose placeholders",
+        "severity": "BLOCK",
+        "caller_claim": "Prior round flagged P1-T1 and P1-T2 verify commands as prose placeholders; caller claims these were backfilled with concrete executable commands in the refinement pass.",
+        "verification_status": "resolved",
+        "verification_notes": "P1-T1 now has 'bun run cli validate workflows archon-piv-loop-codex-v2 --json' (confirmed real via CLI source inspection) and 'rg -n' with specific pattern strings. P1-T2 now has 'bun test' commands targeting the two named test files. No prose placeholders remain in any verify command across any phase."
+      },
+      {
+        "title": "Sidecar paths and contract fields not yet locked",
+        "severity": "BLOCK",
+        "caller_claim": "Prior round flagged that the planning-review/implementation-review contract lacked specific sidecar paths, metadata fields, and iteration cap; caller claims P0-T2 now locks these.",
+        "verification_status": "resolved",
+        "verification_notes": "P0-T2 'Locked Contract' section now explicitly names: id: planning-review, id: implementation-review, docs/plans/_advisory-reviews/*, docs/plans/_peer-reviews/*, peer_review.advisory_sidecar/frozen_plan_sidecar/implementation_review_artifact/max_iterations fields, and max_iterations: 3. All match PRD \u00a76.3/\u00a76.5 and design doc \u00a78.1/\u00a78.2."
+      },
+      {
+        "title": "Grounding Results pre-populated without execution",
+        "severity": "WARN",
+        "caller_claim": "Prior round noted P0-T1 Grounding Results were filled before P0-T1 commands actually ran; caller claims this is acceptable for a refined draft where the author grounded manually.",
+        "verification_status": "resolved",
+        "verification_notes": "The Grounding Results section accurately reflects what is verifiable from the PRD, design doc, and root checkout state. The content is factually correct against the inspected sources. P0-T1 commands will re-verify at execution time, and the LBA1 blocker prevents skipping that step."
+      }
+    ],
+    "closure_verification": "All three prior-round issues are resolved in the current artifact. The two BLOCKs (prose verify commands, unlocked contract) have been addressed with concrete executable commands and a detailed locked-contract section. The WARN (pre-populated grounding) is acceptable given the factual accuracy of the content and the LBA1 guard preventing execution without re-verification.",
+    "rerun_recommendation": "stop"
+  }
+}
