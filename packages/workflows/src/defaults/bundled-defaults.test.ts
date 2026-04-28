@@ -205,8 +205,11 @@ describe('bundled-defaults', () => {
       expect(content).toContain('autonomous_merge_claim');
       expect(content).toContain('pr-result.json');
       expect(content).toContain('pr-ready.md');
-      expect(content).toContain('re.sub(r"_plan\\.md$", "", plan_name)');
-      expect(content).not.toContain('re.sub(r"_plan\\\\.md$", "", plan_name)');
+      expect(content).toContain('required_pr_fields');
+      expect(content).toContain('pr-result.json missing required field');
+      expect(content).toContain('"isDraft": bool');
+      expect(content).toContain('docs/plans/_peer-reviews');
+      expect(content).toContain('implementation review artifact missing');
 
       const artifactsDir =
         process.env.ARTIFACTS_DIR ??
@@ -229,7 +232,7 @@ describe('bundled-defaults', () => {
           planning_status: 'approved',
           implementation_status: 'approved',
           implementation_review_artifact:
-            'docs/plans/_peer-reviews/r001-archon-piv-loop-codex-v2-s7-implementation-review.md',
+            'docs/plans/_peer-reviews/r001-archon-piv-loop-codex-v2-s7_plan-peer-review.json',
         },
         pr: {
           url: 'https://github.com/matzls/Archon/pull/123',
@@ -256,7 +259,7 @@ describe('bundled-defaults', () => {
       expect(written.review.planning_status).toBe('approved');
       expect(written.review.implementation_status).toBe('approved');
       expect(written.review.implementation_review_artifact).toBe(
-        'docs/plans/_peer-reviews/r001-archon-piv-loop-codex-v2-s7-implementation-review.md'
+        'docs/plans/_peer-reviews/r001-archon-piv-loop-codex-v2-s7_plan-peer-review.json'
       );
       expect(written.pr.url).toBe('https://github.com/matzls/Archon/pull/123');
       expect(written.pr.number).toBe(123);

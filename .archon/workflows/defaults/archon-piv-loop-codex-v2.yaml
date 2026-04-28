@@ -190,7 +190,6 @@ nodes:
           exit 1
         fi
         python3 - "$SLICE_MAP" "$SELECTED_SLICE_ID" <<'PY'
-      import re
       import sys
       from pathlib import Path
 
@@ -1766,11 +1765,32 @@ nodes:
           raise SystemExit(1)
 
       plan_file = os.environ["PLAN_FILE"].strip()
-      plan_name = Path(plan_file).name
-      slug = re.sub(r"_plan\.md$", "", plan_name)
       pr_result = json.loads(Path(os.environ["PR_RESULT_PATH"]).read_text(encoding="utf-8"))
+      required_pr_fields = {
+          "branch": str,
+          "baseBranch": str,
+          "url": str,
+          "number": int,
+          "isDraft": bool,
+      }
+      for field, expected_type in required_pr_fields.items():
+          if field not in pr_result:
+              print(f"ERROR: pr-result.json missing required field {field}", file=sys.stderr)
+              raise SystemExit(1)
+          if not isinstance(pr_result[field], expected_type) or (
+              expected_type is int and isinstance(pr_result[field], bool)
+          ):
+              print(f"ERROR: pr-result.json field {field} has invalid type", file=sys.stderr)
+              raise SystemExit(1)
+          if expected_type is str and not pr_result[field].strip():
+              print(f"ERROR: pr-result.json field {field} is empty", file=sys.stderr)
+              raise SystemExit(1)
+      review_artifact_path = Path("docs/plans/_peer-reviews") / f"{Path(plan_file).stem}-peer-review.json"
+      if not review_artifact_path.is_file():
+          print(f"ERROR: implementation review artifact missing: {review_artifact_path}", file=sys.stderr)
+          raise SystemExit(1)
 
-      pr_is_draft = bool(pr_result.get("isDraft"))
+      pr_is_draft = pr_result["isDraft"]
       handoff_type = "pr_ready" if pr_is_draft else "pr_review"
       next_action = (
           "Review the PR-ready packet and decide whether to run the downstream remote Codex PR review workflow."
@@ -1795,9 +1815,7 @@ nodes:
               "implementation_status": (
                   "approved" if implementation_review_decision == "advance" else "recorded"
               ),
-              "implementation_review_artifact": (
-                  f"docs/plans/_peer-reviews/{slug}-implementation-review.md"
-              ),
+              "implementation_review_artifact": str(review_artifact_path),
           },
           "pr": {
               "url": pr_result["url"],
