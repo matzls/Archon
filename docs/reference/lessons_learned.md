@@ -57,3 +57,18 @@ Plan: `docs/plans/r001-archon-piv-loop-codex-v2-s1_plan.md`
 - For post-freeze contract-lock phases, resolving an LBA requires updating the state sidecar with `state_manager.py --action set_unresolved`; completing the task alone does not clear the deterministic blocker.
 - `assert_complete` treats `docs/reference/lessons_learned.md` as required closeout evidence even when implementation and validation manifests already pass.
 - When default workflow YAML changes, rerun `bun run generate:bundled` before `bun run check:bundled`; otherwise bundled-default validation can report a stale generated-default defect after the real workflow change is correct.
+
+## 2026-04-28 — r001-archon-piv-loop-codex-v2-s7
+
+- Plan: `docs/plans/r001-archon-piv-loop-codex-v2-s7_plan.md`
+- In post-freeze lanes that only validate LBAs and contract boundaries, regenerate the implementation manifest after validation state transitions; otherwise `assert_complete` can reject the stale state-after snapshot even when the task evidence is correct.
+- Contract-lock work is enough to unblock a later freeze only when both the unresolved item and the plan ledger reflect the same checked/validated state.
+
+## 2026-04-28 — r001-archon-piv-loop-codex-v2-s7_plan
+
+- Plan: `docs/plans/r001-archon-piv-loop-codex-v2-s7_plan.md`
+- Validation refreshed deterministic workflow evidence for this slice.
+- Validation mode: `fast`.
+- Worker verdict before `assert_complete`: `pass`.
+- Command evidence ok: `true`.
+- E2E gate ok before `assert_complete`: `true`.

@@ -1,38 +1,95 @@
 {
   "$schema": "plan-state-v1",
   "plan": {
-    "status": "draft",
-    "current_phase": 0,
-    "authoring_state": "unknown",
-    "updated": "2026-04-27T14:33:15.128463+00:00"
+    "status": "accepted",
+    "current_phase": 2,
+    "authoring_state": "drafted",
+    "updated": "2026-04-28T17:16:08+00:00"
   },
   "tasks": [
     {
       "id": "P0-T1",
       "phase": 0,
-      "status": "proposed"
+      "status": "validated",
+      "last_sha": "ad1fa7c64e5c22a9cf96538add8e8a64233447e9",
+      "last_transition": "2026-04-28T16:24:39.662025+00:00"
     },
     {
       "id": "P0-T2",
       "phase": 0,
-      "status": "proposed"
+      "status": "validated",
+      "last_sha": "ad1fa7c64e5c22a9cf96538add8e8a64233447e9",
+      "last_transition": "2026-04-28T16:25:15.417251+00:00"
     },
     {
       "id": "P1-T1",
       "phase": 1,
-      "status": "proposed"
+      "status": "validated",
+      "last_sha": "d65df62f7c2e373c6c04aa1a1dcdfc4fea2ed4fa",
+      "last_transition": "2026-04-28T16:47:12.437209+00:00"
     },
     {
       "id": "P1-T2",
       "phase": 1,
-      "status": "proposed"
+      "status": "validated",
+      "last_sha": "d65df62f7c2e373c6c04aa1a1dcdfc4fea2ed4fa",
+      "last_transition": "2026-04-28T16:49:00.540295+00:00"
     },
     {
       "id": "P2-T1",
       "phase": 2,
-      "status": "proposed"
+      "status": "validated",
+      "last_sha": "d65df62f7c2e373c6c04aa1a1dcdfc4fea2ed4fa",
+      "last_transition": "2026-04-28T16:50:49.781557+00:00"
     }
   ],
   "task_contracts": {},
-  "unresolved_items": []
+  "unresolved_items": [
+    {
+      "id": "LBA1",
+      "kind": "lba",
+      "checked": true,
+      "section": "blockers",
+      "blocks_phases": [
+        1,
+        2
+      ],
+      "summary": "The S7 execution lane must be based on integration/r001-archon-piv-loop-codex-v2 or an equivalent branch containing the accepted S1-S6 V2 workflow surfaces.",
+      "verify": "git branch --list integration/r001-archon-piv-loop-codex-v2 plus git show integration/r001-archon-piv-loop-codex-v2:.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml | rg -n \"id: compose-finalize|id: finalize|id: planning-review|id: implementation-review|id: live-validate\"",
+      "evidence": "Verified during P0-T1: integration branch exposes compose-finalize and finalize, with compose-finalize writing commit-message.txt, pr-title.txt, pr-body.md, pr-request.json, and pr-summary.md before github-pr writes pr-result.json, .pr-number, .pr-url, and pr-ready.md. Evidence: artifacts/workflow/implementation-reports/command-logs/cmd-04.stdout.txt through cmd-06.stdout.txt."
+    },
+    {
+      "id": "LBA2",
+      "kind": "lba",
+      "checked": true,
+      "section": "blockers",
+      "blocks_phases": [
+        1
+      ],
+      "summary": "S7 first pass should emit a structured handoff packet and not embed the full remote Codex PR-review loop.",
+      "verify": "nl -ba docs/design/codex-piv-v2-workflow-design.md | sed -n 466,484p and nl -ba docs/design/codex-piv-v2-workflow-design.md | sed -n 564,568p",
+      "evidence": "Verified during P0-T2: design doc \u00a710 says V2 should first create a PR or PR-ready payload and emit PR URL, branch, validation evidence, and whether remote Codex PR review is recommended, while the full remote review loop remains downstream. The focused plan pins S7 to pr-review-handoff.json with the required fields and no autonomous merge claim. Evidence: artifacts/workflow/implementation-reports/command-logs-p0t2/cmd-01.stdout.txt through cmd-04.stdout.txt."
+    }
+  ],
+  "snapshot_gate": {
+    "branch": "slice/r001-archon-piv-loop-codex-v2/s7",
+    "checked_at": "2026-04-28T16:21:59+00:00",
+    "default_branch": "dev",
+    "dirty_before_snapshot": false,
+    "lane_branch": "slice/r001-archon-piv-loop-codex-v2/s7",
+    "lane_decision_basis": "deterministic",
+    "lane_decision_reason": "clean_feature_lane_before_implementation",
+    "lane_type": "worktree",
+    "lane_worktree_path": "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s7",
+    "next_command": null,
+    "plan_path": "docs/plans/r001-archon-piv-loop-codex-v2-s7_plan.md",
+    "reason": "snapshot_commit_created",
+    "snapshot_commit_message": "chore(workflow): snapshot before implementing r001-archon-piv-loop-codex-v2-s7-plan\n\nPlan: docs/plans/r001-archon-piv-loop-codex-v2-s7_plan.md\nFeature: r001-archon-piv-loop-codex-v2-s7-plan\nPurpose: rollback anchor before implementation\nLane: branch=slice/r001-archon-piv-loop-codex-v2/s7 worktree=/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s7\n",
+    "snapshot_commit_sha": "6cc9ec1f7c6a584aa479bf314f67123252387d30",
+    "snapshot_created_at": "2026-04-28T16:21:59+00:00",
+    "status": "current",
+    "worktree_count": 3,
+    "worktree_present": true,
+    "worktree_required": false
+  }
 }
