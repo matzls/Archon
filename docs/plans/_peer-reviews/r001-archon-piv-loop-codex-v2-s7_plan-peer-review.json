@@ -1,0 +1,59 @@
+{
+  "schema_version": "peer-review-v1",
+  "review_id": "peer-review-52360f5226d4",
+  "plan_path": "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s7/docs/plans/r001-archon-piv-loop-codex-v2-s7_plan.md",
+  "plan_sha256": "a3d1250d4e983ceb518986f0082f8a9f9ee711604ed79ccdeb2f3a72226b8800",
+  "mode": "workflow-plan-gate",
+  "sidecar_dir": "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s7/docs/plans/_peer-reviews",
+  "engine": "Claude",
+  "requested_engine": "auto",
+  "origin_runtime": "codex",
+  "engine_policy": "opposite_preferred",
+  "resolved_primary_engine": "claude",
+  "preferred_engine": "claude",
+  "fallback_engine": null,
+  "final_engine": "claude",
+  "reviewer_match": "opposite",
+  "gate_quality": "preferred",
+  "artifact_role": "canonical",
+  "canonical_sidecar_path": "/Users/mase/Codebase/Personal-Projects/Archon/.worktrees/r001-archon-piv-loop-codex-v2-s7/docs/plans/_peer-reviews/r001-archon-piv-loop-codex-v2-s7_plan-peer-review.json",
+  "fallback_used": false,
+  "fallback_reason": null,
+  "attempt_chain": [
+    {
+      "engine": "claude",
+      "phase": "primary",
+      "attempt": 1,
+      "timeout_seconds": 300,
+      "result": "completed",
+      "elapsed_seconds": 1.629,
+      "returncode": 1
+    }
+  ],
+  "review_round": 2,
+  "max_rounds": 3,
+  "prior_review_id": "peer-review-2f31f89f7a74",
+  "caller_disposition_summary": "",
+  "addressed_issues": [],
+  "deferred_issues": [],
+  "recheck_requests": [],
+  "model": "claude-opus-4-6",
+  "verdict": "Failed-to-run",
+  "issues_count": 0,
+  "ran_at": "2026-04-28T16:21:58.287767+00:00",
+  "raw_review_excerpt": "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":true,\"api_error_status\":429,\"duration_ms\":518,\"duration_api_ms\":0,\"num_turns\":1,\"result\":\"You've hit your org's monthly usage limit\",\"stop_reason\":\"stop_sequence\",\"session_id\":\"ec759012-2fae-4140-bc3e-078705610212\",\"total_cost_usd\":0,\"usage\":{\"input_tokens\":0,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"output_tokens\":0,\"server_tool_use\":{\"web_search_requests\":0,\"web_fetch_requests\":0},\"service_tier\":\"standard\",\"cache_creation\":{\"ephemeral_1h_input_tokens\":0,\"ephemeral_5m_input_tokens\":0},\"inference_geo\":\"\",\"iterations\":[],\"speed\":\"standard\"},\"modelUsage\":{},\"permission_denials\":[],\"terminal_reason\":\"completed\",\"fast_mode_state\":\"off\",\"uuid\":\"45756774-d5d0-4bcb-b778-818c668923df\"}",
+  "error": "claude_exit_code:1",
+  "failure_family": "process_failure",
+  "recovery_steps": [
+    "Peer review failed to run. Recovery: check Claude auth/runtime health and retry with a narrower focus if needed."
+  ],
+  "stop_guidance": [
+    "- Existing sidecar before this run: verdict=Sound, issues=0, round=1, error=None",
+    "- Run `python3 \"/Users/mase/.codex/skills/my-peer-review/scripts/run_claude_peer_review.py\" --plan-path \"/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/r001-archon-piv-loop-codex-v2-s7_plan.md\" --mode workflow-plan-gate --check-only` to confirm the current sidecar state.",
+    "- If the sidecar verdict is `Needs-revision` or `Failed-to-run`, do not freeze.",
+    "- Safe next step: fix the plan and rerun one clean peer review.",
+    "- If Claude remains unreliable here, switch explicitly to `--engine codex`.",
+    "- Only skip peer review if the user explicitly approves bypassing that gate."
+  ],
+  "next_action": "- Existing sidecar before this run: verdict=Sound, issues=0, round=1, error=None"
+}

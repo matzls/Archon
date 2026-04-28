@@ -1,21 +1,21 @@
 {
   "$schema": "plan-state-v1",
   "plan": {
-    "status": "draft",
+    "status": "active",
     "current_phase": 0,
-    "authoring_state": "unknown",
-    "updated": "2026-04-27T14:33:15.128463+00:00"
+    "authoring_state": "drafted",
+    "updated": "2026-04-28T16:21:58.789663+00:00"
   },
   "tasks": [
     {
       "id": "P0-T1",
       "phase": 0,
-      "status": "proposed"
+      "status": "approved"
     },
     {
       "id": "P0-T2",
       "phase": 0,
-      "status": "proposed"
+      "status": "approved"
     },
     {
       "id": "P1-T1",
@@ -34,5 +34,52 @@
     }
   ],
   "task_contracts": {},
-  "unresolved_items": []
+  "unresolved_items": [
+    {
+      "id": "LBA1",
+      "kind": "lba",
+      "checked": false,
+      "section": "blockers",
+      "blocks_phases": [
+        1,
+        2
+      ],
+      "summary": "The S7 execution lane must be based on integration/r001-archon-piv-loop-codex-v2 or an equivalent branch containing the accepted S1-S6 V2 workflow surfaces.",
+      "verify": "git branch --list integration/r001-archon-piv-loop-codex-v2 plus git show integration/r001-archon-piv-loop-codex-v2:.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml | rg -n \"id: compose-finalize|id: finalize|id: planning-review|id: implementation-review|id: live-validate\"",
+      "evidence": "Pending P0-T1 execution."
+    },
+    {
+      "id": "LBA2",
+      "kind": "lba",
+      "checked": false,
+      "section": "blockers",
+      "blocks_phases": [
+        1
+      ],
+      "summary": "S7 first pass should emit a structured handoff packet and not embed the full remote Codex PR-review loop.",
+      "verify": "nl -ba docs/design/codex-piv-v2-workflow-design.md | sed -n 466,484p and nl -ba docs/design/codex-piv-v2-workflow-design.md | sed -n 564,568p",
+      "evidence": "Pending P0-T2 contract lock."
+    }
+  ],
+  "snapshot_gate": {
+    "branch": "dev",
+    "checked_at": "2026-04-28T16:21:58+00:00",
+    "default_branch": "dev",
+    "dirty_before_snapshot": true,
+    "lane_branch": "dev",
+    "lane_decision_basis": "deterministic",
+    "lane_decision_reason": "repo_dirty_before_implementation",
+    "lane_type": "branch",
+    "lane_worktree_path": null,
+    "next_command": "git checkout -b r001-archon-piv-loop-codex-v2-s7-plan",
+    "plan_path": "docs/plans/r001-archon-piv-loop-codex-v2-s7_plan.md",
+    "reason": "running_on_default_branch",
+    "snapshot_commit_message": null,
+    "snapshot_commit_sha": null,
+    "snapshot_created_at": null,
+    "status": "missing",
+    "worktree_count": 2,
+    "worktree_present": false,
+    "worktree_required": true
+  }
 }
