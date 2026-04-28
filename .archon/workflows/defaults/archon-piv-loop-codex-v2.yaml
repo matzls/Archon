@@ -1706,7 +1706,7 @@ nodes:
     depends_on: [compose-finalize]
 
   - id: pr-review-handoff
-    depends_on: [finalize, compose-finalize, live-validate, implementation-review, implement-setup]
+    depends_on: [finalize, compose-finalize, live-validate, planning-review, implementation-review, implement-setup]
     bash: |
       set -euo pipefail
 
@@ -1739,6 +1739,7 @@ nodes:
       export LIVE_VALIDATE_EVIDENCE_PATH="$live-validate.output.evidence_path"
       export LIVE_VALIDATE_WAIVER_REASON="$live-validate.output.waiver_reason"
       export LIVE_VALIDATE_SUMMARY="$live-validate.output.summary"
+      export PLANNING_REVIEW_DECISION="$planning-review.output.decision"
       export IMPLEMENTATION_REVIEW_DECISION="$implementation-review.output.decision"
 
       python3 - <<'PY'
@@ -1752,6 +1753,7 @@ nodes:
       evidence_path = os.environ["LIVE_VALIDATE_EVIDENCE_PATH"].strip()
       waiver_reason = os.environ["LIVE_VALIDATE_WAIVER_REASON"].strip()
       validation_summary = os.environ["LIVE_VALIDATE_SUMMARY"].strip()
+      planning_review_decision = os.environ["PLANNING_REVIEW_DECISION"].strip()
       implementation_review_decision = os.environ["IMPLEMENTATION_REVIEW_DECISION"].strip()
 
       if validation_status not in {"pass", "waived"}:
@@ -1763,6 +1765,13 @@ nodes:
       if validation_status == "waived" and not waiver_reason:
           print("ERROR: live validation waiver requires waiver_reason", file=sys.stderr)
           raise SystemExit(1)
+      for review_name, review_decision in {
+          "planning-review": planning_review_decision,
+          "implementation-review": implementation_review_decision,
+      }.items():
+          if review_decision not in {"advance", "continue"}:
+              print(f"ERROR: unsupported {review_name} decision {review_decision!r}", file=sys.stderr)
+              raise SystemExit(1)
 
       plan_file = os.environ["PLAN_FILE"].strip()
       pr_result = json.loads(Path(os.environ["PR_RESULT_PATH"]).read_text(encoding="utf-8"))
@@ -1811,10 +1820,8 @@ nodes:
               "summary": validation_summary,
           },
           "review": {
-              "planning_status": "approved",
-              "implementation_status": (
-                  "approved" if implementation_review_decision == "advance" else "recorded"
-              ),
+              "planning_status": planning_review_decision,
+              "implementation_status": implementation_review_decision,
               "implementation_review_artifact": str(review_artifact_path),
           },
           "pr": {

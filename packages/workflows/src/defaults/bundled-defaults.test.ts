@@ -182,7 +182,7 @@ describe('bundled-defaults', () => {
 
       expect(content).toContain('id: pr-review-handoff');
       expect(content).toContain(
-        'depends_on: [finalize, compose-finalize, live-validate, implementation-review, implement-setup]'
+        'depends_on: [finalize, compose-finalize, live-validate, planning-review, implementation-review, implement-setup]'
       );
       expect(content).toContain('$ARTIFACTS_DIR/pr-review-handoff.json');
       expect(content).toContain('schema_version');
@@ -196,6 +196,10 @@ describe('bundled-defaults', () => {
       expect(content).toContain('planning_status');
       expect(content).toContain('implementation_status');
       expect(content).toContain('implementation_review_artifact');
+      expect(content).toContain('PLANNING_REVIEW_DECISION');
+      expect(content).toContain('unsupported {review_name} decision');
+      expect(content).toContain('"planning-review": planning_review_decision');
+      expect(content).toContain('"implementation-review": implementation_review_decision');
       expect(content).toContain('url');
       expect(content).toContain('number');
       expect(content).toContain('state');
@@ -229,8 +233,8 @@ describe('bundled-defaults', () => {
           summary: 'fixture handoff coverage',
         },
         review: {
-          planning_status: 'approved',
-          implementation_status: 'approved',
+          planning_status: 'advance',
+          implementation_status: 'advance',
           implementation_review_artifact:
             'docs/plans/_peer-reviews/r001-archon-piv-loop-codex-v2-s7_plan-peer-review.json',
         },
@@ -256,8 +260,8 @@ describe('bundled-defaults', () => {
       expect(written.validation.evidence_path).toBe('artifacts/workflow/e2e-reports/r001-s7-pass.json');
       expect(written.validation.waiver_reason).toBe('');
       expect(written.validation.summary).toBe('fixture handoff coverage');
-      expect(written.review.planning_status).toBe('approved');
-      expect(written.review.implementation_status).toBe('approved');
+      expect(written.review.planning_status).toBe('advance');
+      expect(written.review.implementation_status).toBe('advance');
       expect(written.review.implementation_review_artifact).toBe(
         'docs/plans/_peer-reviews/r001-archon-piv-loop-codex-v2-s7_plan-peer-review.json'
       );
