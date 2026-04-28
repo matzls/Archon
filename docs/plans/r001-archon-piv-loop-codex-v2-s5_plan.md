@@ -15,7 +15,7 @@ version: "0.2"
 - Why we're doing it: the current V2 workflow on the campaign integration branch still defers live E2E evidence conventions and jumps from implementation approval straight to PR artifact composition.
 - What "done" looks like: `archon-piv-loop-codex-v2` has an explicit post-review live-validation gate, writes or references run-scoped evidence under `$ARTIFACTS_DIR/e2e-reports/*`, records a waiver only when live proof is genuinely not possible, and proves the contract with focused workflow validation plus real smoke evidence.
 - How we'll do it: ground the current workflow gap on the integration base, freeze the smallest live-validation contract around the existing `e2e_report_manager.py` helper, update the V2 workflow and bundled assertions, then run real CLI and UI smoke with canonical evidence recording.
-- Next step / resume point: peer-review the Phase 99 command corrections, then freeze only if the execution base, no-worktree CLI smoke, and browser-driven Workflows-page proof paths are all explicit.
+- Next step / resume point: resolve the remaining Phase 99 UI proof blocker, or keep the slice blocked with the recorded waiver evidence. The CLI/backend proof passed, but the UI proof cannot honestly claim PASS until the UI-created isolated worktree uses the S5 branch surface instead of stale `origin/dev`.
 
 ### Optional Mental Model
 
@@ -62,15 +62,15 @@ flowchart LR
 
 ## Plan Status & Controls
 - Plan Status: Active (sidecar canonical state, as of 2026-04-28)
-- Current Phase: P99 — End-to-End Gate (proposed)
+- Current Phase: P99 — End-to-End Gate (blocked)
 - Last Updated: 2026-04-28
 - Last Reviewed: 2026-04-28
-- Next Checkpoint: peer-review the refined Phase 99 commands, then freeze and run the live smoke with canonical evidence or an explicit waiver outcome.
+- Next Checkpoint: resolve the UI-created isolation worktree mismatch for P99-T2, then rerun the UI smoke from `/workflows` with the S5 plan/workflow files present in the worker checkout.
 - Execution-base note: the root `dev` checkout still lacks `.archon/workflows/defaults/archon-piv-loop-codex-v2.yaml`, but the current slice branch `slice/r001-archon-piv-loop-codex-v2/s5` already descends from `integration/r001-archon-piv-loop-codex-v2` and contains the V2 workflow surface locally. Keep implementation on this slice branch or an equivalent descendant lane that preserves those S1-S4 artifacts.
 - Deterministic grounding snapshot: PRD row `S5` requires “enforced final live validation contract and evidence path” with “real CLI/API/browser smoke evidence under run artifacts”; the design doc requires proof under `$ARTIFACTS_DIR/e2e-reports/`; before this S5 implementation, the V2 workflow still said live E2E evidence was deferred and `compose-finalize` still depended directly on `fix-feedback`; `e2e_report_manager.py` already exists as the smallest deterministic writer for `*-e2e.{md,json}` artifacts; and this repo's bundled-workflow contract means any default-workflow YAML edit must also keep `packages/workflows/src/defaults/bundled-defaults.generated.ts` passing `bun run check:bundled`.
 - E2E Gate: required
 - E2E Waiver Category: review_required
-- E2E Waiver Rationale: This slice introduces the final live-validation behavior itself, and the PRD row explicitly requires real smoke evidence under run artifacts rather than repo-local tests alone.
+- E2E Waiver Rationale: This slice introduces the final live-validation behavior itself, and the PRD row explicitly requires real smoke evidence under run artifacts rather than repo-local tests alone. The backend/CLI path produced live proof, but the browser/UI path is waiver-blocked until Archon can launch the UI workflow against a worker checkout containing the S5 branch artifacts.
 - Canonical task location: Section 6 (Phased Execution Plan)
 
 **Terminology & Actors (Workflow Defaults):**
@@ -108,7 +108,7 @@ Rules:
 | P0 | Validated | - P0-T1: Ground the live-validation gap and execution base against repo reality — validated<br>- P0-T2: Freeze the live-validation gate and evidence-path contract — validated<br>- P0-T3: Record the live-smoke prerequisite lane and canonical evidence commands — validated |
 | P1 | Validated | - P1-T1: Add the explicit live-validation gate to the V2 workflow on the integration base — validated<br>- P1-T2: Add focused bundled-workflow assertions for the new gate, evidence path, and waiver contract — validated |
 | P2 | Validated | - P2-T1: Run the focused workflow proof commands and capture deterministic results — validated<br>- P2-T2: Reconcile docs and close the slice evidence loop — validated |
-| P99 | Proposed | - P99-T1: E2E backend/CLI smoke for the V2 live-validation contract — proposed<br>- P99-T2: E2E UI smoke for the V2 live-validation contract — proposed |
+| P99 | Blocked | - P99-T1: E2E backend/CLI smoke for the V2 live-validation contract — blocked<br>- P99-T2: E2E UI smoke for the V2 live-validation contract — blocked |
 
 ## 6) Phased Execution Plan
 
@@ -266,6 +266,8 @@ Rules:
 ### Phase 99 — End-to-End Gate
 
 **Exit Criteria:** The `S5` workflow contract works in real conditions and the evidence is recorded.
+
+**Live evidence status as of 2026-04-28:** backend/CLI evidence exists and the UI proof reached the real `/workflows` launch path, but Phase 99 remains blocked rather than accepted. The UI-created run `4bc2a12769072afd20dad73e08a3ddb3` started `archon-piv-loop-codex-v2` from the local Web UI on `http://127.0.0.1:5175`, advanced through `explore`, accepted `comment: "ready"` correctly, ran `detect-project`, and started `create-plan`. The run was then cancelled because the isolated worker checkout was based on `origin/dev` and did not contain `docs/plans/r001-archon-piv-loop-codex-v2-s5_plan.md` or the S5 V2 workflow files, so continuing it would have validated the wrong branch surface. This is explicit waiver/blocker evidence, not automated PASS evidence.
 
 - [ ] P99-T1: E2E backend/CLI smoke for the V2 live-validation contract
   - Why it matters: repo-local workflow validation and bundled string assertions do not prove that a real Archon/Codex workflow run can reach the live-validation gate, produce evidence, or force an explicit waiver before finalization.
@@ -568,6 +570,11 @@ PY`
     - `artifacts/workflow/e2e-reports/<plan-slug>-<YYYY-MM-DD>-e2e.md`
     - `artifacts/workflow/e2e-reports/<plan-slug>-<YYYY-MM-DD>-e2e.json`
   - Test Impact: N/A
+  - Attempt Results:
+    - `agent-browser 0.26.0` was installed and available, but the child lane could not start a controllable browser because its socket directory and Chrome sandbox setup failed in the sandboxed runtime.
+    - Parent Browser Use proved the Web UI path manually: the S5 server on `PORT=3092` and Vite on `5175` loaded `/workflows`, listed `Piv Loop Codex V2`, and started run `4bc2a12769072afd20dad73e08a3ddb3` from chat `web-1777379361078-depsd0`.
+    - The first two non-escalated UI attempts reached the Web UI but failed during workflow dispatch because the server could not write `.git/FETCH_HEAD` while fetching `origin dev`.
+    - The escalated UI run advanced through `explore`, but the worker checkout was created from stale `origin/dev`. It did not contain the S5 plan/workflow files, so the proof was cancelled and recorded as a live-path blocker instead of a PASS.
 
 ## Current Inputs (single source of truth)
 - Feature: `Archon PIV Loop Codex V2`
@@ -649,3 +656,4 @@ Explicit exclusions (handled outside the PIV loop closeout): Project Brief, Feat
 - 2026-04-28: Completed Phase 0 grounding for the refine pass. Verified that the root `dev` checkout lacks the V2 workflow file, grounded `S5` against the integration-branch workflow, recorded the current post-review -> finalization gap, and froze the live-validation/evidence-path contract around `e2e_report_manager.py`.
 - 2026-04-28: Executed approved Phase 0 post-freeze tasks. Recorded deterministic command evidence for the integration-base grounding, locked `live-validate` evidence contract, and E2E smoke prerequisite lane.
 - 2026-04-28: Executed approved Phase 1/2 post-freeze tasks. Added the `live-validate` gate before finalization, refreshed bundled defaults and regression assertions, captured focused proof evidence, and left Phase 99 live smoke as the remaining proposed E2E gate.
+- 2026-04-28: Ran the Phase 99 live UI proof from the parent Browser Use surface. The UI-started workflow reached `create-plan`, proving the Web UI can launch the V2 workflow, but the run was cancelled because the isolated worker checkout used stale `origin/dev` and lacked the S5 plan/workflow files. Phase 99 remains blocked with explicit waiver evidence rather than PASS.
