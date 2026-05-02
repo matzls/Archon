@@ -4,6 +4,7 @@
 import { describe, it, expect, beforeEach, afterEach, spyOn, mock } from 'bun:test';
 import type { WorkflowEmitterEvent } from '@archon/workflows/event-emitter';
 import { makeTestWorkflowWithSource } from '@archon/workflows/test-utils';
+import * as fsPromises from 'node:fs/promises';
 
 const mockLogger = {
   fatal: mock(() => undefined),
@@ -20,15 +21,66 @@ const mockGetLogLevel = mock(() => 'info');
 const mockFsAccess = mock(() => Promise.resolve());
 
 mock.module('fs/promises', () => ({
+  ...fsPromises,
   access: mockFsAccess,
 }));
 
 // Mock @archon/paths (createLogger moved here from @archon/core)
 mock.module('@archon/paths', () => ({
+  BUNDLED_GIT_COMMIT: 'dev',
+  BUNDLED_IS_BINARY: false,
+  BUNDLED_VERSION: '0.0.0-test',
+  checkForUpdate: mock(() => Promise.resolve(null)),
   createLogger: mock(() => mockLogger),
+  createProjectSourceSymlink: mock(() => Promise.resolve()),
+  ensureProjectStructure: mock(() => Promise.resolve()),
+  expandTilde: mock((path: string) => path.replace(/^~/, '/home/test')),
+  findMarkdownFilesRecursive: mock(() => Promise.resolve([])),
+  getAppArchonBasePath: mock(() => '/app/.archon'),
+  getArchonConfigPath: mock(() => '/home/test/.archon/config.yaml'),
+  getArchonEnvPath: mock(() => '/home/test/.archon/.env'),
   getArchonHome: mock(() => '/home/test/.archon'),
+  getArchonWorkspacesPath: mock(() => '/home/test/.archon/workspaces'),
+  getArchonWorktreesPath: mock(() => '/home/test/.archon/worktrees'),
+  getCachedUpdateCheck: mock(() => null),
+  getCommandFolderSearchPaths: mock(() => ['/test/path/.archon/commands']),
+  getDefaultCommandsPath: mock(() => '/app/.archon/commands/defaults'),
+  getDefaultScriptsPath: mock(() => '/app/.archon/scripts'),
+  getDefaultWorkflowsPath: mock(() => '/app/.archon/workflows/defaults'),
+  getHomeCommandsPath: mock(() => '/home/test/.archon/commands'),
+  getHomeScriptsPath: mock(() => '/home/test/.archon/scripts'),
+  getHomeWorkflowsPath: mock(() => '/home/test/.archon/workflows'),
+  getLegacyHomeWorkflowsPath: mock(() => '/home/test/.archon/.archon/workflows'),
   getLogLevel: mockGetLogLevel,
+  getProjectArtifactsPath: mock(
+    (_owner: string, _repo: string) => '/home/test/.archon/workspaces/test/repo/artifacts'
+  ),
+  getProjectLogsPath: mock(
+    (_owner: string, _repo: string) => '/home/test/.archon/workspaces/test/repo/logs'
+  ),
+  getProjectRoot: mock(
+    (_owner: string, _repo: string) => '/home/test/.archon/workspaces/test/repo'
+  ),
+  getProjectSourcePath: mock(
+    (_owner: string, _repo: string) => '/home/test/.archon/workspaces/test/repo/source'
+  ),
+  getProjectWorktreesPath: mock(
+    (_owner: string, _repo: string) => '/home/test/.archon/workspaces/test/repo/worktrees'
+  ),
+  getRepoArchonEnvPath: mock((cwd: string) => `${cwd}/.archon/.env`),
+  getRunArtifactsPath: mock((_projectRoot: string, runId: string) => `/artifacts/runs/${runId}`),
+  getRunLogPath: mock((_projectRoot: string, runId: string) => `/logs/${runId}.jsonl`),
+  getWebDistDir: mock((version: string) => `/home/test/.archon/web/${version}`),
+  getWorkflowFolderSearchPaths: mock(() => ['/test/path/.archon/workflows']),
+  isDocker: mock(() => false),
+  isNewerVersion: mock(() => false),
+  logArchonPaths: mock(() => undefined),
+  parseOwnerRepo: mock(() => null),
+  parseLatestRelease: mock(() => null),
+  resolveProjectRootFromCwd: mock(() => null),
+  rootLogger: mockLogger,
   setLogLevel: mockSetLogLevel,
+  validateAppDefaultsPaths: mock(() => undefined),
 }));
 
 // Mock @archon/isolation (getIsolationProvider moved here from @archon/core)
@@ -93,14 +145,18 @@ mock.module('@archon/workflows/event-emitter', () => ({
 }));
 
 mock.module('@archon/git', () => ({
+  checkout: mock(() => Promise.resolve()),
+  execFileAsync: mock(() => Promise.resolve({ stdout: '', stderr: '' })),
+  execGhWithAuthPolicy: mock(() => Promise.resolve({ stdout: '', stderr: '' })),
   findRepoRoot: mock(() => Promise.resolve(null)),
   getRemoteUrl: mock(() => Promise.resolve(null)),
-  checkout: mock(() => Promise.resolve()),
+  getDefaultBranch: mock(() => Promise.resolve('dev')),
+  hasUncommittedChanges: mock(() => Promise.resolve(false)),
+  isAncestorOf: mock(() => Promise.resolve(true)),
+  resolveGitHubCliAuthDecision: mock(() => ({ allowed: false, reason: 'test' })),
+  toBranchName: mock((branch: string) => branch),
   toRepoPath: mock((path: string) => path),
   toWorktreePath: mock((path: string) => path),
-  toBranchName: mock((branch: string) => branch),
-  getDefaultBranch: mock(() => Promise.resolve('dev')),
-  isAncestorOf: mock(() => Promise.resolve(true)),
 }));
 
 mock.module('@archon/core/db/conversations', () => ({

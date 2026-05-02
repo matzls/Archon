@@ -10,13 +10,13 @@ import {
   generateEnvContent,
   generateWebhookSecret,
   spawnTerminalWithSetup,
-  copyArchonSkill,
   detectClaudeExecutablePath,
   writeScopedEnv,
   serializeEnv,
   resolveScopedEnvPath,
 } from './setup';
 import * as setupModule from './setup';
+import { copyArchonSkill } from './skill';
 import { parse as parseDotenv } from 'dotenv';
 
 // Test directory for file operations
@@ -409,11 +409,11 @@ CODEX_ACCOUNT_ID=account1
   });
 
   describe('copyArchonSkill', () => {
-    it('should create skill files in target directory', () => {
+    it('should create skill files in target directory', async () => {
       const target = join(TEST_DIR, 'skill-target');
       mkdirSync(target, { recursive: true });
 
-      copyArchonSkill(target);
+      await copyArchonSkill(target);
 
       expect(existsSync(join(target, '.agents', 'skills', 'archon', 'SKILL.md'))).toBe(true);
       expect(existsSync(join(target, '.claude', 'skills', 'archon', 'SKILL.md'))).toBe(true);
@@ -431,11 +431,11 @@ CODEX_ACCOUNT_ID=account1
       );
     });
 
-    it('should write non-empty content to skill files', () => {
+    it('should write non-empty content to skill files', async () => {
       const target = join(TEST_DIR, 'skill-target-content');
       mkdirSync(target, { recursive: true });
 
-      copyArchonSkill(target);
+      await copyArchonSkill(target);
 
       const content = readFileSync(
         join(target, '.agents', 'skills', 'archon', 'SKILL.md'),
@@ -445,7 +445,7 @@ CODEX_ACCOUNT_ID=account1
       expect(content).toContain('archon');
     });
 
-    it('should overwrite existing skill files', () => {
+    it('should overwrite existing skill files', async () => {
       const target = join(TEST_DIR, 'skill-target-overwrite');
       const claudeSkillDir = join(target, '.claude', 'skills', 'archon');
       const agentsSkillDir = join(target, '.agents', 'skills', 'archon');
@@ -454,7 +454,7 @@ CODEX_ACCOUNT_ID=account1
       writeFileSync(join(claudeSkillDir, 'SKILL.md'), 'old content');
       writeFileSync(join(agentsSkillDir, 'SKILL.md'), 'old content');
 
-      copyArchonSkill(target);
+      await copyArchonSkill(target);
 
       const claudeContent = readFileSync(join(claudeSkillDir, 'SKILL.md'), 'utf-8');
       const agentsContent = readFileSync(join(agentsSkillDir, 'SKILL.md'), 'utf-8');
@@ -462,11 +462,11 @@ CODEX_ACCOUNT_ID=account1
       expect(agentsContent).not.toBe('old content');
     });
 
-    it('should create skill files even when target directory does not exist', () => {
+    it('should create skill files even when target directory does not exist', async () => {
       const target = join(TEST_DIR, 'non-existent-parent', 'skill-target-new');
       // Do NOT pre-create target — copyArchonSkill must handle it
 
-      copyArchonSkill(target);
+      await copyArchonSkill(target);
 
       expect(existsSync(join(target, '.agents', 'skills', 'archon', 'SKILL.md'))).toBe(true);
       expect(existsSync(join(target, '.claude', 'skills', 'archon', 'SKILL.md'))).toBe(true);
