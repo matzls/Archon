@@ -1,0 +1,7 @@
+interface:
+  display_name: "My Archon Sync"
+  short_description: "Safely sync this fork from upstream"
+  default_prompt: "Use $my-achrchon-sync to check upstream drift and safely merge upstream dev into my Archon fork."
+
+policy:
+  allow_implicit_invocation: true

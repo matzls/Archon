@@ -1,0 +1,132 @@
+name: my-achrchon-sync
+
+on:
+  schedule:
+    - cron: '17 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: my-achrchon-sync
+  cancel-in-progress: false
+
+jobs:
+  check-upstream:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch upstream dev
+        run: |
+          git remote remove upstream 2>/dev/null || true
+          git remote add upstream https://github.com/coleam00/Archon.git
+          git fetch origin dev:refs/remotes/origin/dev
+          git fetch upstream dev:refs/remotes/upstream/dev
+
+      - name: Calculate upstream drift
+        id: drift
+        run: |
+          ahead_count="$(git rev-list --count origin/dev..upstream/dev)"
+          latest_commit="$(git rev-parse upstream/dev)"
+          latest_subject="$(git log -1 --pretty=%s upstream/dev)"
+          merge_base="$(git merge-base origin/dev upstream/dev)"
+
+          {
+            echo "ahead_count=${ahead_count}"
+            echo "latest_commit=${latest_commit}"
+            echo "merge_base=${merge_base}"
+            echo "latest_subject<<EOF"
+            echo "${latest_subject}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Open or update upstream sync issue
+        if: steps.drift.outputs.ahead_count != '0'
+        uses: actions/github-script@v7
+        env:
+          AHEAD_COUNT: ${{ steps.drift.outputs.ahead_count }}
+          LATEST_COMMIT: ${{ steps.drift.outputs.latest_commit }}
+          LATEST_SUBJECT: ${{ steps.drift.outputs.latest_subject }}
+          MERGE_BASE: ${{ steps.drift.outputs.merge_base }}
+        with:
+          script: |
+            const aheadCount = Number(process.env.AHEAD_COUNT);
+            const latestCommit = process.env.LATEST_COMMIT;
+            const mergeBase = process.env.MERGE_BASE;
+            const latestSubject = process.env.LATEST_SUBJECT;
+            const title = `my-achrchon-sync: upstream dev is ${aheadCount} commit${aheadCount === 1 ? '' : 's'} ahead`;
+
+            const body = [
+              'Daily upstream drift check found new changes in `coleam00/Archon:dev`.',
+              '',
+              `- Upstream ahead count: ${aheadCount}`,
+              `- Latest upstream commit: \`${latestCommit}\``,
+              `- Latest upstream subject: ${latestSubject}`,
+              `- Merge base: \`${mergeBase}\``,
+              '',
+              'Use the repo-local `my-achrchon-sync` skill to merge this safely into the personalized fork.',
+              '',
+              'Expected manual flow:',
+              '',
+              '```bash',
+              'git checkout dev',
+              'git fetch --all --prune',
+              'git checkout -b codex/merge-upstream-dev-YYYY-MM-DD',
+              'git merge upstream/dev',
+              '# resolve conflicts with broad preservation of fork-local Codex/PIV assets',
+              'bun install',
+              'bun run generate:bundled',
+              'bun run validate',
+              'git checkout dev',
+              'git merge --ff-only codex/merge-upstream-dev-YYYY-MM-DD',
+              'git push origin dev',
+              '```',
+              '',
+              'Protected fork-local paths by default:',
+              '',
+              '- `.agents/skills/**`',
+              '- `.archon/workflows/defaults/*codex*`',
+              '- `.archon/commands/defaults/*codex*`',
+              '- `docs/design/**`',
+              '- `docs/prd/**`',
+              '- `docs/plans/**`',
+              '',
+              'This action does not auto-merge upstream changes.',
+            ].join('\n');
+
+            const { owner, repo } = context.repo;
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: 'open',
+              per_page: 100,
+            });
+            const existing = issues.find((issue) => issue.title.startsWith('my-achrchon-sync: upstream dev is '));
+
+            if (existing) {
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: existing.number,
+                title,
+                body,
+              });
+              return;
+            }
+
+            await github.rest.issues.create({
+              owner,
+              repo,
+              title,
+              body,
+            });
+
+      - name: Report no drift
+        if: steps.drift.outputs.ahead_count == '0'
+        run: echo "origin/dev already contains upstream/dev."
