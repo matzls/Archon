@@ -2103,6 +2103,18 @@ function asStructuredOutputRecord(value: unknown): Record<string, unknown> | und
   return undefined;
 }
 
+function parseStructuredOutputText(text: string): unknown {
+  const trimmed = text.trim();
+  if (!trimmed) return undefined;
+  const fencedMatch = /^```(?:json)?\s*([\s\S]*?)\s*```$/i.exec(trimmed);
+  const candidate = fencedMatch ? fencedMatch[1].trim() : trimmed;
+  try {
+    return JSON.parse(candidate) as unknown;
+  } catch {
+    return undefined;
+  }
+}
+
 function matchLoopDecisionGate(
   structuredOutput: unknown,
   decisionGate: LoopDecisionGate | undefined
@@ -2599,16 +2611,38 @@ async function executeLoopNode(
         }
         structuredDecision = matchLoopDecisionGate(iterationStructuredOutput, loop.decision_gate);
       } else {
-        getLog().warn(
-          { nodeId: node.id, workflowRunId: workflowRun.id, iteration: i },
-          'loop_node.structured_output_missing'
-        );
-        await safeSendMessage(
-          platform,
-          conversationId,
-          `Warning: Loop node '${node.id}' requested output_format but the provider did not return structured output. Falling back to sentinel completion detection.`,
-          msgContext
-        );
+        const parsedStructuredOutput = parseStructuredOutputText(fullOutput);
+        if (parsedStructuredOutput !== undefined) {
+          try {
+            cleanOutput =
+              typeof parsedStructuredOutput === 'string'
+                ? parsedStructuredOutput
+                : JSON.stringify(parsedStructuredOutput);
+          } catch (serializeErr) {
+            const err = serializeErr as Error;
+            await persistLoopNodeFailed(
+              `Loop '${node.id}' iteration ${String(i)} failed: failed to serialize parsed structured output to JSON: ${err.message}`
+            );
+            return {
+              state: 'failed',
+              output: '',
+              error: `Loop iteration ${String(i)} failed: failed to serialize parsed structured output to JSON: ${err.message}`,
+              costUsd: loopTotalCostUsd,
+            };
+          }
+          structuredDecision = matchLoopDecisionGate(parsedStructuredOutput, loop.decision_gate);
+        } else {
+          getLog().warn(
+            { nodeId: node.id, workflowRunId: workflowRun.id, iteration: i },
+            'loop_node.structured_output_missing'
+          );
+          await safeSendMessage(
+            platform,
+            conversationId,
+            `Warning: Loop node '${node.id}' requested output_format but the provider did not return structured output. Falling back to sentinel completion detection.`,
+            msgContext
+          );
+        }
       }
     }
 

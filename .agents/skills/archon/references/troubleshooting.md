@@ -54,6 +54,26 @@ Artifacts are **external** to the repo on purpose — they don't pollute git.
 
 ## Common Failure Modes
 
+### Input file path is missing in an isolated worktree
+
+The workflow was launched with a local file path, but the first workflow node
+cannot read it from the worktree.
+
+Likely cause: the file exists only in the caller's live checkout. Git worktrees
+are created from a committed tree. Untracked files, modified files, and files
+that are merely staged in the main checkout are not materialized in the new
+worktree.
+
+**Fix:**
+- If the input is durable project context, commit it before launching the
+  worktree-isolated workflow.
+- If the input is scratch/private context, rerun with `--no-worktree`.
+- If the workflow needs isolation and scratch input, use an explicit
+  run-artifact/content handoff before isolation. This avoids repo noise, but it
+  is still a deliberate copy into Archon's external artifact storage.
+- Do not silently copy the file into the repository or infer that staging is
+  enough.
+
 ### "No base branch could be resolved"
 
 A node references `$BASE_BRANCH` in its prompt, but neither git auto-detection nor `worktree.baseBranch` in `.archon/config.yaml` produced a branch.

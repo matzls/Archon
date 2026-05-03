@@ -3626,6 +3626,87 @@ describe('executeDagWorkflow -- resume with priorCompletedNodes', () => {
       ).toBe(1);
     });
 
+    it('advances an interactive loop when the structured decision is only assistant JSON text', async () => {
+      mockSendQueryDag.mockImplementation(function* () {
+        yield { type: 'assistant', content: '{"decision":"advance"}' };
+        yield { type: 'result', sessionId: 'loop-json-text-advance-sid' };
+      });
+
+      const store = createMockStore();
+      const mockDeps = createMockDeps(store);
+      const platform = createMockPlatform();
+      const workflowRun = makeWorkflowRun('loop-json-text-advance-run', {
+        metadata: {
+          lastApproval: {
+            type: 'interactive_loop',
+            nodeId: 'phase-gate',
+            iteration: 1,
+            sessionId: 'loop-json-text-gate-sid',
+            message: 'Continue or advance?',
+            resolution: 'feedback',
+            resolvedAt: '2026-04-27T10:00:00.000Z',
+          },
+          loop_user_input: 'advance',
+        },
+      });
+
+      await executeDagWorkflow(
+        mockDeps,
+        platform,
+        'conv-json-text-advance',
+        testDir,
+        {
+          name: 'typed-loop-json-text-advance',
+          nodes: [
+            {
+              id: 'phase-gate',
+              output_format: {
+                type: 'object',
+                properties: {
+                  decision: { type: 'string', enum: ['continue', 'advance'] },
+                },
+                required: ['decision'],
+              },
+              loop: {
+                prompt: 'User said: $LOOP_USER_INPUT. Decide.',
+                until: 'PLAN_READY',
+                max_iterations: 3,
+                interactive: true,
+                gate_message: 'Continue or advance?',
+                decision_gate: {
+                  gate_kind: 'phase_decision',
+                  decisions: [
+                    { id: 'continue', resume_reason: 'loop_feedback' },
+                    { id: 'advance', transition_intent: 'phase_advance' },
+                  ],
+                },
+              },
+            },
+          ],
+        },
+        workflowRun,
+        'claude',
+        undefined,
+        join(testDir, 'artifacts'),
+        join(testDir, 'logs'),
+        'main',
+        'docs/',
+        minimalConfig
+      );
+
+      expect(mockSendQueryDag.mock.calls.length).toBe(1);
+      expect(
+        (
+          store.pauseWorkflowRun as Mock<
+            (id: string, ctx: Record<string, unknown>) => Promise<void>
+          >
+        ).mock.calls.length
+      ).toBe(0);
+      expect(
+        (store.completeWorkflowRun as Mock<(id: string) => Promise<void>>).mock.calls.length
+      ).toBe(1);
+    });
+
     it('keeps an interactive loop paused when structured decision maps to continue', async () => {
       mockSendQueryDag.mockImplementation(function* () {
         yield { type: 'assistant', content: '{"decision":"continue"}' };

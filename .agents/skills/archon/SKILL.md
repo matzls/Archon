@@ -191,6 +191,13 @@ Rules:
 6. Treat Archon workflows as long-running jobs. Keep the run ID, working path,
    and current status available for follow-up checks instead of assuming the
    launch command alone is the full observability surface.
+7. Before launching a worktree-isolated workflow with a local file path as the
+   main input, verify the file will exist in the new worktree. Relative paths
+   only work when the file is committed on the start point. Untracked, modified,
+   or merely staged files in the caller's checkout are not visible in a new git
+   worktree. If the input is not committed, pause and offer the user a choice:
+   commit the input first, run with `--no-worktree`, or use an explicit
+   run-artifact/content handoff. Do not silently copy the file into the repo.
 
 ## Interactive Operator Protocol
 

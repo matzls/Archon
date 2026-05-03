@@ -684,6 +684,7 @@ describe('executeWorkflow', () => {
       expect(bashOf(summary)).toContain('Mode B design doc was not created');
       expect(bashOf(summary)).toContain('Mode B slice map was not created');
       expect(bashOf(summary)).toContain('Mode B must select exactly one slice');
+      expect(bashOf(summary)).toContain('import re');
       expect(bashOf(summary)).toContain('selected_lines = [line for line in lines');
       expect(bashOf(summary)).toContain(
         'Mode B slice map must contain exactly one selected marker'

@@ -190,6 +190,7 @@ nodes:
           exit 1
         fi
         python3 - "$SLICE_MAP" "$SELECTED_SLICE_ID" <<'PY'
+      import re
       import sys
       from pathlib import Path
 
