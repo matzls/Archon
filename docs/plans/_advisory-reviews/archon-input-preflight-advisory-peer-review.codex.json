@@ -1,0 +1,42 @@
+{
+  "schema_version": "peer-review-v1",
+  "review_id": "peer-review-f8e099aa7f9b",
+  "plan_path": "/private/tmp/archon-input-preflight-advisory.md",
+  "plan_sha256": "2e43fad0f93c95d93ee0120afdfd4983af40b9411d8968c6cbd418c0a6c21737",
+  "mode": "advisory-challenge",
+  "sidecar_dir": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/_advisory-reviews",
+  "engine": "GPT",
+  "requested_engine": "codex",
+  "origin_runtime": "codex",
+  "engine_policy": "explicit",
+  "resolved_primary_engine": "codex",
+  "preferred_engine": "codex",
+  "fallback_engine": null,
+  "final_engine": "codex",
+  "reviewer_match": "same_model_fallback",
+  "gate_quality": "preferred",
+  "artifact_role": "diagnostic",
+  "canonical_sidecar_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/_advisory-reviews/archon-input-preflight-advisory-peer-review.json",
+  "fallback_used": false,
+  "fallback_reason": null,
+  "attempt_chain": [
+    {
+      "engine": "codex",
+      "phase": "primary",
+      "result": "process_failure",
+      "returncode": 1,
+      "error": "WARNING: proceeding, even though we could not update PATH: Operation not permitted (os error 1)\nReading additional input from stdin...\n2026-05-03T06:33:51.578704Z ERROR codex_core_skills::manager: failed to install system skills: io error while remove existing system skills dir: Operation not permitted (os error 1)\n2026-05-03T06:33:51.581039Z  WARN codex_features: unknown feature key in config: voice_transcription\n2026-05-03T06:33:51.593005Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path must not contain '..'\n2026-05-03T06:33:51.593011Z  WARN codex_core_skills::loader: ignoring interface.icon_large: icon path must not contain '..'\n2026-05-03T06:33:51.593347Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path must not contain '..'\n2026-05-03\u2026"
+    }
+  ],
+  "model": "codex",
+  "verdict": "Failed-to-run",
+  "issues_count": 0,
+  "ran_at": "2026-05-03T06:33:54.452811+00:00",
+  "raw_review_excerpt": "WARNING: proceeding, even though we could not update PATH: Operation not permitted (os error 1)\nReading additional input from stdin...\n2026-05-03T06:33:51.578704Z ERROR codex_core_skills::manager: failed to install system skills: io error while remove existing system skills dir: Operation not permitted (os error 1)\n2026-05-03T06:33:51.581039Z  WARN codex_features: unknown feature key in config: voice_transcription\n2026-05-03T06:33:51.593005Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path must not contain '..'\n2026-05-03T06:33:51.593011Z  WARN codex_core_skills::loader: ignoring interface.icon_large: icon path must not contain '..'\n2026-05-03T06:33:51.593347Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path must not contain '..'\n2026-05-03T06:33:51.593350Z  WARN codex_core_skills::loader: ignoring interface.icon_large: icon path must not contain '..'\n2026-05-03T06:33:51.593657Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path must not contain '..'\n2026-05-03T06:33:51.593660Z  WARN codex_core_skills::loader: ignoring interface.icon_large: icon path must not contain '..'\n2026-05-03T06:33:51.593976Z  WARN code\u2026",
+  "error": "WARNING: proceeding, even though we could not update PATH: Operation not permitted (os error 1)\nReading additional input from stdin...\n2026-05-03T06:33:51.578704Z ERROR codex_core_skills::manager: failed to install system skills: io error while remove existing system skills dir: Operation not permitted (os error 1)\n2026-05-03T06:33:51.581039Z  WARN codex_features: unknown feature key in config: voice_transcription\n2026-05-03T06:33:51.593005Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path must not contain '..'\n2026-05-03T06:33:51.593011Z  WARN codex_core_skills::loader: ignoring interface.icon_large: icon path must not contain '..'\n2026-05-03T06:33:51.593347Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path must not contain '..'\n2026-05-03\u2026",
+  "failure_family": "process_failure",
+  "recovery_steps": [
+    "Peer review failed to run (Codex). Recovery: verify Codex auth/runtime health and retry with a narrower focus if needed."
+  ],
+  "next_action": "Peer review failed to run (Codex). Recovery: verify Codex auth/runtime health and retry with a narrower focus if needed."
+}

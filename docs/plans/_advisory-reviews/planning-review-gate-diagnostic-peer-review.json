@@ -1,0 +1,187 @@
+{
+  "schema_version": "peer-review-v1",
+  "review_id": "peer-review-ab9bbea88cbf",
+  "plan_path": "/private/tmp/archon-piv-diagnostics/planning-review-gate-diagnostic.md",
+  "plan_sha256": "bf31f00b2626321bc96d105b283ad275c809d6b287e533510ce6acde9a539f2a",
+  "mode": "advisory-challenge",
+  "sidecar_dir": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/_advisory-reviews",
+  "engine": "Claude",
+  "requested_engine": "opposite",
+  "origin_runtime": "codex",
+  "engine_policy": "opposite_preferred",
+  "resolved_primary_engine": "claude",
+  "preferred_engine": "claude",
+  "fallback_engine": null,
+  "final_engine": "claude",
+  "reviewer_match": "opposite",
+  "gate_quality": "preferred",
+  "artifact_role": "canonical",
+  "canonical_sidecar_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/_advisory-reviews/planning-review-gate-diagnostic-peer-review.json",
+  "fallback_used": false,
+  "fallback_reason": null,
+  "attempt_chain": [
+    {
+      "engine": "claude",
+      "phase": "primary",
+      "attempt": 1,
+      "timeout_seconds": 300,
+      "result": "completed",
+      "elapsed_seconds": 263.71,
+      "returncode": 0
+    }
+  ],
+  "model": "claude-opus-4-6",
+  "verdict": null,
+  "stance": "mixed",
+  "issues_count": 4,
+  "ran_at": "2026-05-04T06:01:32.362742+00:00",
+  "raw_review_excerpt": "The diagnostic correctly maps the code paths that produce the failure: Codex provider concatenates agent_message text (provider.ts:329), tries JSON.parse on the full accumulation (provider.ts:482), and the executor fallback parseStructuredOutputText (dag-executor.ts:2106) also uses a single JSON.parse. Both paths reject concatenated JSON, so the typed decision gate never fires and the sentinel is never emitted. However, the fix recommendation (Option A deduplication) is undergrounded \u2014 the actual shape of the failing accumulatedText is inferred, not observed, and a simpler structural fix (stop accumulating multiple complete agent_messages into one string) is never considered.\n\nIssues:\n- 1. [WARN] Fix selection based on inferred, not observed, input shape\n- 2. [WARN] Simpler structural alternative not considered: last-complete-message wins\n- 3. [WARN] Open Question 1 is a gating precondition, not a follow-up\n- 4. [NOTE] Prompt coherence between typed decision contract and sentinel contract",
+  "error": null,
+  "closure_verification": "",
+  "prior_round_closure": [],
+  "rerun_recommendation": null,
+  "review": {
+    "mode": "advisory-challenge",
+    "summary": "The diagnostic correctly maps the code paths that produce the failure: Codex provider concatenates agent_message text (provider.ts:329), tries JSON.parse on the full accumulation (provider.ts:482), and the executor fallback parseStructuredOutputText (dag-executor.ts:2106) also uses a single JSON.parse. Both paths reject concatenated JSON, so the typed decision gate never fires and the sentinel is never emitted. However, the fix recommendation (Option A deduplication) is undergrounded \u2014 the actual shape of the failing accumulatedText is inferred, not observed, and a simpler structural fix (stop accumulating multiple complete agent_messages into one string) is never considered.",
+    "rubric_cards": [
+      {
+        "title": "Claim anchoring",
+        "anchor": "Code path claims vs. source files",
+        "claim": "The diagnostic claims specific line numbers for provider accumulation, JSON.parse failure, parseStructuredOutputText behavior, and decision gate completion. All verified against source.",
+        "evidence": "provider.ts:329 accumulates agent_message text. provider.ts:482 calls JSON.parse(accumulatedText). dag-executor.ts:2106-2116 parseStructuredOutputText calls JSON.parse on trimmed text. dag-executor.ts:2742-2744 structured decision drives completion. dag-executor.ts:2966-2979 max iteration failure. All match diagnostic claims.",
+        "disposition": "Code path mapping is sound. The root-cause hypothesis (duplicated JSON defeats both parse paths) is mechanically correct for the stated input shape, but the actual accumulatedText for run 127b99692faf196c633ea1c4d9aec649 is never quoted. The fix selection builds on an inferred shape, not an observed one."
+      },
+      {
+        "title": "Disposition matrix",
+        "anchor": "Evidence coverage across artifact, conversation, and campaign",
+        "claim": "Diagnostic draws from code inspection and workflow YAML. No run logs, no conversation thread evidence, no campaign-level coverage.",
+        "evidence": "The diagnostic references a specific run_id but never quotes the actual provider log output (codex.structured_output_not_json warning payload). The YAML lines 773-884 confirm the planning-review node config. No prior review rounds or campaign artifacts were available.",
+        "disposition": "Code evidence is present and verified. Run-level evidence (the actual malformed string) is missing. Conversation evidence was not available. Campaign coverage is not assessed."
+      },
+      {
+        "title": "Coverage scope",
+        "anchor": "Completeness of reviewed material",
+        "claim": "Review covered the diagnostic artifact and the five directly referenced source files (provider.ts, dag-executor.ts, executor-shared.ts, archon-piv-loop-codex-v2.yaml). Did not cover test files, prior run logs, or Codex SDK documentation.",
+        "evidence": "Read provider.ts lines 310-503, dag-executor.ts lines 2100-2980, YAML lines 760-900. Test files and run log artifacts were not inspected.",
+        "disposition": "Slice-only review of the diagnostic plus relevant runtime code. Sufficient for challenging the analysis but not for validating the fix end-to-end."
+      }
+    ],
+    "disposition_matrix": {
+      "rows": [
+        "artifact",
+        "conversation",
+        "campaign"
+      ],
+      "columns": [
+        "present",
+        "partial",
+        "missing"
+      ],
+      "cells": [
+        [
+          "code path mapping, YAML config, three fix options",
+          "root-cause shape (inferred not observed), test gap analysis",
+          "actual accumulatedText from failing run, Codex SDK docs on multi-message behavior"
+        ],
+        [
+          "n/a",
+          "n/a",
+          "no conversation thread available"
+        ],
+        [
+          "n/a",
+          "n/a",
+          "no campaign context assessed"
+        ]
+      ]
+    },
+    "conversation_evidence": {
+      "used": false,
+      "sources": [],
+      "summary": "No conversation thread or prior review rounds were available for this review. All evidence comes from the artifact text and direct code inspection.",
+      "gaps": [
+        "No prior review rounds to check for closure",
+        "No conversation context about how the duplicated JSON shape was determined"
+      ]
+    },
+    "campaign_coverage": {
+      "scope": "not-assessed",
+      "covered": [],
+      "missing": [
+        "Prior PIV V2 run diagnostics",
+        "Mode B import re bug diagnostic referenced in the artifact",
+        "Other typed decision gate failures across workflows"
+      ],
+      "gaps": [
+        "Cannot assess whether this is an isolated Codex provider issue or a pattern across runs"
+      ]
+    },
+    "issues": [
+      {
+        "title": "Fix selection based on inferred, not observed, input shape",
+        "details": "The diagnostic concludes the accumulatedText is duplicated identical JSON (e.g. {\"decision\":\"advance\"}{\"decision\":\"advance\"}) but never quotes the actual provider log payload from run 127b99692faf196c633ea1c4d9aec649. The codex.structured_output_not_json warning includes an outputPreview field (provider.ts:486) that would show the exact bytes. Without it, the recommended dedup fix may target the wrong shape \u2014 the real payload could be thinking-text + JSON, two different JSON objects from session replay, or JSON inside markdown fences plus bare JSON.",
+        "suggested_fix": "Before committing to a fix approach, retrieve the actual outputPreview from the codex.structured_output_not_json log entry for this run. The shape of the bytes determines which fix is correct.",
+        "severity": "WARN"
+      },
+      {
+        "title": "Simpler structural alternative not considered: last-complete-message wins",
+        "details": "The Codex provider accumulates ALL agent_message item.text into accumulatedText (provider.ts:329). But Codex items arrive as item.completed events with complete text payloads (provider.ts:312-328). When output_format requests a single JSON object, accumulating multiple complete agent_messages is itself the design error \u2014 concatenating any two complete messages produces invalid JSON whether they're identical or not. A 'last complete agent_message wins' approach would handle identical duplicates, thinking-then-result patterns, and session replay artifacts without making JSON parsing more lenient.",
+        "suggested_fix": "Add Option D: for output_format turns, track the last agent_message item.text separately and use it as the structured output candidate instead of accumulating all messages. This addresses the structural cause rather than patching the symptom.",
+        "severity": "WARN"
+      },
+      {
+        "title": "Open Question 1 is a gating precondition, not a follow-up",
+        "details": "The diagnostic lists 'Does the Codex SDK intentionally emit multiple agent_message chunks for the same output-format turn?' as an open question. But this question determines whether deduplication is the right fix or whether Archon is seeing replayed/resumed messages due to a session handling bug. If the latter, dedup masks a state bug that will manifest differently elsewhere.",
+        "suggested_fix": "Promote this from Open Questions to a required investigation step before fix selection. Check Codex SDK documentation and/or instrument the provider to log each item.completed event's item.id to determine if the messages are genuinely distinct items or replayed.",
+        "severity": "WARN"
+      },
+      {
+        "title": "Prompt coherence between typed decision contract and sentinel contract",
+        "details": "The YAML prompt (lines 839-852) has two competing signal contracts: the sentinel emission contract (emit <promise>PLANNING_REVIEW_APPROVED</promise>) and the typed decision contract (set decision to advance). The diagnostic correctly identifies this duality but frames Option C (prompt hardening) as a symptom-only fix. However, the prompt incoherence is a real issue independent of the runtime bug \u2014 the model prioritized the typed contract and skipped the sentinel, which is rational behavior given the prompt structure. Even after fixing the runtime, this dual-signal confusion wastes tokens and creates fragile gate behavior.",
+        "suggested_fix": "Regardless of which runtime fix ships, clean up the prompt to make the typed decision gate primary and demote the sentinel to an explicit fallback clause rather than a co-equal requirement. This is a follow-up, not a blocker for the runtime fix.",
+        "severity": "NOTE"
+      }
+    ],
+    "verification_gaps": [
+      "Actual accumulatedText / outputPreview from the failing run's codex.structured_output_not_json log entry",
+      "Whether Codex SDK emits multiple agent_message items per turn by design or only under resume/replay conditions",
+      "Whether other Codex output-format nodes in the same workflow experienced the same duplication pattern",
+      "Existing test coverage for multi-item agent_message turns in the Codex provider"
+    ],
+    "recommended_fixes": [
+      "Retrieve the actual outputPreview from run 127b99692faf196c633ea1c4d9aec649 before selecting a fix approach",
+      "Evaluate a 'last complete agent_message wins' approach (Option D) as a structurally cleaner alternative to dedup parsing",
+      "Answer whether Codex SDK multi-message behavior is by design before committing to provider-side normalization",
+      "If Option A proceeds, ensure the deep-equality check handles non-identical payloads gracefully (currently the diagnostic says fail-stop, which preserves the original failure mode for the more likely non-identical case)"
+    ],
+    "evidence_sources": [
+      "packages/providers/src/codex/provider.ts:312-503 (agent_message accumulation and structured output parsing)",
+      "packages/workflows/src/dag-executor.ts:2106-2116 (parseStructuredOutputText definition)",
+      "packages/workflows/src/dag-executor.ts:2592-2644 (structured decision matching with fallback)",
+      "packages/workflows/src/dag-executor.ts:2740-2744 (completion decision logic)",
+      "packages/workflows/src/dag-executor.ts:2966-2979 (max iteration failure)",
+      "archon-piv-loop-codex-v2.yaml:773-884 (planning-review node definition)"
+    ],
+    "error": null,
+    "stance": "mixed",
+    "best_case": "The code path analysis is correct, the runtime does have a real gap in handling multi-message structured output, and Option A (provider-side normalization) would fix the observed failure if the accumulatedText shape is indeed duplicated identical JSON. The diagnostic correctly identifies the two-mechanism completion system as the architectural context and correctly prioritizes a runtime fix over prompt churn.",
+    "strongest_objections": [
+      "The fix targets an inferred input shape \u2014 the actual accumulatedText was never inspected. If the real payload is thinking-text-plus-JSON or session-replay artifacts rather than identical duplicates, the deep-equality dedup in Option A will fail-stop and the bug persists.",
+      "A simpler structural fix exists: stop accumulating multiple complete agent_messages and instead use the last complete message. This handles all realistic duplication shapes without making JSON parsing more lenient, and it's absent from the options list.",
+      "Open Question 1 (is duplication intentional SDK behavior or a session bug?) is a precondition for fix selection, not a follow-up. Committing to dedup before answering it risks masking a state management bug."
+    ],
+    "hidden_assumptions": [
+      "The diagnostic assumes all agent_message items in a Codex output-format turn carry the same text (identical duplication). Real-world Codex behavior may produce thinking/reasoning as agent_message items before the final structured response.",
+      "The diagnostic assumes the provider's accumulatedText is the only source of the problem, but doesn't consider whether Codex session resume/replay could produce the duplication \u2014 in which case the bug is in session handling, not in JSON parsing.",
+      "Option A's 'deeply equal \u2192 keep one' logic assumes the dedup case is the common case. If most real failures involve non-identical payloads, the fail-stop path preserves the original failure mode and the fix has no practical effect.",
+      "The recommendation assumes the executor's parseStructuredOutputText fallback (line 2614) sees the same concatenated text as the provider. In practice, fullOutput comes from assistant chunks (line 2408), which may include interleaved tool output and thinking, making it even harder to parse as JSON."
+    ],
+    "what_would_change_my_mind": "If the actual outputPreview from the failing run's log shows literally duplicated identical JSON (e.g. {\"decision\":\"advance\"}{\"decision\":\"advance\"} with no interleaving), then Option A is well-targeted. If Codex SDK documentation confirms that multiple agent_message items per turn is expected behavior for output-format turns, then provider-side normalization is the right layer. Both of these are retrievable facts that the diagnostic should have grounded before recommending a fix.",
+    "next_checks": [
+      "Retrieve the codex.structured_output_not_json log entry for run 127b99692faf196c633ea1c4d9aec649 and inspect the outputPreview field",
+      "Check Codex SDK documentation or changelog for expected behavior when output_format is set \u2014 does it guarantee a single agent_message item?",
+      "Instrument the Codex provider to log each item.completed agent_message event's item.id and text length to characterize the duplication pattern across runs",
+      "Review whether other Codex output-format nodes in this workflow (or other workflows) hit the same structured_output_not_json warning"
+    ]
+  }
+}

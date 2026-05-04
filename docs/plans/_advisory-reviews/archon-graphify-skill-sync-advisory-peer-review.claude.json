@@ -1,0 +1,208 @@
+{
+  "schema_version": "peer-review-v1",
+  "review_id": "peer-review-19908d1bfb55",
+  "plan_path": "/private/tmp/archon-graphify-skill-sync-advisory.md",
+  "plan_sha256": "e909271e51cb6a12bf3069ed61bd31a79c457d7a93e1f7dc3f54feb04f7ebd3c",
+  "mode": "advisory-challenge",
+  "sidecar_dir": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/_advisory-reviews",
+  "engine": "Claude",
+  "requested_engine": "claude",
+  "origin_runtime": "codex",
+  "engine_policy": "explicit",
+  "resolved_primary_engine": "claude",
+  "preferred_engine": "claude",
+  "fallback_engine": null,
+  "final_engine": "claude",
+  "reviewer_match": "opposite",
+  "gate_quality": "preferred",
+  "artifact_role": "diagnostic",
+  "canonical_sidecar_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/_advisory-reviews/archon-graphify-skill-sync-advisory-peer-review.json",
+  "fallback_used": false,
+  "fallback_reason": null,
+  "attempt_chain": [
+    {
+      "engine": "claude",
+      "phase": "primary",
+      "attempt": 1,
+      "timeout_seconds": 300,
+      "result": "completed",
+      "elapsed_seconds": 212.285,
+      "returncode": 0
+    }
+  ],
+  "model": "claude-opus-4-6",
+  "verdict": null,
+  "stance": "mixed",
+  "issues_count": 5,
+  "ran_at": "2026-05-03T18:42:03.726664+00:00",
+  "raw_review_excerpt": "The advisory's directional call is sound: reconciliation-first, no blind overwrite, repo-local authority for fork-specific rules. However, the proposed two-layer mechanism (generic skill + per-repo manifest with 8+ fields) is overengineered for a two-repo problem and does not address the empirically verified root cause of Archon skill drift \u2014 a static-import bundler that silently omits new files. Two focused repo-local procedures would deliver the same safety with fewer artifacts and no new abstraction layer.\n\nIssues:\n- 1. [WARN] YAGNI: generic skill + manifest schema at N=2\n- 2. [WARN] Bundle drift root cause is not addressed by governance\n- 3. [WARN] Manifest duplicates operating guide, creating a new drift surface\n- 4. [NOTE] Three-surface ambiguity for Archon not resolved\n- 5. [NOTE] Unverified assumption that global install is needed",
+  "error": null,
+  "closure_verification": "",
+  "prior_round_closure": [],
+  "rerun_recommendation": null,
+  "review": {
+    "mode": "advisory-challenge",
+    "summary": "The advisory's directional call is sound: reconciliation-first, no blind overwrite, repo-local authority for fork-specific rules. However, the proposed two-layer mechanism (generic skill + per-repo manifest with 8+ fields) is overengineered for a two-repo problem and does not address the empirically verified root cause of Archon skill drift \u2014 a static-import bundler that silently omits new files. Two focused repo-local procedures would deliver the same safety with fewer artifacts and no new abstraction layer.",
+    "stance": "mixed",
+    "rubric_cards": [
+      {
+        "title": "Claim anchoring",
+        "anchor": "Advisory \u00a7Evidence and \u00a7Recommendation",
+        "claim": "The advisory makes load-bearing claims about Archon bundle drift, Graphify operating model, and global policy. Archon claims are well-grounded; Graphify claims are unverified in this review.",
+        "evidence": "Verified: bundled-skill.ts (line 49-76) lists 26 files and omits references/codex-workflow-status.md, which exists at .agents/skills/archon/references/codex-workflow-status.md. Verified: skill-copy-governance.md matches the advisory's summary of global policy. Verified: my-achrchon-sync/SKILL.md exists with protected-path rules matching the advisory description. Unverified: all Graphify claims (mase-fork-operating-model.md, doctor --require-source, .graphify_version, safe-graphify-skill-upgrade plan, branch state). Unverified: bun test failure claim (test file not read).",
+        "disposition": "Partially grounded \u2014 Archon-side claims confirmed, Graphify-side and test-failure claims are caller assertions only"
+      },
+      {
+        "title": "Disposition matrix",
+        "anchor": "Full artifact",
+        "claim": "Review covers artifact evidence and global policy; conversation context and Graphify campaign evidence are not available or not verified.",
+        "evidence": "Inspected: advisory text, bundled-skill.ts, SKILL.md (Archon host skill), my-achrchon-sync/SKILL.md, skill-copy-governance.md. Not inspected: Graphify repo files, graphify SKILL.md (permission denied), bundled-skill.test.ts, .codex git state.",
+        "disposition": "Slice-only review with Archon-side grounding"
+      },
+      {
+        "title": "Coverage scope",
+        "anchor": "N/A",
+        "claim": "This review covers only the advisory artifact and Archon-side repo evidence. Graphify repo state, conversation history leading to the advisory, and any broader campaign context were not inspected.",
+        "evidence": "Five files read from Archon repo and .codex. Zero files read from Graphify repo. No conversation transcript available.",
+        "disposition": "Slice-only \u2014 Graphify half of the problem statement is unverified"
+      }
+    ],
+    "disposition_matrix": {
+      "rows": [
+        "artifact",
+        "conversation",
+        "campaign"
+      ],
+      "columns": [
+        "present",
+        "partial",
+        "missing"
+      ],
+      "cells": [
+        [
+          "Archon evidence grounded",
+          "Graphify claims unverified",
+          "Test failure claim unverified"
+        ],
+        [
+          "No transcript available",
+          "N/A",
+          "Full conversation context"
+        ],
+        [
+          "Archon skill surfaces inspected",
+          "Global policy verified",
+          "Graphify repo and branch state"
+        ]
+      ]
+    },
+    "conversation_evidence": {
+      "used": false,
+      "sources": [],
+      "summary": "No conversation transcript was provided or available for this review. All evidence comes from the artifact text and directly inspected files.",
+      "gaps": [
+        "Full conversation that led to the advisory",
+        "Any prior discussion of alternatives or rejected approaches",
+        "Mase's stated frequency of editing global vs repo-side skills"
+      ]
+    },
+    "campaign_coverage": {
+      "scope": "slice-only",
+      "covered": [
+        "Archon host skill structure and bundle mechanism",
+        "Archon upstream sync skill and protected paths",
+        "Global skill-copy-governance policy",
+        "Bundle drift claim (confirmed: codex-workflow-status.md missing from BUNDLED_SKILL_FILES)"
+      ],
+      "missing": [
+        "Graphify repo: mase-fork-operating-model.md, doctor command, .graphify_version, safe-graphify-skill-upgrade plan",
+        "Graphify branch state (ahead 16, behind 3 claim)",
+        "bundled-skill.test.ts failure verification",
+        "Whether archon skill is currently installed globally at all"
+      ],
+      "gaps": [
+        "Cannot assess whether Graphify's operating model is actually 'slightly heavy' as claimed",
+        "Cannot verify whether Graphify's version stamp behavior matches the advisory's description",
+        "No visibility into how often Mase actually edits the global skill copies vs repo source"
+      ]
+    },
+    "issues": [
+      {
+        "title": "YAGNI: generic skill + manifest schema at N=2",
+        "details": "The recommendation introduces a generic my-fork-skill-sync skill with an 8-field manifest schema, classification taxonomy (port/adapt/preserve/drop/defer), and per-repo operating guides \u2014 all for exactly two repos. The coding contract says 'generalize only when there is a demonstrated second use case.' Two is the threshold to consider extraction, not a mandate to build a framework. Two short repo-local sync procedures would deliver identical safety with fewer artifacts and no new abstraction.",
+        "suggested_fix": "Before building the generic skill, demonstrate that two independent repo-local procedures (one Archon, one Graphify) would fail to catch a real conflict that the generic engine would catch. If no such case exists, ship the repo-local procedures first and defer the generic layer.",
+        "severity": "WARN"
+      },
+      {
+        "title": "Bundle drift root cause is not addressed by governance",
+        "details": "The empirically verified problem \u2014 bundled-skill.ts silently omits codex-workflow-status.md (confirmed: 26 files in the map vs 27+ in .agents/skills/archon/) \u2014 is a build-time enumeration bug. No manifest, sync skill, or governance pattern fixes it. The advisory recommends installing globally 'after fixing the bundled-skill drift' but treats the two as separable steps, when the bundle mechanism is the primary drift vector for Archon.",
+        "suggested_fix": "Fix the bundle drift first: add a build-time or CI check that enumerates .agents/skills/archon/**/*.md and fails when the set disagrees with BUNDLED_SKILL_FILES keys. This is a prerequisite for any governance pattern, not a parallel workstream.",
+        "severity": "WARN"
+      },
+      {
+        "title": "Manifest duplicates operating guide, creating a new drift surface",
+        "details": "The proposal calls for per-repo manifests listing source paths, global paths, CLI verifier commands, protected paths, and sync modes. The repo-local operating guides (my-achrchon-sync/SKILL.md already has protected paths; Graphify allegedly has mase-fork-operating-model.md) contain the same facts. Two sources of truth for the same facts is the exact drift the advisory claims to prevent.",
+        "suggested_fix": "If a machine-readable manifest is needed, generate it from the operating guide or consolidate into one surface. Do not maintain parallel human-authored documents with overlapping facts.",
+        "severity": "WARN"
+      },
+      {
+        "title": "Three-surface ambiguity for Archon not resolved",
+        "details": "Archon has four skill surfaces: .agents/skills/archon/ (authored source), .claude/skills/archon/ (byte-identical mirror), BUNDLED_SKILL_FILES (compile-time snapshot), and potentially /Users/mase/.codex/skills/archon/ (global install). The advisory acknowledges the .agents\u2194.claude mirror but doesn't define which surface is canonical input for the bundle or the global install, or what happens when .agents and .claude diverge.",
+        "suggested_fix": "Define the canonical chain explicitly: .agents/ is source \u2192 .claude/ is derived mirror \u2192 bundle is compile-time snapshot of .agents/ \u2192 global install is deployment copy of bundle output. Then verify the existing mirror and bundle mechanisms enforce this chain.",
+        "severity": "NOTE"
+      },
+      {
+        "title": "Unverified assumption that global install is needed",
+        "details": "The advisory recommends installing the Archon host skill globally 'for convenience' but the current setup (bun symlink into local fork, archon version reporting source build) already works. No justification is given for why a separate global skill copy is needed when the CLI is already locally linked.",
+        "suggested_fix": "Document a concrete use case where the global Codex skill copy provides value that the local fork + bun symlink does not, before recommending the global install path.",
+        "severity": "NOTE"
+      }
+    ],
+    "verification_gaps": [
+      "Graphify repo state: operating model, doctor command, .graphify_version, and safe-graphify-skill-upgrade plan are all unverified caller claims",
+      "bun test bundled-skill.test.ts failure: advisory claims it fails and catches the omission, but the test file was not read",
+      "Whether Mase has ever edited a global skill copy directly (frequency of the bidirectional edit scenario the entire pattern is built around)",
+      "Whether archon skill is currently installed globally or only exists in the repo",
+      "Graphify branch divergence claim (ahead 16, behind 3)"
+    ],
+    "recommended_fixes": [
+      "Verify the Graphify-side claims before adopting the advisory's cross-repo recommendations \u2014 read mase-fork-operating-model.md, check doctor command, confirm branch state",
+      "Fix the Archon bundle enumeration gap (build-time check for .agents/skills/archon/ vs BUNDLED_SKILL_FILES) as a prerequisite, not a parallel workstream",
+      "Before building a generic sync skill, write the two repo-local procedures and assess whether they leave a real gap that justifies the abstraction",
+      "If a manifest is adopted, ensure it is machine-consumed (by a validator or doctor command), not just human-read \u2014 otherwise it's a second operating guide",
+      "Clarify the concrete use case for global Archon skill installation before recommending it"
+    ],
+    "evidence_sources": [
+      "Artifact: /private/tmp/archon-graphify-skill-sync-advisory.md",
+      "File: /Users/mase/Codebase/Personal-Projects/Archon/packages/cli/src/bundled-skill.ts (lines 1-76) \u2014 confirmed 26-file bundle map, codex-workflow-status.md absent",
+      "File: /Users/mase/Codebase/Personal-Projects/Archon/.agents/skills/archon/SKILL.md (lines 1-60) \u2014 confirmed skill tree structure and .agents/.claude mirror contract",
+      "File: /Users/mase/Codebase/Personal-Projects/Archon/.agents/skills/archon/references/codex-workflow-status.md (lines 1-10) \u2014 confirmed file exists in repo",
+      "File: /Users/mase/Codebase/Personal-Projects/Archon/.agents/skills/my-achrchon-sync/SKILL.md (lines 1-80) \u2014 confirmed upstream sync skill with protected paths",
+      "File: /Users/mase/.codex/docs/reference/skill-copy-governance.md (lines 1-34) \u2014 confirmed global policy content"
+    ],
+    "error": null,
+    "best_case": "The directional principles are correct and durable: reconciliation-first, no blind overwrite, repo-local authority for fork-specific rules, explicit approval before any write. If adopted with the right sizing \u2014 two focused repo-local procedures instead of a generic engine \u2014 this pattern prevents the class of silent-overwrite bugs that skill sync is prone to, while staying maintainable at Mase's actual scale of two repos.",
+    "strongest_objections": [
+      "YAGNI: the two-layer pattern (generic skill + manifest + operating guide) is a framework for two repos. Two independent repo-local procedures deliver the same safety with fewer artifacts and no new abstraction to maintain.",
+      "Root cause mismatch: Archon's verified drift problem is a static-import bundler that silently omits files. No governance pattern, manifest, or sync skill addresses this \u2014 only a build-time enumeration check does. The advisory treats bundle-fixing and governance as separable when they aren't.",
+      "Manifest-guide duplication: the proposed manifest contains facts already in existing operating guides (protected paths, CLI verifiers, sync direction). Two human-authored surfaces for the same facts creates the drift the pattern claims to prevent.",
+      "Sync-direction asymmetry: Graphify ships through a CLI package mechanism; Archon ships through compile-time static imports. A generic skill abstracting both either becomes lowest-common-denominator (just diff + approve) or grows per-repo branches \u2014 at which point repo-local procedures are simpler.",
+      "Undemonstrated need for global install: the advisory recommends installing Archon's host skill globally 'for convenience' without showing that the existing bun-symlink setup is insufficient."
+    ],
+    "hidden_assumptions": [
+      "That Mase regularly edits the global skill copies directly. If 95%+ of edits go to repo source, the heavyweight bidirectional reconciliation pattern is solving a rare case.",
+      "That 'latest' is genuinely hard to determine. For a single-developer fork with git history on both sides, git log comparison may be sufficient without a classification taxonomy.",
+      "That the manifest will stay in sync with operating guides. The pattern introduces a new maintenance surface while claiming to reduce drift.",
+      "That a generic skill engine provides value over a checklist. The proposed skill's core behavior (diff, show git history, propose patches, require approval) is operationally identical to a documented manual procedure.",
+      "That Archon should be globally installed at all. The advisory assumes this without justifying why the local fork symlink is insufficient."
+    ],
+    "what_would_change_my_mind": "A demonstrated real-world case where a generic sync engine caught a conflict that two independent repo-local procedures would have missed. Or: evidence that the manifest format is consumed by a machine validator (CI check, doctor command, build-time verifier) rather than being a human-read document \u2014 that would justify it as a separate artifact from the operating guide. Or: evidence that Mase edits global skill copies frequently enough that the bidirectional reconciliation pattern is the common case rather than an edge case.",
+    "next_checks": [
+      "Read Graphify's mase-fork-operating-model.md and verify whether the advisory's characterization (directionally good, slightly heavy, missing hash comparison) is accurate",
+      "Read bundled-skill.test.ts and confirm the advisory's claim that it fails and catches the codex-workflow-status.md omission",
+      "Check whether /Users/mase/.codex/skills/archon/ exists at all \u2014 the advisory recommends installing there but doesn't confirm current state",
+      "Ask Mase how often he edits global skill copies directly vs repo source \u2014 this determines whether bidirectional reconciliation is the common case or an edge case",
+      "Verify whether Graphify's doctor --require-source actually validates skill content freshness or only checks the CLI binary source"
+    ]
+  }
+}

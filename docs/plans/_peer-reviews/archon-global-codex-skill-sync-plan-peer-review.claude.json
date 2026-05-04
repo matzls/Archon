@@ -1,0 +1,205 @@
+{
+  "schema_version": "peer-review-v1",
+  "review_id": "peer-review-6937ae8ba6fa",
+  "plan_path": "/private/tmp/archon-global-codex-skill-sync-plan.md",
+  "plan_sha256": "1ebf4cc811e0ce4ef80fea0a91459de411af06685d62f2a12b273ae402d0f6c6",
+  "mode": "workflow-plan-gate",
+  "sidecar_dir": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/_peer-reviews",
+  "engine": "Claude",
+  "requested_engine": "claude",
+  "origin_runtime": "codex",
+  "engine_policy": "explicit",
+  "resolved_primary_engine": "claude",
+  "preferred_engine": "claude",
+  "fallback_engine": null,
+  "final_engine": "claude",
+  "reviewer_match": "opposite",
+  "gate_quality": "preferred",
+  "artifact_role": "diagnostic",
+  "canonical_sidecar_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/_peer-reviews/archon-global-codex-skill-sync-plan-peer-review.json",
+  "fallback_used": false,
+  "fallback_reason": null,
+  "attempt_chain": [
+    {
+      "engine": "claude",
+      "phase": "primary",
+      "attempt": 1,
+      "timeout_seconds": 300,
+      "result": "completed",
+      "elapsed_seconds": 217.458,
+      "returncode": 0
+    }
+  ],
+  "review_round": 1,
+  "max_rounds": 3,
+  "prior_review_id": "None",
+  "caller_disposition_summary": "",
+  "addressed_issues": [],
+  "deferred_issues": [],
+  "recheck_requests": [],
+  "model": "claude-opus-4-6",
+  "verdict": "Sound-with-issues",
+  "stance": null,
+  "issues_count": 2,
+  "ran_at": "2026-05-04T06:07:01.230298+00:00",
+  "raw_review_excerpt": "The plan is factually grounded and freeze-ready. Every load-bearing claim was verified against the actual codebase: the bundled-skill drift (codex-workflow-status.md missing from 26-file manifest), the test gap (skill.test.ts only asserts .claude writes), the sync skill's missing protected paths, and the SKILL.md routing table reference to the missing file. Exit criteria are measurable, verify commands are realistic and use actual repo tooling, and the phasing respects dependencies. Two minor tightening issues found (cp -R semantics and git-repo assumption for ~/.codex), neither of which blocks implementation.\n\nIssues:\n- 1. [WARN] cp -R destination semantics in P3-T1\n- 2. [NOTE] P4-T1 git commands assume ~/.codex is a git repo without precheck",
+  "error": null,
+  "closure_verification": "Round 1/3 with no prior round. No carried issues to verify.",
+  "prior_round_closure": [],
+  "rerun_recommendation": "stop",
+  "review": {
+    "mode": "workflow-plan-gate",
+    "summary": "The plan is factually grounded and freeze-ready. Every load-bearing claim was verified against the actual codebase: the bundled-skill drift (codex-workflow-status.md missing from 26-file manifest), the test gap (skill.test.ts only asserts .claude writes), the sync skill's missing protected paths, and the SKILL.md routing table reference to the missing file. Exit criteria are measurable, verify commands are realistic and use actual repo tooling, and the phasing respects dependencies. Two minor tightening issues found (cp -R semantics and git-repo assumption for ~/.codex), neither of which blocks implementation.",
+    "rubric_cards": [
+      {
+        "title": "Claim Anchoring",
+        "anchor": "bundled-skill.ts:12-76, SKILL.md:83+129, skill.test.ts:22-30, my-achrchon-sync/SKILL.md:28-35",
+        "claim": "Plan claims codex-workflow-status.md is missing from bundle, test catches it, .agents writes lack test coverage, sync skill lacks bundle-sensitive protected paths",
+        "evidence": "bundled-skill.ts has 26 entries, none is codex-workflow-status.md. File exists at .agents/skills/archon/references/codex-workflow-status.md. bundled-skill.test.ts compares canonical file listing to bundle keys. skill.test.ts only checks .claude/skills/archon/ path. my-achrchon-sync protected paths omit .claude/skills/archon/** and bundled-skill.ts.",
+        "disposition": "All load-bearing claims verified against inspected source files."
+      },
+      {
+        "title": "Disposition Matrix",
+        "anchor": "Plan phases 0-6 vs repo artifacts",
+        "claim": "Plan correctly maps canonical chain, identifies drift, and proposes safe sync/install layering",
+        "evidence": "copyArchonSkill() writes both roots (skill.ts:33-36). BUNDLED_SKILL_FILES is authoritative for install content. Test infrastructure exists but has documented gap. Sync skill exists with correct protected-path structure to extend.",
+        "disposition": "Artifact structure matches plan's model. No contradictions found."
+      },
+      {
+        "title": "Coverage Scope",
+        "anchor": "Plan artifact only; no campaign or thread context available",
+        "claim": "Review covers the plan artifact and directly referenced repo files",
+        "evidence": "Inspected: bundled-skill.ts, bundled-skill.test.ts, skill.ts, skill.test.ts, .agents/skills/archon/SKILL.md, .agents/skills/archon/references/codex-workflow-status.md, my-achrchon-sync/SKILL.md. Could not inspect ~/.codex/skills/archon (permission denied).",
+        "disposition": "Slice-only review of plan plus directly implicated code files. No broader campaign context was available or inspected."
+      }
+    ],
+    "disposition_matrix": {
+      "rows": [
+        "artifact",
+        "conversation",
+        "campaign"
+      ],
+      "columns": [
+        "present",
+        "partial",
+        "missing"
+      ],
+      "cells": [
+        [
+          "plan phases, exit criteria, verify commands, risks",
+          "cp -R edge case, .codex git-repo precheck",
+          "n/a"
+        ],
+        [
+          "n/a",
+          "n/a",
+          "no conversation/thread evidence available"
+        ],
+        [
+          "n/a",
+          "n/a",
+          "no campaign context inspected"
+        ]
+      ]
+    },
+    "conversation_evidence": {
+      "used": false,
+      "sources": [],
+      "summary": "No conversation or thread evidence was available for this review. Assessment is based solely on the plan artifact and directly inspected repo files.",
+      "gaps": [
+        "No prior discussion, decision log, or thread context was provided or referenced"
+      ]
+    },
+    "campaign_coverage": {
+      "scope": "slice-only",
+      "covered": [
+        "Plan artifact text",
+        "packages/cli/src/bundled-skill.ts",
+        "packages/cli/src/bundled-skill.test.ts",
+        "packages/cli/src/commands/skill.ts",
+        "packages/cli/src/commands/skill.test.ts",
+        ".agents/skills/archon/SKILL.md",
+        ".agents/skills/archon/references/codex-workflow-status.md",
+        ".agents/skills/my-achrchon-sync/SKILL.md"
+      ],
+      "missing": [
+        "~/.codex/skills/archon/ (permission denied)",
+        "AGENTS.md routing references",
+        "docs/reference/ for existing operating model docs"
+      ],
+      "gaps": [
+        "Could not verify whether global Codex Archon skill already exists",
+        "Did not inspect broader campaign or orchestration artifacts"
+      ]
+    },
+    "issues": [
+      {
+        "title": "cp -R destination semantics in P3-T1",
+        "details": "The command `cp -R .agents/skills/archon /Users/mase/.codex/skills/archon` behaves differently on BSD cp depending on whether the destination already exists. If it exists, BSD cp nests the source as a subdirectory (archon/archon). The plan's 'stop and diff' gate prevents the dangerous case, but the command itself is fragile if the guard is ever skipped.",
+        "suggested_fix": "Use `cp -R .agents/skills/archon/. /Users/mase/.codex/skills/archon/` or `rsync -a --delete .agents/skills/archon/ /Users/mase/.codex/skills/archon/` as the canonical copy command in P3-T1.",
+        "severity": "WARN"
+      },
+      {
+        "title": "P4-T1 git commands assume ~/.codex is a git repo without precheck",
+        "details": "Phase 4 checklist commands run `git -C /Users/mase/.codex log` and `git -C /Users/mase/.codex status` without `|| true` fallback. Phase 0 correctly uses `|| true` on the log command, but the Phase 4 checklist (which becomes the ongoing operating procedure) does not. If ~/.codex is not a git repo, these commands fail and block the checklist.",
+        "suggested_fix": "Add `|| echo 'not a git repo'` or a `test -d /Users/mase/.codex/.git &&` guard to the P4-T1 git commands, matching the defensive style already used in P0-T3.",
+        "severity": "NOTE"
+      }
+    ],
+    "verification_gaps": [
+      "Could not verify whether ~/.codex/skills/archon/ already exists (read permission denied)",
+      "Did not run `bun test` to confirm the drift test actually fails today"
+    ],
+    "recommended_fixes": [
+      "P3-T1: Change cp command to `cp -R .agents/skills/archon/. /Users/mase/.codex/skills/archon/` or use rsync to avoid BSD cp nesting behavior",
+      "P4-T1: Add graceful degradation (`|| true` or git-repo precheck) to the git commands in the sync checklist"
+    ],
+    "evidence_sources": [
+      "packages/cli/src/bundled-skill.ts (lines 1-76)",
+      "packages/cli/src/bundled-skill.test.ts (lines 1-43)",
+      "packages/cli/src/commands/skill.ts (lines 1-77)",
+      "packages/cli/src/commands/skill.test.ts (lines 1-85)",
+      ".agents/skills/archon/SKILL.md (lines 1-159)",
+      ".agents/skills/archon/references/codex-workflow-status.md (lines 1-20)",
+      ".agents/skills/my-achrchon-sync/SKILL.md (lines 1-150)"
+    ],
+    "error": null,
+    "verdict": "Sound-with-issues",
+    "workflow_compliance": [
+      "Plan has YAML frontmatter with required fields (title, kind, status, created, owner, repo)",
+      "Phases are numbered and ordered with explicit dependency reasoning in Recommended Execution Order",
+      "Exit criteria are present for each phase and at the global level in Phase 6",
+      "Verify commands are concrete, use actual repo tooling, and cover both unit tests and integration checks",
+      "Non-goals are explicit and well-scoped",
+      "Risks and mitigations section present with actionable mitigations"
+    ],
+    "technical_reality": [
+      "codex-workflow-status.md IS missing from BUNDLED_SKILL_FILES (verified: 26 entries, file absent)",
+      "bundled-skill.test.ts DOES compare canonical file listing to bundle keys (will fail on drift)",
+      "copyArchonSkill() DOES write to both .claude and .agents roots",
+      "skill.test.ts ONLY asserts .claude/skills/archon/ writes, confirming the .agents coverage gap",
+      "my-achrchon-sync protected paths DO omit .claude/skills/archon/** and bundled-skill.ts",
+      "SKILL.md lines 83 and 129 DO reference codex-workflow-status.md"
+    ],
+    "assumptions_to_verify": [
+      "~/.codex/skills/archon/ does not already exist (could not verify due to permission denial)",
+      "The `archon` binary on PATH points to the local fork (P0-T2 addresses this before P1-T4)",
+      "~/.codex is a git repository (plan assumes this in multiple commands)"
+    ],
+    "verification_sufficiency": [
+      "Phase 1 verify commands are sufficient: bun test + real CLI install diff covers both unit and integration",
+      "Phase 3 manual verification is honest about automated limitations for Codex Desktop discovery",
+      "Phase 6 aggregates all prior checks plus a fresh-session smoke \u2014 comprehensive for this scope",
+      "The plan does not over-claim automated coverage where manual verification is more appropriate"
+    ],
+    "downstream_risks": [
+      "If bundled-skill.test.ts is not run in CI, the drift fix could regress silently",
+      "Global skill staleness depends entirely on human discipline (sync checklist); no automated alert",
+      "Over-broad Archon activation from global skill is mitigated by existing trigger wording but not tested"
+    ],
+    "freeze_recommendation": "Safe to freeze. Carry the remaining WARN/NOTE items as explicit follow-ups or implementation-time checks.",
+    "prior_round_closure": [],
+    "closure_verification": "Round 1/3 with no prior round. No carried issues to verify.",
+    "rerun_recommendation": "stop"
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "schema_version": "peer-review-v1",
+  "review_id": "peer-review-d57b3b80ebb2",
+  "plan_path": "/private/tmp/archon-input-preflight-advisory.md",
+  "plan_sha256": "2e43fad0f93c95d93ee0120afdfd4983af40b9411d8968c6cbd418c0a6c21737",
+  "mode": "advisory-challenge",
+  "sidecar_dir": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/_advisory-reviews",
+  "engine": "Claude",
+  "requested_engine": "claude",
+  "origin_runtime": "codex",
+  "engine_policy": "explicit",
+  "resolved_primary_engine": "claude",
+  "preferred_engine": "claude",
+  "fallback_engine": null,
+  "final_engine": "claude",
+  "reviewer_match": "opposite",
+  "gate_quality": "preferred",
+  "artifact_role": "diagnostic",
+  "canonical_sidecar_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/plans/_advisory-reviews/archon-input-preflight-advisory-peer-review.json",
+  "fallback_used": false,
+  "fallback_reason": null,
+  "attempt_chain": [
+    {
+      "engine": "claude",
+      "phase": "primary",
+      "attempt": 1,
+      "timeout_seconds": 300,
+      "result": "completed",
+      "elapsed_seconds": 0.526,
+      "returncode": 0
+    }
+  ],
+  "model": "claude-opus-4-6",
+  "verdict": "Failed-to-run",
+  "issues_count": 0,
+  "ran_at": "2026-05-03T17:21:14.654949+00:00",
+  "raw_review_excerpt": "",
+  "error": "structured_output_missing",
+  "failure_family": "structured_output_missing",
+  "recovery_steps": [
+    "Peer review failed (structured output missing). Recovery: retry once."
+  ],
+  "stop_guidance": [
+    "- Run `python3 \"/Users/mase/.codex/skills/my-peer-review/scripts/run_claude_peer_review.py\" --plan-path \"/private/tmp/archon-input-preflight-advisory.md\" --mode advisory-challenge --check-only` to confirm the current sidecar state.",
+    "- Safe next step: fix the plan and rerun one clean peer review.",
+    "- If Claude remains unreliable here, switch explicitly to `--engine codex`.",
+    "- Only skip peer review if the user explicitly approves bypassing that gate."
+  ],
+  "next_action": "- Run `python3 \"/Users/mase/.codex/skills/my-peer-review/scripts/run_claude_peer_review.py\" --plan-path \"/private/tmp/archon-input-preflight-advisory.md\" --mode advisory-challenge --check-only` to confirm the current sidecar state."
+}
