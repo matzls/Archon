@@ -16,6 +16,7 @@ export default tseslint.config(
       'workspace/**',
       'worktrees/**',
       '.worktrees/**',
+      '.agents/skills/**',
       '.claude/worktrees/**',
       '.claude/skills/**',
       '.archon/**', // User workflow/script/command content — not in any tsconfig project
