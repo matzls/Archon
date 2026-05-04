@@ -1,0 +1,21 @@
+{
+  "source_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/prd/paused-output-web-parity.prd.md",
+  "type": "PRD",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "PRD: Paused Output Web Parity",
+  "summary": "Defines Web parity requirements for showing persisted paused workflow output in Archon chat and dashboard approval surfaces.",
+  "scope": [
+    "Archon workflow pauses",
+    "Web chat progress card",
+    "dashboard workflow run card",
+    "approval prompt",
+    "approval.lastOutput",
+    "Latest output",
+    "clipped-output notice"
+  ],
+  "cross_refs": ["docs/plans/archon-paused-output-ux-parity_plan.md"],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

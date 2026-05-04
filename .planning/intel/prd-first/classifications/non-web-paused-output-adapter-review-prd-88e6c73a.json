@@ -1,0 +1,28 @@
+{
+  "source_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/prd/non-web-paused-output-adapter-review.prd.md",
+  "type": "PRD",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "PRD: Non-Web Paused Output Adapter Review",
+  "summary": "Defines the Slice 5 requirements for non-Web paused-output parity across CLI, shared workflow status text, and GitHub pull behavior.",
+  "scope": [
+    "Slice 5",
+    "non-Web paused output",
+    "CLI paused rendering",
+    "workflow status",
+    "GitHub command path",
+    "finalAssistantOutput",
+    "lastOutput",
+    "truncation wording"
+  ],
+  "cross_refs": [
+    "docs/plans/archon-paused-output-ux-parity_plan.md",
+    "docs/prd/paused-output-web-parity.prd.md",
+    "docs/prd/paused-snapshot-contract-design.prd.md",
+    "docs/prd/runtime-metadata-hygiene.prd.md",
+    "docs/prd/full-output-fallback.prd.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

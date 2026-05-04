@@ -1,0 +1,21 @@
+{
+  "source_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/prd/workflow-node-display-names.prd.md",
+  "type": "PRD",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "PRD: Workflow Node Display Names",
+  "summary": "Defines requirements for human-readable workflow node labels in Archon execution graphs.",
+  "scope": [
+    "Archon workflows",
+    "workflow execution graph",
+    "DAG nodes",
+    "node labels",
+    "display_name schema field",
+    "web UI graph components",
+    "workflow definitions"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

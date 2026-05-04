@@ -1,0 +1,21 @@
+{
+  "source_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/prd/full-output-fallback.prd.md",
+  "type": "PRD",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "PRD: Full Output Fallback",
+  "summary": "Defines Slice 4 requirements for opening full paused Web workflow output from clipped previews through existing worker conversation logs.",
+  "scope": [
+    "Full Output Fallback",
+    "paused Web workflow cards",
+    "clipped paused previews",
+    "workflow run details logs view",
+    "worker conversation history",
+    "bounded paused status payloads",
+    "Archon Web workflows"
+  ],
+  "cross_refs": ["docs/plans/archon-paused-output-ux-parity_plan.md"],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

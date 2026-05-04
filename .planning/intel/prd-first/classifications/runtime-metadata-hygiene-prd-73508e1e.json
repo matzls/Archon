@@ -1,0 +1,24 @@
+{
+  "source_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/prd/runtime-metadata-hygiene.prd.md",
+  "type": "PRD",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "PRD: Runtime Metadata Hygiene",
+  "summary": "Defines requirements for separating live paused-workflow approval metadata from resolved approval history in Archon runtime rows.",
+  "scope": [
+    "Archon",
+    "workflow runtime metadata",
+    "metadata.approval",
+    "metadata.lastApproval",
+    "paused workflow runs",
+    "approval gates",
+    "resume logic",
+    "Web UI",
+    "CLI",
+    "API"
+  ],
+  "cross_refs": ["docs/plans/archon-paused-output-ux-parity_plan.md"],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

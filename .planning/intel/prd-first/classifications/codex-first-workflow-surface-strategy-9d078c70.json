@@ -1,0 +1,35 @@
+{
+  "source_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/design/codex-first-workflow-surface-strategy.md",
+  "type": "ADR",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Design Doc: Codex-First Workflow Surface Strategy",
+  "summary": "Defines the fork's Codex-first workflow surface, default asset policy, parity boundaries, and follow-on implementation sequence.",
+  "scope": [
+    "Codex workflows",
+    "Archon workflow defaults",
+    "bundled defaults",
+    "workflow builder",
+    "PIV loop",
+    "asset parity",
+    "capability crosswalk"
+  ],
+  "cross_refs": [
+    "docs/plans/human-gate-runtime-cli-durability_plan.md",
+    ".archon/workflows/defaults/archon-assist-codex.yaml",
+    ".archon/workflows/defaults/archon-piv-loop-codex.yaml",
+    ".archon/commands/defaults/archon-assist-codex.md",
+    ".agents/skills/archon/SKILL.md",
+    "packages/core/src/clients/codex.ts",
+    "packages/workflows/src/defaults/bundled-defaults.ts",
+    ".archon/workflows/defaults/archon-workflow-builder.yaml",
+    "packages/core/src/clients/claude.ts",
+    "packages/workflows/src/validator.ts",
+    "packages/workflows/src/deps.ts",
+    "packages/core/src/orchestrator/prompt-builder.ts",
+    ".archon/workflows/defaults/archon-piv-loop-codex.README.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

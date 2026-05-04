@@ -1,0 +1,34 @@
+{
+  "source_path": "/Users/mase/Codebase/Personal-Projects/Archon/docs/design/codex-piv-v2-workflow-design.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Design Doc: Codex PIV V2 Workflow",
+  "summary": "Defines the Archon-native Codex PIV V2 workflow model, artifacts, gates, validation expectations, and rollout slices.",
+  "scope": [
+    "Archon",
+    "Codex PIV V2 workflow",
+    "archon-piv-loop-codex",
+    "local Codex workflow system",
+    "integration branch",
+    "slice map",
+    "focused slice plan",
+    "plan template",
+    "peer review gates",
+    "live E2E validation",
+    "PR review handoff"
+  ],
+  "cross_refs": [
+    "docs/prd/<feature>.prd.md",
+    "docs/design/<feature>.md",
+    "docs/plans/<feature>_slice_map.md",
+    "docs/plans/<feature>-s<n>_plan.md",
+    "docs/plans/_advisory-reviews/<feature>-s<n>_plan-peer-review.json",
+    "docs/plans/_peer-reviews/<feature>-s<n>_plan-peer-review.json",
+    ".archon/plans/{slug}.plan.md",
+    "docs/plans/{slug}_plan.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}
