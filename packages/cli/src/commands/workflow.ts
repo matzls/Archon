@@ -10,6 +10,7 @@ import {
   loadRepoConfig,
   generateAndSetTitle,
   createWorkflowStore,
+  preflightWorkflowInputFiles,
 } from '@archon/core';
 import { WORKFLOW_EVENT_TYPES, type WorkflowEventType } from '@archon/workflows/store';
 import { configureIsolation, getIsolationProvider } from '@archon/isolation';
@@ -595,6 +596,25 @@ export async function workflowRunCommand(
     !options.resume && pinnedEnabled !== undefined ? pinnedEnabled : flagWantsIsolation;
 
   if (wantsIsolation && codebase) {
+    const repoConfigForPreflight = await loadRepoConfig(codebase.default_cwd);
+    const configuredBaseBranch = repoConfigForPreflight?.worktree?.baseBranch?.trim();
+    const startRef = options.fromBranch?.trim()
+      ? options.fromBranch.trim()
+      : configuredBaseBranch
+        ? `origin/${configuredBaseBranch}`
+        : `origin/${await git.getDefaultBranch(git.toRepoPath(codebase.default_cwd))}`;
+    const inputPreflight = await preflightWorkflowInputFiles({
+      originalCwd: cwd,
+      repoRoot: codebase.default_cwd,
+      userMessage,
+      workflowName: workflow.name,
+      wantsIsolation,
+      startRef,
+    });
+    if (inputPreflight.blocked) {
+      throw new Error(inputPreflight.message);
+    }
+
     // Auto-generate branch identifier from workflow name + timestamp when --branch not provided
     const branchIdentifier = options.branchName ?? `${workflowName}-${Date.now()}`;
 

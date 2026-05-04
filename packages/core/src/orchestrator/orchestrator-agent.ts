@@ -28,7 +28,8 @@ import { toError } from '../utils/error';
 import { getAgentProvider, getProviderCapabilities } from '@archon/providers';
 import { getArchonWorkspacesPath } from '@archon/paths';
 import { syncArchonToWorktree } from '../utils/worktree-sync';
-import { syncWorkspace, toRepoPath } from '@archon/git';
+import { preflightWorkflowInputFiles } from '../utils/workflow-input-preflight';
+import { getDefaultBranch, syncWorkspace, toRepoPath } from '@archon/git';
 import type { WorkspaceSyncResult } from '@archon/git';
 import { discoverWorkflowsWithConfig } from '@archon/workflows/workflow-discovery';
 import { findWorkflow } from '@archon/workflows/router';
@@ -39,7 +40,7 @@ import type {
   WorkflowLoadError,
 } from '@archon/workflows/schemas/workflow';
 import { createWorkflowDeps } from '../workflows/store-adapter';
-import { loadConfig } from '../config/config-loader';
+import { loadConfig, loadRepoConfig } from '../config/config-loader';
 import type { MergedConfig } from '../config/config-types';
 import { generateAndSetTitle } from '../services/title-generator';
 import { validateAndResolveIsolation, dispatchBackgroundWorkflow } from './orchestrator';
@@ -262,6 +263,33 @@ async function dispatchOrchestratorWorkflow(
     );
     cwd = codebase.default_cwd;
   } else {
+    if (!conversation.isolation_env_id) {
+      const repoConfigForPreflight = await loadRepoConfig(codebase.default_cwd);
+      const configuredBaseBranch =
+        isolationHints?.baseBranch?.trim() ?? repoConfigForPreflight?.worktree?.baseBranch?.trim();
+      const explicitStartRef = isolationHints?.fromBranch ? String(isolationHints.fromBranch) : '';
+      const startRef = explicitStartRef.trim()
+        ? explicitStartRef.trim()
+        : configuredBaseBranch
+          ? `origin/${configuredBaseBranch}`
+          : `origin/${await getDefaultBranch(toRepoPath(codebase.default_cwd))}`;
+      const inputPreflight = await preflightWorkflowInputFiles({
+        originalCwd: conversation.cwd ?? codebase.default_cwd,
+        repoRoot: codebase.default_cwd,
+        userMessage,
+        workflowName: workflow.name,
+        wantsIsolation: true,
+        startRef,
+      });
+      if (inputPreflight.blocked) {
+        await platform.sendMessage(
+          conversationId,
+          inputPreflight.message ?? 'Workflow input preflight failed.'
+        );
+        return;
+      }
+    }
+
     try {
       const result = await validateAndResolveIsolation(
         { ...conversation, codebase_id: codebase.id },

@@ -31,6 +31,7 @@ const mockSyncWorkspace = mock(() =>
 );
 // Identity passthrough — strips branded type for test simplicity; empty-string guard not needed here
 const mockToRepoPath = mock((p: string) => p);
+const mockGetDefaultBranch = mock(() => Promise.resolve('main'));
 const mockGetOrCreateConversation = mock(() => Promise.resolve(null as unknown));
 const mockGetCodebase = mock(() => Promise.resolve(null as unknown));
 const mockExecuteWorkflow = mock(() => Promise.resolve());
@@ -47,6 +48,10 @@ const mockLoadConfig = mock(() =>
     assistants: { claude: {}, codex: {} },
     envVars: {},
   })
+);
+const mockLoadRepoConfig = mock(() => Promise.resolve(null));
+const mockPreflightWorkflowInputFiles = mock(() =>
+  Promise.resolve({ blocked: false, checkedPaths: [] })
 );
 
 const mockLogger = createMockLogger();
@@ -169,6 +174,7 @@ mock.module('../db/messages', () => ({
 
 mock.module('../config/config-loader', () => ({
   loadConfig: mockLoadConfig,
+  loadRepoConfig: mockLoadRepoConfig,
 }));
 
 mock.module('../services/title-generator', () => ({
@@ -204,7 +210,12 @@ mock.module('../utils/worktree-sync', () => ({
   syncArchonToWorktree: mock(() => Promise.resolve()),
 }));
 
+mock.module('../utils/workflow-input-preflight', () => ({
+  preflightWorkflowInputFiles: mockPreflightWorkflowInputFiles,
+}));
+
 mock.module('@archon/git', () => ({
+  getDefaultBranch: mockGetDefaultBranch,
   syncWorkspace: mockSyncWorkspace,
   toRepoPath: mockToRepoPath,
 }));
@@ -1429,6 +1440,12 @@ describe('handleWorkflowRunCommand — E2 single codebase auto-select', () => {
     mockUpdateConversation.mockClear();
     mockDispatchBackgroundWorkflow.mockClear();
     mockLogger.error.mockClear();
+    mockPreflightWorkflowInputFiles.mockClear();
+    mockPreflightWorkflowInputFiles.mockResolvedValue({ blocked: false, checkedPaths: [] });
+    mockLoadRepoConfig.mockReset();
+    mockLoadRepoConfig.mockResolvedValue(null);
+    mockGetDefaultBranch.mockReset();
+    mockGetDefaultBranch.mockResolvedValue('main');
 
     // Default: return empty conversation without codebase
     mockGetOrCreateConversation.mockImplementation(() => Promise.resolve(null));
@@ -1470,6 +1487,78 @@ describe('handleWorkflowRunCommand — E2 single codebase auto-select', () => {
 
     // Should auto-select the codebase and update conversation
     expect(mockUpdateConversation).toHaveBeenCalledWith('conv-1', { codebase_id: codebase.id });
+    expect(mockDispatchBackgroundWorkflow).toHaveBeenCalled();
+  });
+
+  test('sends preflight guidance before creating an isolated workflow worktree', async () => {
+    const conversation = makeConversation({ codebase_id: null });
+    const codebase = makeCodebaseForSync();
+    mockGetOrCreateConversation.mockReturnValueOnce(Promise.resolve(conversation));
+    mockParseCommand.mockReturnValueOnce({ command: 'workflow', args: ['run', 'assist'] });
+    mockHandleCommand.mockReturnValueOnce(
+      Promise.resolve({
+        success: true,
+        message: 'Running workflow assist...',
+        workflow: { definition: assistWorkflow, args: 'docs/prd/new.md' },
+      })
+    );
+    mockListCodebases.mockReturnValueOnce(Promise.resolve([codebase]));
+    mockDiscoverWorkflowsWithConfig.mockReturnValueOnce(
+      Promise.resolve({
+        workflows: [makeTestWorkflowWithSource({ name: 'assist' })],
+        errors: [],
+      })
+    );
+    mockPreflightWorkflowInputFiles.mockResolvedValueOnce({
+      blocked: true,
+      checkedPaths: ['docs/prd/new.md'],
+      message: 'Cannot launch workflow because docs/prd/new.md is not visible',
+    });
+
+    const platform = makePlatform();
+    await handleMessage(platform, 'conv-1', '/workflow run assist docs/prd/new.md');
+
+    expect(platform.sendMessage).toHaveBeenCalledWith(
+      'conv-1',
+      expect.stringContaining('docs/prd/new.md is not visible')
+    );
+    expect(mockPreflightWorkflowInputFiles).toHaveBeenCalledWith(
+      expect.objectContaining({
+        originalCwd: codebase.default_cwd,
+        repoRoot: codebase.default_cwd,
+        userMessage: 'docs/prd/new.md',
+        workflowName: 'assist',
+        wantsIsolation: true,
+        startRef: 'origin/main',
+      })
+    );
+    expect(mockDispatchBackgroundWorkflow).not.toHaveBeenCalled();
+  });
+
+  test('skips input preflight when reusing an existing isolated conversation', async () => {
+    const conversation = makeConversation({ codebase_id: null, isolation_env_id: 'env-1' });
+    const codebase = makeCodebaseForSync();
+    mockGetOrCreateConversation.mockReturnValueOnce(Promise.resolve(conversation));
+    mockParseCommand.mockReturnValueOnce({ command: 'workflow', args: ['run', 'assist'] });
+    mockHandleCommand.mockReturnValueOnce(
+      Promise.resolve({
+        success: true,
+        message: 'Running workflow assist...',
+        workflow: { definition: assistWorkflow, args: 'docs/prd/new.md' },
+      })
+    );
+    mockListCodebases.mockReturnValueOnce(Promise.resolve([codebase]));
+    mockDiscoverWorkflowsWithConfig.mockReturnValueOnce(
+      Promise.resolve({
+        workflows: [makeTestWorkflowWithSource({ name: 'assist' })],
+        errors: [],
+      })
+    );
+
+    const platform = makePlatform();
+    await handleMessage(platform, 'conv-1', '/workflow run assist docs/prd/new.md');
+
+    expect(mockPreflightWorkflowInputFiles).not.toHaveBeenCalled();
     expect(mockDispatchBackgroundWorkflow).toHaveBeenCalled();
   });
 

@@ -19,6 +19,9 @@ const mockSetLogLevel = mock(() => undefined);
 const mockGetLogLevel = mock(() => 'info');
 
 const mockFsAccess = mock(() => Promise.resolve());
+const mockPreflightWorkflowInputFiles = mock(() =>
+  Promise.resolve({ blocked: false, checkedPaths: [] })
+);
 
 mock.module('fs/promises', () => ({
   ...fsPromises,
@@ -117,6 +120,7 @@ mock.module('@archon/core', () => ({
   loadConfig: mock(() => Promise.resolve({ defaults: {} })),
   generateAndSetTitle: mock(() => Promise.resolve()),
   loadRepoConfig: mock(() => Promise.resolve(null)),
+  preflightWorkflowInputFiles: mockPreflightWorkflowInputFiles,
   createWorkflowStore: mock(() => ({
     createWorkflowEvent: mock(() => Promise.resolve()),
   })),
@@ -429,6 +433,8 @@ describe('workflowRunCommand', () => {
     mockLogger.info.mockClear();
     mockFsAccess.mockClear();
     mockFsAccess.mockResolvedValue(undefined);
+    mockPreflightWorkflowInputFiles.mockClear();
+    mockPreflightWorkflowInputFiles.mockResolvedValue({ blocked: false, checkedPaths: [] });
   });
 
   afterEach(() => {
@@ -918,6 +924,51 @@ describe('workflowRunCommand', () => {
     const findActiveCallsAfter = (isolationDb.findActiveByWorkflow as ReturnType<typeof mock>).mock
       .calls.length;
     expect(findActiveCallsAfter).toBe(findActiveCallsBefore);
+  });
+
+  it('blocks isolated workflow launch when local input preflight fails', async () => {
+    const { discoverWorkflowsWithConfig } = await import('@archon/workflows/workflow-discovery');
+    const conversationDb = await import('@archon/core/db/conversations');
+    const codebaseDb = await import('@archon/core/db/codebases');
+    const isolation = await import('@archon/isolation');
+
+    const providerCallsBefore = (isolation.getIsolationProvider as ReturnType<typeof mock>).mock
+      .calls.length;
+
+    (discoverWorkflowsWithConfig as ReturnType<typeof mock>).mockResolvedValueOnce({
+      workflows: [makeTestWorkflowWithSource({ name: 'assist', description: 'Help' })],
+      errors: [],
+    });
+    (conversationDb.getOrCreateConversation as ReturnType<typeof mock>).mockResolvedValueOnce({
+      id: 'conv-123',
+    });
+    (codebaseDb.findCodebaseByDefaultCwd as ReturnType<typeof mock>).mockResolvedValueOnce({
+      id: 'cb-123',
+      default_cwd: '/test/path',
+    });
+    mockPreflightWorkflowInputFiles.mockResolvedValueOnce({
+      blocked: true,
+      checkedPaths: ['docs/prd/new.md'],
+      message: 'Cannot launch workflow because docs/prd/new.md is not visible',
+    });
+
+    await expect(workflowRunCommand('/test/path', 'assist', 'docs/prd/new.md', {})).rejects.toThrow(
+      'docs/prd/new.md is not visible'
+    );
+
+    expect(mockPreflightWorkflowInputFiles).toHaveBeenCalledWith(
+      expect.objectContaining({
+        originalCwd: '/test/path',
+        repoRoot: '/test/path',
+        userMessage: 'docs/prd/new.md',
+        workflowName: 'assist',
+        wantsIsolation: true,
+        startRef: 'origin/dev',
+      })
+    );
+    expect((isolation.getIsolationProvider as ReturnType<typeof mock>).mock.calls.length).toBe(
+      providerCallsBefore
+    );
   });
 
   it('skips isolation when --no-worktree flag is set', async () => {

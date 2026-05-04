@@ -147,3 +147,10 @@ export { getPort } from './utils/port-allocation';
 
 // Worktree sync
 export { syncArchonToWorktree } from './utils/worktree-sync';
+
+// Workflow input preflight
+export { preflightWorkflowInputFiles } from './utils/workflow-input-preflight';
+export type {
+  WorkflowInputPreflightOptions,
+  WorkflowInputPreflightResult,
+} from './utils/workflow-input-preflight';
