@@ -24,12 +24,19 @@ Archon `dev` branch without losing local Codex/PIV operating-system changes.
 - Preserve fork-local workflow/docs/skill artifacts by default.
 - If conflicts touch generated bundled defaults, resolve source YAML first and
   regenerate generated output.
+- If upstream touches host skills, bundled skill install behavior, or Codex/PIV
+  workflow surfaces, classify those changes before accepting them into Mase's
+  fork. Use `docs/reference/mase-archon-fork-operating-model.md` for the
+  repo/global skill sync rules.
 
 Protected paths by default:
 
 - `.agents/skills/**`
+- `.claude/skills/archon/**`
 - `.archon/workflows/defaults/*codex*`
 - `.archon/commands/defaults/*codex*`
+- `packages/cli/src/bundled-skill.ts`
+- `packages/cli/src/commands/skill.ts`
 - `docs/design/**`
 - `docs/prd/**`
 - `docs/plans/**`
@@ -44,6 +51,7 @@ git fetch upstream dev
 git status --short --branch
 git rev-list --count dev..upstream/dev
 git log --oneline --decorate --max-count=12 dev..upstream/dev
+git diff --name-status dev..upstream/dev -- .agents/skills .claude/skills .archon/workflows/defaults .archon/commands/defaults packages/cli/src/bundled-skill.ts packages/cli/src/commands/skill.ts
 ```
 
 If the ahead count is `0`, report that no upstream sync is currently needed.
@@ -77,44 +85,62 @@ git merge upstream/dev
 
 Resolve conflicts with the safety rules above.
 
-4. Reconcile dependencies and generated defaults:
+4. Review host-skill and Codex/PIV deltas before reconciling dependencies:
+
+```bash
+git diff --name-status dev..upstream/dev -- .agents/skills .claude/skills .archon/workflows/defaults .archon/commands/defaults packages/cli/src/bundled-skill.ts packages/cli/src/commands/skill.ts
+git status --short -- .agents/skills .claude/skills .archon/workflows/defaults .archon/commands/defaults packages/cli/src/bundled-skill.ts packages/cli/src/commands/skill.ts
+```
+
+For every relevant upstream delta, classify it before keeping or changing it:
+
+- `port`: bring the upstream behavior into the fork as-is.
+- `adapt`: keep upstream intent but adjust for Mase's Codex/PIV fork.
+- `preserve`: keep the fork-local behavior.
+- `drop`: reject obsolete or incompatible upstream behavior.
+- `defer`: leave the decision for a separate follow-up.
+
+5. Reconcile dependencies and generated defaults:
 
 ```bash
 bun install
 bun run generate:bundled
 ```
 
-5. Verify protected assets still exist:
+6. Verify protected assets still exist:
 
 ```bash
 test -f .archon/workflows/defaults/archon-piv-loop-codex.yaml
 test -f .archon/workflows/defaults/archon-piv-loop-codex-v2.yaml
+test -f .agents/skills/archon/SKILL.md
+test -f .claude/skills/archon/SKILL.md
 test -f .agents/skills/my-dash-workflow-builder-codex/SKILL.md
 ```
 
-6. Validate workflow discovery and fork-local workflows:
+7. Validate workflow discovery and fork-local workflows:
 
 ```bash
 bun run cli workflow list --json
 bun run cli validate workflows archon-piv-loop-codex-v2 --json
 bun run cli validate workflows archon-workflow-builder --json
+bun test packages/cli/src/bundled-skill.test.ts
 python3 .agents/skills/my-dash-workflow-builder-codex/scripts/codex_workflow_lint.py .archon/workflows/defaults/*.yaml --repo-root .
 ```
 
-7. Run targeted tests for touched areas, then full validation:
+8. Run targeted tests for touched areas, then full validation:
 
 ```bash
 bun run validate
 ```
 
-8. Commit the sync branch after validation passes. The commit message must end
+9. Commit the sync branch after validation passes. The commit message must end
    with:
 
 ```text
 Co-authored-by: Codex <noreply@openai.com>
 ```
 
-9. Move `dev` to the validated merge commit and push:
+10. Move `dev` to the validated merge commit and push:
 
 ```bash
 git checkout dev

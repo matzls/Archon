@@ -19,14 +19,13 @@ import { dirname, join, resolve } from 'path';
  * Pure file-system helper used by both the standalone `skill install` CLI
  * command and the interactive setup wizard.
  *
- * The `bundled-skill` module is dynamically imported here so that its 18 top-level
- * `import … with { type: 'text' }` statements only execute when this function is
- * actually called. Compiled binaries (`bun build --compile`) still statically
- * analyze the literal-string `import()` and embed the chunk; linked-source
- * installs (`bun link`) don't touch the source skill files unless the user runs
- * `archon setup` or `archon skill install`. Without this indirection, every
- * `archon` invocation — including `archon --help` — fails at module load when
- * the source skill files are missing from disk.
+ * The `bundled-skill` module is dynamically imported here so its text imports
+ * only execute when this function is actually called. Compiled binaries (`bun
+ * build --compile`) still statically analyze the literal-string `import()` and
+ * embed the chunk; linked-source installs (`bun link`) don't touch the source
+ * skill files unless the user runs `archon setup` or `archon skill install`.
+ * Without this indirection, every `archon` invocation, including
+ * `archon --help`, fails at module load when source skill files are missing.
  */
 export async function copyArchonSkill(targetPath: string): Promise<void> {
   const { BUNDLED_SKILL_FILES } = await import('../bundled-skill');
@@ -60,14 +59,17 @@ export async function skillInstallCommand(targetPath: string): Promise<number> {
     return 1;
   }
 
-  const skillRoot = join(absoluteTarget, '.claude', 'skills', 'archon');
+  const claudeSkillRoot = join(absoluteTarget, '.claude', 'skills', 'archon');
+  const agentsSkillRoot = join(absoluteTarget, '.agents', 'skills', 'archon');
   try {
     const { BUNDLED_SKILL_FILES } = await import('../bundled-skill');
     const fileCount = Object.keys(BUNDLED_SKILL_FILES).length;
-    console.log(`Installing Archon skill (${fileCount} files) into ${skillRoot}`);
+    console.log(`Installing Archon skill (${fileCount} files each) into:`);
+    console.log(`  ${claudeSkillRoot}`);
+    console.log(`  ${agentsSkillRoot}`);
 
     await copyArchonSkill(absoluteTarget);
-    console.log('Done. Restart Claude Code to load the skill.');
+    console.log('Done. Restart Claude Code or Codex to load the skill.');
     return 0;
   } catch (error) {
     const err = error as NodeJS.ErrnoException;

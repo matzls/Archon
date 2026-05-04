@@ -103,7 +103,7 @@ Commands:
   continue <branch> [msg]    Continue work on an existing worktree with prior context
   complete <branch> [...]    Complete branch lifecycle (remove worktree + branches)
   serve                      Start the web UI server (downloads web UI on first run)
-  skill install [path]       Install the bundled Archon skill into .claude/skills/archon
+  skill install [path]       Install the bundled Archon skill into .claude and .agents
   validate workflows [name]  Validate workflow definitions and their references
   validate commands [name]   Validate command files
   version                    Show version info

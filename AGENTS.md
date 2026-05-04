@@ -8,6 +8,10 @@ fork-only operating rules that should not be assumed for upstream contributions.
 When Mase asks to update this fork from upstream, use the repo-local
 `my-achrchon-sync` skill.
 
+Before changing Archon host skills, bundled skill install behavior, the global
+Codex Archon skill, or fork-local upstream sync behavior, read
+`docs/reference/mase-archon-fork-operating-model.md`.
+
 Rules:
 
 - Source of incoming changes: `upstream/dev` from `coleam00/Archon`.
@@ -22,8 +26,11 @@ Rules:
 Protected paths by default:
 
 - `.agents/skills/**`
+- `.claude/skills/archon/**`
 - `.archon/workflows/defaults/*codex*`
 - `.archon/commands/defaults/*codex*`
+- `packages/cli/src/bundled-skill.ts`
+- `packages/cli/src/commands/skill.ts`
 - `docs/design/**`
 - `docs/prd/**`
 - `docs/plans/**`

@@ -19,14 +19,20 @@ describe('copyArchonSkill', () => {
     rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('writes every bundled skill file under .claude/skills/archon/', async () => {
+  it('writes every bundled skill file under both host skill roots', async () => {
     await copyArchonSkill(tempDir);
 
-    const skillRoot = join(tempDir, '.claude', 'skills', 'archon');
-    for (const [relativePath, content] of Object.entries(BUNDLED_SKILL_FILES)) {
-      const dest = join(skillRoot, relativePath);
-      expect(existsSync(dest)).toBe(true);
-      expect(readFileSync(dest, 'utf-8')).toBe(content);
+    const skillRoots = [
+      join(tempDir, '.claude', 'skills', 'archon'),
+      join(tempDir, '.agents', 'skills', 'archon'),
+    ];
+
+    for (const skillRoot of skillRoots) {
+      for (const [relativePath, content] of Object.entries(BUNDLED_SKILL_FILES)) {
+        const dest = join(skillRoot, relativePath);
+        expect(existsSync(dest)).toBe(true);
+        expect(readFileSync(dest, 'utf-8')).toBe(content);
+      }
     }
   });
 
@@ -66,9 +72,14 @@ describe('skillInstallCommand', () => {
 
     expect(exitCode).toBe(0);
     expect(existsSync(join(tempDir, '.claude', 'skills', 'archon', 'SKILL.md'))).toBe(true);
-    // Final log line should mention restarting Claude Code
+    expect(existsSync(join(tempDir, '.agents', 'skills', 'archon', 'SKILL.md'))).toBe(true);
+    const allLogs = logSpy.mock.calls.map(call => call[0] as string).join('\n');
+    expect(allLogs).toContain('.claude');
+    expect(allLogs).toContain('.agents');
+    // Final log line should mention both supported local hosts.
     const lastLog = logSpy.mock.calls.at(-1)?.[0] as string | undefined;
     expect(lastLog).toContain('Restart Claude Code');
+    expect(lastLog).toContain('Codex');
   });
 
   it('returns 1 and prints an error when the target directory does not exist', async () => {

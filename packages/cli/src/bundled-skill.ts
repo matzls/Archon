@@ -9,7 +9,7 @@
  */
 
 // =============================================================================
-// Skill Files (26 total)
+// Skill Files
 // =============================================================================
 
 import skillMd from '../../../.agents/skills/archon/SKILL.md' with { type: 'text' };
@@ -27,6 +27,7 @@ import telegramGuide from '../../../.agents/skills/archon/guides/telegram.md' wi
 import authoringCommands from '../../../.agents/skills/archon/references/authoring-commands.md' with { type: 'text' };
 import cliCommands from '../../../.agents/skills/archon/references/cli-commands.md' with { type: 'text' };
 import codexCapabilityCrosswalk from '../../../.agents/skills/archon/references/codex-capability-crosswalk.md' with { type: 'text' };
+import codexWorkflowStatus from '../../../.agents/skills/archon/references/codex-workflow-status.md' with { type: 'text' };
 import configuration from '../../../.agents/skills/archon/references/configuration.md' with { type: 'text' };
 import dagAdvanced from '../../../.agents/skills/archon/references/dag-advanced.md' with { type: 'text' };
 import goodPractices from '../../../.agents/skills/archon/references/good-practices.md' with { type: 'text' };
@@ -62,6 +63,7 @@ export const BUNDLED_SKILL_FILES: Record<string, string> = {
   'references/authoring-commands.md': authoringCommands,
   'references/cli-commands.md': cliCommands,
   'references/codex-capability-crosswalk.md': codexCapabilityCrosswalk,
+  'references/codex-workflow-status.md': codexWorkflowStatus,
   'references/configuration.md': configuration,
   'references/dag-advanced.md': dagAdvanced,
   'references/good-practices.md': goodPractices,
