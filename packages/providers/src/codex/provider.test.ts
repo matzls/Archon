@@ -1266,6 +1266,77 @@ describe('CodexProvider', () => {
         expect(resultChunk!.type === 'result' && resultChunk!.structuredOutput).toBeUndefined();
       });
 
+      test('uses the last agent_message as the structured output candidate', async () => {
+        const continuePayload = { decision: 'continue' };
+        const advancePayload = { decision: 'advance' };
+        mockRunStreamed.mockResolvedValueOnce({
+          events: (async function* () {
+            yield {
+              type: 'item.completed',
+              item: { type: 'agent_message', id: 'msg-1', text: JSON.stringify(continuePayload) },
+            };
+            yield {
+              type: 'item.completed',
+              item: { type: 'agent_message', id: 'msg-2', text: JSON.stringify(advancePayload) },
+            };
+            yield { type: 'turn.completed', usage: defaultUsage };
+          })(),
+        });
+
+        const chunks = [];
+        for await (const chunk of client.sendQuery('test', '/tmp', undefined, {
+          outputFormat: { type: 'json_schema', schema: { type: 'object' } },
+        })) {
+          chunks.push(chunk);
+        }
+
+        const assistantChunks = chunks.filter(c => c.type === 'assistant');
+        expect(assistantChunks).toHaveLength(2);
+        expect(assistantChunks.map(c => c.type === 'assistant' && c.content)).toEqual([
+          JSON.stringify(continuePayload),
+          JSON.stringify(advancePayload),
+        ]);
+
+        const resultChunk = chunks.find(c => c.type === 'result');
+        expect(resultChunk).toBeDefined();
+        expect(resultChunk!.type === 'result' && resultChunk!.structuredOutput).toEqual(
+          advancePayload
+        );
+      });
+
+      test('does not reuse an earlier valid structured output when the last message is invalid', async () => {
+        mockRunStreamed.mockResolvedValueOnce({
+          events: (async function* () {
+            yield {
+              type: 'item.completed',
+              item: { type: 'agent_message', id: 'msg-1', text: '{"decision":"continue"}' },
+            };
+            yield {
+              type: 'item.completed',
+              item: { type: 'agent_message', id: 'msg-2', text: 'not json at all' },
+            };
+            yield { type: 'turn.completed', usage: defaultUsage };
+          })(),
+        });
+
+        const chunks = [];
+        for await (const chunk of client.sendQuery('test', '/tmp', undefined, {
+          outputFormat: { type: 'json_schema', schema: { type: 'object' } },
+        })) {
+          chunks.push(chunk);
+        }
+
+        const systemChunk = chunks.find(c => c.type === 'system');
+        expect(systemChunk).toBeDefined();
+        expect(systemChunk!.type === 'system' && systemChunk!.content).toContain(
+          'Structured output requested but Codex returned non-JSON'
+        );
+
+        const resultChunk = chunks.find(c => c.type === 'result');
+        expect(resultChunk).toBeDefined();
+        expect(resultChunk!.type === 'result' && resultChunk!.structuredOutput).toBeUndefined();
+      });
+
       test('does not populate structuredOutput when outputFormat is not set', async () => {
         mockRunStreamed.mockResolvedValueOnce({
           events: (async function* () {

@@ -257,7 +257,7 @@ async function* streamCodexEvents(
   abortSignal?: AbortSignal
 ): AsyncGenerator<MessageChunk> {
   const state: CodexStreamState = {};
-  let accumulatedText = '';
+  let lastStructuredOutputCandidate = '';
 
   // If the iterator closes without a terminal event (e.g. the model was
   // rejected before the turn even started), we synthesize a fail-stop result
@@ -326,8 +326,9 @@ async function* streamCodexEvents(
       switch (itemType) {
         case 'agent_message':
           if (item.text) {
-            if (hasOutputFormat) accumulatedText += item.text as string;
-            yield { type: 'assistant', content: item.text as string };
+            const text = item.text as string;
+            if (hasOutputFormat) lastStructuredOutputCandidate = text;
+            yield { type: 'assistant', content: text };
           }
           break;
 
@@ -477,13 +478,13 @@ async function* streamCodexEvents(
       // Normalize: parse as JSON and put on structuredOutput so the
       // dag-executor can handle all providers uniformly.
       let structuredOutput: unknown;
-      if (hasOutputFormat && accumulatedText) {
+      if (hasOutputFormat && lastStructuredOutputCandidate) {
         try {
-          structuredOutput = JSON.parse(accumulatedText);
+          structuredOutput = JSON.parse(lastStructuredOutputCandidate);
           getLog().debug('codex.structured_output_parsed');
         } catch {
           getLog().warn(
-            { outputPreview: accumulatedText.slice(0, 200) },
+            { outputPreview: lastStructuredOutputCandidate.slice(0, 200) },
             'codex.structured_output_not_json'
           );
           yield {
