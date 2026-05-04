@@ -12,6 +12,13 @@ import { tmpdir } from 'os';
 import { join, resolve } from 'path';
 
 const ENABLED = process.env.ARCHON_LIVE_E2E === '1';
+const WEB_SMOKE_ENABLED = process.env.ARCHON_LIVE_WEB_SMOKE === '1';
+const WEB_API_URL = process.env.ARCHON_WEB_API_URL ?? 'http://localhost:3090';
+const ASSIST_WORKFLOW = 'archon-assist-codex';
+const PIV_V1_WORKFLOW = 'archon-piv-loop-codex';
+const PIV_V2_WORKFLOW = 'archon-piv-loop-codex-v2';
+const PIV_RUN_WORKFLOW = process.env.ARCHON_LIVE_PIV_WORKFLOW ?? PIV_V1_WORKFLOW;
+const PIV_APPROVAL_LIMIT = Number(process.env.ARCHON_LIVE_PIV_APPROVAL_LIMIT ?? '8');
 const ASSIST_TOKEN = 'ARCHON_CODEX_ASSIST_SMOKE_OK';
 const PIV_FILE = 'archon-codex-live-smoke.txt';
 const PIV_CONTENT = 'ARCHON_CODEX_PIV_SMOKE_OK';
@@ -27,6 +34,17 @@ interface CommandResult {
 interface WorkflowListOutput {
   workflows: { name: string }[];
   errors: { filename: string; error: string }[];
+}
+
+interface WebWorkflowListOutput {
+  workflows: WebWorkflowListEntry[];
+}
+
+interface WebWorkflowListEntry {
+  name?: string;
+  workflow?: {
+    name?: string;
+  };
 }
 
 interface WorkflowRunStatus {
@@ -71,6 +89,14 @@ function assertWorkflowStatus(value: unknown): asserts value is WorkflowStatusOu
   if (!isRecord(value) || !Array.isArray(value.runs)) {
     throw new Error('workflow status JSON did not match expected shape');
   }
+}
+
+function workflowNameFromWebEntry(entry: unknown): string | undefined {
+  if (!isRecord(entry)) {
+    return undefined;
+  }
+  const candidate = entry as WebWorkflowListEntry;
+  return candidate.workflow?.name ?? candidate.name;
 }
 
 async function runCommand(
@@ -139,6 +165,47 @@ async function runCli(
   });
 }
 
+async function verifyWebWorkflowDiscovery(cwd: string): Promise<void> {
+  const listUrl = new URL('/api/workflows', WEB_API_URL);
+  listUrl.searchParams.set('cwd', cwd);
+  const listResponse = await fetch(listUrl);
+  if (!listResponse.ok) {
+    throw new Error(
+      `Web workflow list failed (${listResponse.status}) from ${listUrl.toString()}: ${await listResponse.text()}`
+    );
+  }
+  const listPayload = await listResponse.json();
+  if (!isRecord(listPayload) || !Array.isArray(listPayload.workflows)) {
+    throw new Error('Web workflow list JSON did not match expected object shape');
+  }
+  const workflowList = listPayload as unknown as WebWorkflowListOutput;
+  const workflowNames = new Set(
+    workflowList.workflows.map(workflowNameFromWebEntry).filter(Boolean)
+  );
+  if (!workflowNames.has(PIV_V2_WORKFLOW)) {
+    throw new Error(`Web workflow list did not include ${PIV_V2_WORKFLOW}`);
+  }
+
+  const definitionUrl = new URL(`/api/workflows/${PIV_V2_WORKFLOW}`, WEB_API_URL);
+  definitionUrl.searchParams.set('cwd', cwd);
+  const definitionResponse = await fetch(definitionUrl);
+  if (!definitionResponse.ok) {
+    throw new Error(
+      `Web workflow definition failed (${definitionResponse.status}) from ${definitionUrl.toString()}: ${await definitionResponse.text()}`
+    );
+  }
+  const definitionPayload = await definitionResponse.json();
+  if (!isRecord(definitionPayload)) {
+    throw new Error('Web workflow definition JSON did not match expected object shape');
+  }
+  const workflow = isRecord(definitionPayload.workflow)
+    ? definitionPayload.workflow
+    : definitionPayload;
+  if (workflow.name !== PIV_V2_WORKFLOW) {
+    throw new Error(`Web workflow definition returned unexpected name: ${String(workflow.name)}`);
+  }
+}
+
 async function initializeRepo(repoDir: string): Promise<void> {
   await mkdir(repoDir, { recursive: true });
   await runCommand('git', ['init'], { cwd: repoDir });
@@ -173,7 +240,11 @@ function responseForPause(run: WorkflowRunStatus): string {
   return 'approved';
 }
 
-async function drivePivToCompletion(repoDir: string, archonHome: string): Promise<string> {
+async function drivePivToCompletion(
+  repoDir: string,
+  archonHome: string,
+  workflowName: string
+): Promise<string> {
   const prompt = [
     'Live E2E smoke for Archon Codex PIV.',
     `Create exactly one repo file named ${PIV_FILE}.`,
@@ -185,13 +256,13 @@ async function drivePivToCompletion(repoDir: string, archonHome: string): Promis
   await runCli(
     repoDir,
     archonHome,
-    ['workflow', 'run', 'archon-piv-loop-codex', '--branch', 'e2e-codex-piv-smoke', prompt],
+    ['workflow', 'run', workflowName, '--branch', 'e2e-codex-piv-smoke', prompt],
     900_000
   );
 
   let latestWorkingPath = repoDir;
-  for (let step = 0; step < 8; step += 1) {
-    const activeRun = await getActiveRun(repoDir, archonHome, 'archon-piv-loop-codex');
+  for (let step = 0; step < PIV_APPROVAL_LIMIT; step += 1) {
+    const activeRun = await getActiveRun(repoDir, archonHome, workflowName);
     if (!activeRun) {
       return latestWorkingPath;
     }
@@ -199,9 +270,7 @@ async function drivePivToCompletion(repoDir: string, archonHome: string): Promis
       latestWorkingPath = activeRun.working_path;
     }
     if (activeRun.status !== 'paused') {
-      throw new Error(
-        `Expected archon-piv-loop-codex to pause or complete; got ${activeRun.status}`
-      );
+      throw new Error(`Expected ${workflowName} to pause or complete; got ${activeRun.status}`);
     }
 
     const response = responseForPause(activeRun);
@@ -230,8 +299,19 @@ async function assertOnlyExpectedPivChange(workingPath: string): Promise<void> {
 }
 
 async function main(): Promise<void> {
+  if (!ENABLED && !WEB_SMOKE_ENABLED) {
+    console.log(
+      'Skipping live Codex E2E smoke. Set ARCHON_LIVE_E2E=1 to run it, or ARCHON_LIVE_WEB_SMOKE=1 for Web API discovery.'
+    );
+    return;
+  }
+
+  if (WEB_SMOKE_ENABLED) {
+    await verifyWebWorkflowDiscovery(process.env.ARCHON_WEB_SMOKE_CWD ?? REPO_ROOT);
+    console.log(`Web workflow discovery smoke passed for ${PIV_V2_WORKFLOW}.`);
+  }
+
   if (!ENABLED) {
-    console.log('Skipping live Codex E2E smoke. Set ARCHON_LIVE_E2E=1 to run it.');
     return;
   }
 
@@ -248,14 +328,15 @@ async function main(): Promise<void> {
     const workflowList = parseJson(listResult.stdout, 'workflow list');
     assertWorkflowList(workflowList);
     const workflowNames = new Set(workflowList.workflows.map(workflow => workflow.name));
-    for (const expected of ['archon-assist-codex', 'archon-piv-loop-codex']) {
+    for (const expected of [ASSIST_WORKFLOW, PIV_V1_WORKFLOW, PIV_V2_WORKFLOW, PIV_RUN_WORKFLOW]) {
       if (!workflowNames.has(expected)) {
         throw new Error(`workflow list did not include ${expected}`);
       }
     }
 
-    await runCli(repoDir, archonHome, ['validate', 'workflows', 'archon-assist-codex']);
-    await runCli(repoDir, archonHome, ['validate', 'workflows', 'archon-piv-loop-codex']);
+    await runCli(repoDir, archonHome, ['validate', 'workflows', ASSIST_WORKFLOW]);
+    await runCli(repoDir, archonHome, ['validate', 'workflows', PIV_V1_WORKFLOW]);
+    await runCli(repoDir, archonHome, ['validate', 'workflows', PIV_V2_WORKFLOW]);
 
     const assistResult = await runCli(
       repoDir,
@@ -263,21 +344,21 @@ async function main(): Promise<void> {
       [
         'workflow',
         'run',
-        'archon-assist-codex',
+        ASSIST_WORKFLOW,
         '--no-worktree',
         `Read-only live smoke. Make no file changes. Reply with exactly ${ASSIST_TOKEN}.`,
       ],
       600_000
     );
     if (!assistResult.stdout.includes(ASSIST_TOKEN)) {
-      throw new Error(`archon-assist-codex did not emit ${ASSIST_TOKEN}`);
+      throw new Error(`${ASSIST_WORKFLOW} did not emit ${ASSIST_TOKEN}`);
     }
     const assistStatus = await runCommand('git', ['status', '--short'], { cwd: repoDir });
     if (assistStatus.stdout.trim() !== '') {
-      throw new Error(`archon-assist-codex changed the repo unexpectedly:\n${assistStatus.stdout}`);
+      throw new Error(`${ASSIST_WORKFLOW} changed the repo unexpectedly:\n${assistStatus.stdout}`);
     }
 
-    const pivWorkingPath = await drivePivToCompletion(repoDir, archonHome);
+    const pivWorkingPath = await drivePivToCompletion(repoDir, archonHome, PIV_RUN_WORKFLOW);
     await assertOnlyExpectedPivChange(pivWorkingPath);
 
     success = true;
