@@ -25,6 +25,7 @@ const CODEX_WEB_SEARCH_MODES = [
 ] as const satisfies readonly WebSearchMode[];
 
 const portableFields = {
+  execPolicyApprovals: z.boolean().optional(),
   model: configStringSchema.optional(),
   modelReasoningEffort: z
     .enum(CODEX_EFFORTS, { error: `expected ${CODEX_EFFORTS.join(', ')}` })

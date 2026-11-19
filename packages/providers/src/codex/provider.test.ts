@@ -1,5 +1,6 @@
 import { spyOn } from 'bun:test';
 import Ajv from 'ajv';
+import { z } from 'zod';
 import * as binaryResolver from './binary-resolver';
 import { overStreams } from '../test/plugin';
 import { createProvider, descriptor } from './index';
@@ -26,6 +27,7 @@ import {
   type ProviderFailureClass,
 } from '@archon/provider-contract';
 import {
+  checkEventVocabulary,
   checkFailureClasses,
   runProviderConformance,
   type ProviderBackgroundCase,
@@ -59,6 +61,8 @@ import { TOOL_FREE_THREAD_CONFIG } from './turn-params';
 import type { CodexErrorInfo } from './protocol/v2/CodexErrorInfo';
 import type { ServerNotification } from './protocol/ServerNotification';
 import type { ThreadItem } from './protocol/v2/ThreadItem';
+import { parseCodexConfigStrict } from './config';
+import type { ItemGuardianApprovalReviewCompletedNotification } from './protocol/v2/ItemGuardianApprovalReviewCompletedNotification';
 
 const trackTempRoot = trackTempRoots();
 
@@ -2970,5 +2974,660 @@ test('a dropped MCP name cannot be supplied by Object.prototype beside a valid s
   expect(resultOf(chunks).failure).toEqual({
     class: 'misconfigured',
     evidence: expect.stringContaining('constructor'),
+  });
+});
+
+// These fixtures exercise Archon's protocol boundary, not Codex's execpolicy evaluator.
+describe('execpolicy approval compatibility', () => {
+  const policy = {
+    granular: {
+      sandbox_approval: false,
+      rules: true,
+      skill_approval: false,
+      request_permissions: false,
+      mcp_elicitations: false,
+    },
+  } as const;
+  const applied = { approvalPolicy: policy, approvalsReviewer: 'auto_review' } as const;
+  const node: SendQueryOptions = {
+    assistantConfig: { execPolicyApprovals: true },
+    nodeConfig: { nodeId: 'implement' },
+  };
+  const routes = [
+    [undefined, false, 'thread/start'],
+    ['existing-thread', false, 'thread/resume'],
+    ['existing-thread', true, 'thread/fork'],
+  ] as const;
+  type Readback = NonNullable<FakeTurnScript['threadSettings']>;
+  type Review = ItemGuardianApprovalReviewCompletedNotification;
+  function reviewNotification(
+    status: Review['review']['status'] = 'approved',
+    overrides: Partial<Review> = {}
+  ): ServerNotification {
+    return {
+      method: 'item/autoApprovalReview/completed',
+      params: {
+        threadId: THREAD_ID,
+        turnId: TURN_ID,
+        startedAtMs: 1,
+        completedAtMs: 2,
+        reviewId: 'review-1',
+        targetItemId: 'exec-1',
+        decisionSource: 'agent',
+        review: {
+          status,
+          riskLevel: null,
+          userAuthorization: null,
+          rationale: 'PRIVATE rationale',
+        },
+        action: {
+          type: 'command',
+          source: 'unifiedExec',
+          command: 'PRIVATE command with credential',
+          cwd: '/PRIVATE/path',
+        },
+        ...overrides,
+      },
+    };
+  }
+
+  test('the boolean is opt-in, strict in every scope, and portable through a JSON snapshot', () => {
+    for (const scope of ['install', 'run', 'snapshot'] as const) {
+      const schema = z.fromJSONSchema(descriptor.config![scope]);
+      expect(parseCodexConfigStrict({}, scope)).not.toHaveProperty('execPolicyApprovals');
+      for (const flag of [false, true]) {
+        expect(schema.safeParse({ execPolicyApprovals: flag }).success).toBe(true);
+        expect(parseCodexConfigStrict({ execPolicyApprovals: flag }, scope)).toEqual({
+          execPolicyApprovals: flag,
+        });
+      }
+      for (const flag of ['true', 1, null, {}]) {
+        expect(schema.safeParse({ execPolicyApprovals: flag }).success).toBe(false);
+        expect(() => parseCodexConfigStrict({ execPolicyApprovals: flag }, scope)).toThrow();
+      }
+    }
+    const snapshot = parseCodexConfigStrict(
+      { execPolicyApprovals: true, model: 'gpt-test', codexBinaryPath: '/local/binary' },
+      'snapshot'
+    );
+    expect(snapshot).toEqual({ execPolicyApprovals: true, model: 'gpt-test' });
+    expect(parseCodexConfigStrict(JSON.parse(JSON.stringify(snapshot)), 'run')).toEqual(snapshot);
+  });
+
+  for (const [session, forkSession, method] of routes) {
+    for (const reviewer of ['auto_review', 'guardian_subagent'] as const) {
+      for (const execContext of [undefined, { kind: 'host' as const }]) {
+        test(`${method} reads back ${reviewer} before a host turn (explicit context=${!!execContext})`, async () => {
+          const { provider, server } = providerWith({
+            threadSettings: { ...applied, approvalsReviewer: reviewer },
+          });
+          const chunks = await run(provider, { ...node, forkSession, execContext }, session);
+          expect(resultOf(chunks).failure).toBeUndefined();
+          expect(paramsOf(server, 'initialize')?.capabilities).toEqual({
+            experimentalApi: true,
+            requestAttestation: false,
+          });
+          expect(paramsOf(server, method)).toMatchObject({
+            approvalPolicy: policy,
+            sandbox: 'danger-full-access',
+          });
+          expect(paramsOf(server, method)).not.toHaveProperty('approvalsReviewer');
+          expect(paramsOf(server, method)?.config).not.toHaveProperty('approval_policy');
+          expect(server.processes[0].methods.indexOf(method)).toBeLessThan(
+            server.processes[0].methods.indexOf('turn/start')
+          );
+        });
+      }
+    }
+
+    const mismatches: [string, Readback][] = [
+      ['stock policy', { ...applied, approvalPolicy: 'never' }],
+      ['on-request policy', { ...applied, approvalPolicy: 'on-request' }],
+      ['missing policy', { ...applied, approvalPolicy: undefined }],
+      [
+        'null policy',
+        { ...applied, approvalPolicy: null as unknown as Readback['approvalPolicy'] },
+      ],
+      ['human reviewer', { ...applied, approvalsReviewer: 'user' }],
+      ['missing reviewer', { ...applied, approvalsReviewer: undefined }],
+      [
+        'unknown reviewer',
+        { ...applied, approvalsReviewer: 'future' as Readback['approvalsReviewer'] },
+      ],
+      [
+        'missing rules flag',
+        {
+          ...applied,
+          approvalPolicy: {
+            granular: { ...policy.granular, rules: undefined },
+          } as unknown as Readback['approvalPolicy'],
+        },
+      ],
+      [
+        'rules disabled',
+        { ...applied, approvalPolicy: { granular: { ...policy.granular, rules: false } } },
+      ],
+      [
+        'unknown policy field',
+        {
+          ...applied,
+          approvalPolicy: {
+            granular: { ...policy.granular, future_permission: true },
+          } as Readback['approvalPolicy'],
+        },
+      ],
+      ...(
+        ['sandbox_approval', 'skill_approval', 'request_permissions', 'mcp_elicitations'] as const
+      ).map((flag): [string, Readback] => [
+        `${flag} broadened`,
+        { ...applied, approvalPolicy: { granular: { ...policy.granular, [flag]: true } } },
+      ]),
+    ];
+    for (const [name, settings] of mismatches) {
+      test(`${method} stops before turn/start on ${name}`, async () => {
+        const { provider, server } = providerWith({ threadSettings: settings });
+        const chunks = await run(provider, { ...node, forkSession }, session);
+        expect(resultOf(chunks).failure).toEqual({
+          class: 'misconfigured',
+          evidence:
+            'Codex did not apply execpolicy approvals with the configured automatic reviewer.',
+        });
+        expect(server.processes).toHaveLength(1);
+        expect(server.processes[0].methods).toContain(method);
+        expect(server.processes[0].methods).not.toContain('turn/start');
+        expect(server.processes[0].toolResponses).toEqual([]);
+        expect(chunks.some(chunk => chunk.type === 'tool_call')).toBe(false);
+      });
+    }
+  }
+
+  const exclusions: [string, SendQueryOptions][] = [
+    ['default workflow', { nodeConfig: node.nodeConfig }],
+    ['explicit false', { ...node, assistantConfig: { execPolicyApprovals: false } }],
+    ['invalid opt-in', { ...node, assistantConfig: { execPolicyApprovals: 'true' } }],
+    ['direct', { assistantConfig: node.assistantConfig }],
+    ['empty node id', { ...node, nodeConfig: { nodeId: '  ' } }],
+    ['title', { ...node, purpose: 'title-generation' }],
+    ['container', { ...node, execContext: { kind: 'container', containerId: 'fixture-only' } }],
+  ];
+  for (const [name, options] of exclusions) {
+    test(`${name} retains stock policy and does not require automatic-review readback`, async () => {
+      const { provider, server } = providerWith();
+      expect(resultOf(await run(provider, options)).failure).toBeUndefined();
+      expect(paramsOf(server, 'thread/start')).toMatchObject({
+        approvalPolicy: 'never',
+        sandbox: name === 'title' ? 'read-only' : 'danger-full-access',
+      });
+      expect(paramsOf(server, 'initialize')?.capabilities).toBeNull();
+    });
+  }
+
+  test('the split tool-free final turn resets policy and capability to stock', async () => {
+    let processIndex = 0;
+    const { provider, server } = providerWith(() =>
+      processIndex++ === 0
+        ? { threadSettings: applied }
+        : { notifications: [agentMessage('{"answer":"ok"}')] }
+    );
+    const chunks = await run(provider, {
+      ...node,
+      assistantConfig: {
+        execPolicyApprovals: true,
+        model: 'split',
+        toolFreeStructuredOutputModels: ['split'],
+      },
+      outputFormat: {
+        type: 'json_schema',
+        schema: {
+          type: 'object',
+          properties: { answer: { type: 'string' } },
+          required: ['answer'],
+          additionalProperties: false,
+        },
+      },
+    });
+    expect(resultOf(chunks).structuredOutput).toEqual({ answer: 'ok' });
+    expect(server.processes).toHaveLength(2);
+    expect(
+      server.processes[0].requests.find(r => r.method === 'thread/start')?.params.approvalPolicy
+    ).toEqual(policy);
+    expect(paramsOf(server, 'thread/resume')).toMatchObject({
+      approvalPolicy: 'never',
+      config: TOOL_FREE_THREAD_CONFIG,
+    });
+    expect(paramsOf(server, 'initialize')?.capabilities).toBeNull();
+  });
+
+  test.each(['initialize', 'thread/start'] as const)(
+    'unsupported granular runtime at %s never retries with weaker policy',
+    async method => {
+      const { provider, server } = providerWith({
+        errors: { [method]: { code: -32600, message: 'unsupported capability or policy' } },
+      });
+      expect(resultOf(await run(provider, node)).isError).toBe(true);
+      expect(server.processes).toHaveLength(1);
+      expect(server.processes[0].methods).not.toContain('turn/start');
+    }
+  );
+
+  for (const [verdict, status] of [
+    ['approved', 'completed'],
+    ['denied', 'completed'],
+    ['timedOut', 'failed'],
+    ['aborted', 'stopped'],
+  ] as const) {
+    test(`${verdict} emits only correlated redacted terminal evidence without a live worker`, async () => {
+      const { provider } = providerWith({
+        threadSettings: applied,
+        notifications: [reviewNotification(verdict)],
+      });
+      const chunks = await run(provider, node);
+      expect(chunks.filter(chunk => chunk.type === 'subtask')).toEqual([
+        {
+          type: 'subtask',
+          taskId: `codex-approval:${THREAD_ID}:${TURN_ID}:review-1`,
+          taskType: 'approval_review',
+          summary: verdict,
+          status,
+          parentToolCallId: 'exec-1',
+        },
+      ]);
+      expect(JSON.stringify(chunks)).not.toContain('PRIVATE');
+      expect(chunks.at(-1)).toEqual({ type: 'settled' });
+    });
+  }
+
+  test('a null target has no invented parent item', async () => {
+    const chunks = await run(
+      providerWith({
+        threadSettings: applied,
+        notifications: [reviewNotification('approved', { targetItemId: null })],
+      }).provider,
+      node
+    );
+    const event = chunks.find(chunk => chunk.type === 'subtask');
+    expect(event).toMatchObject({ summary: 'approved', taskType: 'approval_review' });
+    expect(event).not.toHaveProperty('parentToolCallId');
+  });
+
+  test('foreign threads/turns, non-agent decisions, started, in-progress and unknown statuses emit no approval evidence', async () => {
+    const completed = reviewNotification();
+    if (completed.method !== 'item/autoApprovalReview/completed') throw new Error('fixture method');
+    const notifications: ServerNotification[] = [
+      reviewNotification('approved', { threadId: 'another-thread' }),
+      reviewNotification('approved', { turnId: 'another-turn' }),
+      reviewNotification('approved', { decisionSource: 'human' as Review['decisionSource'] }),
+      reviewNotification('inProgress'),
+      ...['futureStatus', 'constructor', '__proto__', 'toString'].map(status =>
+        reviewNotification(status as Review['review']['status'])
+      ),
+      {
+        method: 'item/autoApprovalReview/started',
+        params: {
+          ...completed.params,
+          review: { ...completed.params.review, status: 'inProgress' },
+        },
+      },
+    ];
+    const chunks = await run(
+      providerWith({ threadSettings: applied, notifications }).provider,
+      node
+    );
+    expect(chunks.filter(chunk => chunk.type === 'subtask')).toEqual([]);
+    expect(chunks.at(-1)).toEqual({ type: 'settled' });
+  });
+
+  test('stock policy ignores automatic-review notifications', async () => {
+    const chunks = await run(providerWith({ notifications: [reviewNotification()] }).provider);
+    expect(chunks.filter(chunk => chunk.type === 'subtask')).toEqual([]);
+  });
+
+  // The script supplies rule classification and execution outcome independently of review.
+  // Nothing here executes git or claims to reproduce Codex's rule/reviewer implementation.
+  for (const [rule, verdict, executed] of [
+    ['allow', undefined, true],
+    ['prompt', 'approved', true],
+    ['prompt', 'denied', false],
+    ['prompt', 'timedOut', false],
+    ['prompt', 'aborted', false],
+    ['prompt', undefined, false],
+    ['forbidden', undefined, false],
+  ] as const) {
+    test(`protocol fixture preserves ${rule}/${verdict ?? 'no review'} with executed=${executed}`, async () => {
+      const exactCommand = 'git commit -m "Verify Archon approval compatibility"';
+      const item = {
+        ...command('exec-1', exactCommand),
+        status: executed ? ('completed' as const) : ('declined' as const),
+        exitCode: executed ? 0 : null,
+      };
+      const notifications = [
+        ...(verdict ? [reviewNotification(verdict)] : []),
+        itemCompleted(item),
+      ];
+      const script: FakeTurnScript = {
+        threadSettings: applied,
+        notifications,
+        ...(!executed
+          ? ({
+              completion: {
+                status: 'failed',
+                error: turnError('other', 'fixture command was not executed'),
+              },
+            } as const)
+          : {}),
+      };
+      const { provider, server } = providerWith(script);
+      const chunks = await run(provider, node, undefined, exactCommand);
+      expect(paramsOf(server, 'turn/start')?.input).toEqual([
+        { type: 'text', text: exactCommand, text_elements: [] },
+      ]);
+      expect(chunks.find(chunk => chunk.type === 'tool_call')).toMatchObject({
+        toolCallId: 'exec-1',
+        rawInput: { command: exactCommand },
+      });
+      expect(resultOf(chunks).isError === true).toBe(!executed);
+      expect(chunks.filter(chunk => chunk.type === 'subtask').map(chunk => chunk.summary)).toEqual(
+        verdict ? [verdict] : []
+      );
+      expect(server.processes[0].approvalResponses).toEqual([]);
+      expect(server.processes[0].toolResponses).toEqual([]);
+      expect(paramsOf(server, 'thread/start')).toMatchObject({
+        sandbox: 'danger-full-access',
+        approvalPolicy: policy,
+      });
+    });
+  }
+
+  describe('same-ID approval command lifecycle', () => {
+    for (const duplicateStart of [false, true]) {
+      test.each([
+        ['completed', 0, 'completed'],
+        ['failed', 7, 'failed'],
+        ['completed', 9, 'failed'],
+      ] as const)(
+        `preserves %s exit %s as %s before result (duplicate start=${String(duplicateStart)})`,
+        async (status, exitCode, expected) => {
+          const item = command('exec-1', 'fixture command');
+          const unified = { ...item, source: 'unifiedExecStartup' as const };
+          const chunks = await run(
+            providerWith({
+              threadSettings: applied,
+              notifications: [
+                itemStarted(item),
+                reviewNotification(),
+                ...(duplicateStart ? [itemStarted(unified)] : []),
+                itemCompleted({ ...unified, status, exitCode, aggregatedOutput: 'actual output' }),
+              ],
+            }).provider,
+            node
+          );
+          expect(chunks.filter(chunk => chunk.type === 'tool_call')).toEqual([
+            {
+              type: 'tool_call',
+              toolCallId: item.id,
+              name: 'command_execution',
+              title: item.command,
+              rawInput: { command: item.command },
+            },
+          ]);
+          expect(chunks.filter(chunk => chunk.type === 'tool_call_update')).toEqual([
+            {
+              type: 'tool_call_update',
+              toolCallId: item.id,
+              status: expected,
+              exitCode,
+              output: 'actual output',
+            },
+          ]);
+          expect(
+            chunks.filter(chunk => chunk.type === 'subtask').map(chunk => chunk.taskType)
+          ).toEqual(['approval_review']);
+          expect(chunks.map(chunk => chunk.type)).toEqual([
+            'session',
+            'tool_call',
+            'subtask',
+            'tool_call_update',
+            'result',
+            'settled',
+          ]);
+        }
+      );
+    }
+
+    test.each(['denied', 'timedOut', 'aborted'] as const)(
+      '%s cannot turn a same-ID declined command into success',
+      async verdict => {
+        const item = command('exec-1', 'fixture command');
+        const chunks = await run(
+          providerWith({
+            threadSettings: applied,
+            notifications: [
+              itemStarted(item),
+              reviewNotification(verdict),
+              itemCompleted({ ...item, source: 'unifiedExecStartup', status: 'declined' }),
+            ],
+            completion: { status: 'failed', error: turnError('other', 'command did not execute') },
+          }).provider,
+          node
+        );
+        expect(chunks.filter(chunk => chunk.type === 'tool_call_update')).toEqual([
+          { type: 'tool_call_update', toolCallId: item.id, status: 'failed', output: '' },
+        ]);
+        expect(resultOf(chunks).isError).toBe(true);
+        expect(
+          chunks.filter(chunk => chunk.type === 'subtask').map(chunk => chunk.summary)
+        ).toEqual([verdict]);
+        expect(chunks.at(-1)).toEqual({ type: 'settled' });
+      }
+    );
+
+    test('approval without a command completion never fabricates success', async () => {
+      const chunks = await run(
+        providerWith({
+          threadSettings: applied,
+          notifications: [itemStarted(command('exec-1', 'fixture command')), reviewNotification()],
+        }).provider,
+        node
+      );
+      expect(chunks.filter(chunk => chunk.type === 'tool_call_update')).toEqual([
+        { type: 'tool_call_update', toolCallId: 'exec-1', status: 'cancelled' },
+      ]);
+      expect(chunks.at(-1)).toEqual({ type: 'settled' });
+    });
+
+    test('an abort after approval closes the open command without success', async () => {
+      const { provider, server } = providerWith({
+        threadSettings: applied,
+        notifications: [itemStarted(command('exec-1', 'fixture command')), reviewNotification()],
+        completion: null,
+      });
+      const controller = new AbortController();
+      const chunks: MessageChunk[] = [];
+      const consume = async (): Promise<void> => {
+        for await (const chunk of provider.sendQuery('p', '/workspace', undefined, {
+          ...node,
+          abortSignal: controller.signal,
+        })) {
+          chunks.push(chunk);
+          if (chunk.type === 'subtask' && chunk.taskType === 'approval_review') controller.abort();
+        }
+      };
+      await expect(consume()).rejects.toThrow('Query aborted');
+      expect(chunks.filter(chunk => chunk.type === 'tool_call_update')).toEqual([
+        { type: 'tool_call_update', toolCallId: 'exec-1', status: 'cancelled' },
+      ]);
+      expect(chunks.some(chunk => chunk.type === 'result' || chunk.type === 'settled')).toBe(false);
+      expect(paramsOf(server, 'turn/interrupt')).toEqual({ threadId: THREAD_ID, turnId: TURN_ID });
+    });
+
+    describe('after parent completion', () => {
+      for (const parentStatus of ['completed', 'failed'] as const) {
+        for (const liveBackground of [false, true]) {
+          for (const duplicateStart of [false, true]) {
+            test.each([
+              ['completed', 0],
+              ['failed', 17],
+              ['completed', 23],
+              ['declined', null],
+            ] as const)(
+              `${parentStatus} parent, background=${String(liveBackground)}, duplicate=${String(duplicateStart)}, late %s exit %s retains the terminal boundary`,
+              async (status, exitCode) => {
+                const item = command('exec-1', 'foreground command');
+                const unified = { ...item, source: 'unifiedExecStartup' as const };
+                const background = {
+                  ...command('keepalive', 'background command'),
+                  source: 'unifiedExecStartup' as const,
+                };
+                const chunks = await run(
+                  providerWith({
+                    threadSettings: applied,
+                    notifications: [
+                      itemStarted(item),
+                      reviewNotification(),
+                      ...(liveBackground ? [itemStarted(background)] : []),
+                      turnCompleted(
+                        parentStatus,
+                        parentStatus === 'failed' ? turnError('other', 'parent failed') : null
+                      ),
+                      ...(duplicateStart ? [itemStarted(unified), itemStarted(unified)] : []),
+                      itemCompleted({ ...unified, status, exitCode }),
+                      ...(liveBackground
+                        ? [itemCompleted({ ...background, status: 'completed', exitCode: 0 })]
+                        : []),
+                    ],
+                    completion: null,
+                  }).provider,
+                  node
+                );
+                expect(chunks.filter(chunk => chunk.type === 'tool_call')).toHaveLength(1);
+                expect(chunks.filter(chunk => chunk.type === 'tool_call_update')).toEqual([
+                  { type: 'tool_call_update', toolCallId: item.id, status: 'cancelled' },
+                ]);
+                expect(
+                  chunks
+                    .filter(chunk => chunk.type === 'subtask')
+                    .filter(chunk => chunk.taskType === 'command_execution')
+                    .map(chunk => [chunk.taskId, chunk.status])
+                ).toEqual(
+                  liveBackground
+                    ? [
+                        [`command:${THREAD_ID}:keepalive`, 'started'],
+                        ...(duplicateStart
+                          ? [
+                              [`command:${THREAD_ID}:exec-1`, 'started'],
+                              [
+                                `command:${THREAD_ID}:exec-1`,
+                                status === 'declined' ? 'stopped' : status,
+                              ],
+                            ]
+                          : []),
+                        [`command:${THREAD_ID}:keepalive`, 'completed'],
+                      ]
+                    : []
+                );
+                expect(resultOf(chunks).isError === true).toBe(parentStatus === 'failed');
+                if (liveBackground) {
+                  const resultIndex = chunks.findIndex(chunk => chunk.type === 'result');
+                  const drainedIndex = chunks.map(chunk => chunk.type).lastIndexOf('subtask');
+                  expect(resultIndex > drainedIndex).toBe(parentStatus === 'failed');
+                }
+                expect(chunks.at(-1)).toEqual({ type: 'settled' });
+                expect(
+                  await checkEventVocabulary([
+                    {
+                      name: 'post-parent completion',
+                      run: async function* () {
+                        yield* chunks;
+                      },
+                    },
+                  ])
+                ).toEqual([]);
+              }
+            );
+          }
+        }
+      }
+    });
+
+    test('a child command sharing the parent item ID retains its background lifecycle', async () => {
+      const item = command('exec-1', 'parent command');
+      const child = { ...command(item.id, 'child command'), source: 'unifiedExecStartup' as const };
+      const chunks = await run(
+        providerWith({
+          threadSettings: applied,
+          notifications: [
+            itemStarted(item),
+            reviewNotification(),
+            itemStarted(subAgentActivity('started')),
+            itemStarted(child, 'child-thread', 'child-turn'),
+            itemCompleted(
+              { ...child, status: 'completed', exitCode: 0 },
+              'child-thread',
+              'child-turn'
+            ),
+            itemCompleted(subAgentActivity('completed')),
+            itemCompleted({
+              ...item,
+              source: 'unifiedExecStartup',
+              status: 'completed',
+              exitCode: 0,
+            }),
+          ],
+        }).provider,
+        node
+      );
+      expect(chunks.filter(chunk => chunk.type === 'tool_call')).toHaveLength(1);
+      expect(chunks.filter(chunk => chunk.type === 'tool_call_update')).toEqual([
+        {
+          type: 'tool_call_update',
+          toolCallId: item.id,
+          status: 'completed',
+          exitCode: 0,
+          output: '',
+        },
+      ]);
+      expect(
+        chunks
+          .filter(chunk => chunk.type === 'subtask')
+          .filter(chunk => chunk.taskType === 'command_execution')
+          .map(chunk => [chunk.taskId, chunk.status])
+      ).toEqual([
+        ['command:child-thread:exec-1', 'started'],
+        ['command:child-thread:exec-1', 'completed'],
+      ]);
+      expect(chunks.at(-1)).toEqual({ type: 'settled' });
+    });
+  });
+
+  test('a human-only approval callback is immediately rejected without an allow result or command effect', async () => {
+    const { provider, server } = providerWith({
+      threadSettings: applied,
+      approvalRequests: [
+        {
+          kind: 'command',
+          threadId: THREAD_ID,
+          turnId: TURN_ID,
+          itemId: 'exec-1',
+          startedAtMs: 1,
+          environmentId: null,
+          command: 'git commit -m "fixture only"',
+        },
+      ],
+      completion: { status: 'failed', error: turnError('other', 'approval callback denied') },
+    });
+    const chunks = await run(provider, node);
+    expect(server.processes[0].approvalResponses).toEqual([
+      {
+        id: 'approval-0',
+        error: {
+          code: -32601,
+          message: 'Archon does not handle item/commandExecution/requestApproval',
+        },
+      },
+    ]);
+    expect(resultOf(chunks).isError).toBe(true);
+    expect(chunks.some(chunk => chunk.type === 'tool_call' || chunk.type === 'subtask')).toBe(
+      false
+    );
   });
 });
