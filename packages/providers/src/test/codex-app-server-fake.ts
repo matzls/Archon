@@ -6,7 +6,13 @@
  * Every frame it sends is typed with the protocol generated from the pinned Codex, so a
  * regeneration that renames or adds a field fails type-check here.
  */
+import {
+  threadStartResponse,
+  threadResumeResponse,
+  threadForkResponse,
+} from './codex-thread-fixture';
 import type { DynamicToolCallParams } from '../codex/protocol/v2/DynamicToolCallParams';
+import type { CommandExecutionRequestApprovalParams } from '../codex/protocol/v2/CommandExecutionRequestApprovalParams';
 import type { DynamicToolCallResponse } from '../codex/protocol/v2/DynamicToolCallResponse';
 import type { GetAccountResponse } from '../codex/protocol/v2/GetAccountResponse';
 import { EventEmitter } from 'events';
@@ -29,10 +35,7 @@ import type { LoginAccountParams } from '../codex/protocol/v2/LoginAccountParams
 import type { LoginAccountResponse } from '../codex/protocol/v2/LoginAccountResponse';
 import type { McpToolCallStatus } from '../codex/protocol/v2/McpToolCallStatus';
 import type { RateLimitWindow } from '../codex/protocol/v2/RateLimitWindow';
-import type { Thread } from '../codex/protocol/v2/Thread';
-import type { ThreadForkResponse } from '../codex/protocol/v2/ThreadForkResponse';
 import type { ThreadItem } from '../codex/protocol/v2/ThreadItem';
-import type { ThreadResumeResponse } from '../codex/protocol/v2/ThreadResumeResponse';
 import type { ThreadStartResponse } from '../codex/protocol/v2/ThreadStartResponse';
 import type { TokenUsageBreakdown } from '../codex/protocol/v2/TokenUsageBreakdown';
 import type { Turn } from '../codex/protocol/v2/Turn';
@@ -48,6 +51,10 @@ type CommandExecution = Extract<ThreadItem, { type: 'commandExecution' }>;
 type McpToolCall = Extract<ThreadItem, { type: 'mcpToolCall' }>;
 
 export interface FakeTurnScript {
+  /** Applied readback, deliberately independent of the requested thread settings. */
+  threadSettings?: Partial<Pick<ThreadStartResponse, 'approvalPolicy' | 'approvalsReviewer'>>;
+  /** Human-only callbacks: the fixture does not run commands or evaluate execpolicy. */
+  approvalRequests?: CommandExecutionRequestApprovalParams[];
   toolCalls?: DynamicToolCallParams[];
   account?: GetAccountResponse['account'];
   /** `requiresOpenaiAuth` in the default `account/read` answer (default true). */
@@ -102,6 +109,7 @@ export interface FakeRequest {
 }
 
 export interface FakeProcess {
+  approvalResponses: { id: string; error?: { code: number; message: string }; result?: unknown }[];
   args: string[];
   env: Record<string, string>;
   binary: string;
@@ -126,6 +134,11 @@ type OutgoingFrame =
   | { id: number | string; result: unknown }
   | { id: number | string; error: { code: number; message: string } }
   | { id: number | string; method: 'item/tool/call'; params: DynamicToolCallParams }
+  | {
+      id: string;
+      method: 'item/commandExecution/requestApproval';
+      params: CommandExecutionRequestApprovalParams;
+    }
   | ServerNotification;
 
 export function createFakeAppServer(script: () => FakeTurnScript = () => ({})): Spawner & {
@@ -147,6 +160,7 @@ export function createFakeAppServer(script: () => FakeTurnScript = () => ({})): 
       binary: command,
       requests: [],
       toolResponses: [],
+      approvalResponses: [],
       notifications: [],
       signals: [],
       stdinEnded: false,
@@ -221,10 +235,23 @@ export function createFakeAppServer(script: () => FakeTurnScript = () => ({})): 
       }
     };
     let callIndex = 0;
+    let approvalIndex = 0;
+    const nextApproval = (): void => {
+      const params = turn.approvalRequests?.[approvalIndex];
+      if (!params) {
+        finishTurn();
+        return;
+      }
+      send({
+        id: `approval-${String(approvalIndex++)}`,
+        method: 'item/commandExecution/requestApproval',
+        params,
+      });
+    };
     const nextToolCall = (): void => {
       const params = turn.toolCalls?.[callIndex];
       if (!params) {
-        finishTurn();
+        nextApproval();
         return;
       }
       send({ id: `host-tool-${String(callIndex++)}`, method: 'item/tool/call', params });
@@ -272,18 +299,27 @@ export function createFakeAppServer(script: () => FakeTurnScript = () => ({})): 
           if (!turn.ignoreInitialize) send({ id, result: initializeResponse() });
           break;
         case 'thread/start':
-          send({ id, result: threadStartResponse(THREAD_ID) });
+          send({ id, result: { ...threadStartResponse(THREAD_ID), ...turn.threadSettings } });
           break;
         case 'thread/resume':
           send({
             id,
-            result: threadResumeResponse((params as { threadId: string }).threadId),
+            result: {
+              ...threadResumeResponse((params as { threadId: string }).threadId),
+              ...turn.threadSettings,
+            },
           });
           break;
         case 'thread/fork': {
           forks += 1;
           const source = (params as { threadId: string }).threadId;
-          send({ id, result: threadForkResponse(`${source}-fork-${String(forks)}`, source) });
+          send({
+            id,
+            result: {
+              ...threadForkResponse(`${source}-fork-${String(forks)}`, source),
+              ...turn.threadSettings,
+            },
+          });
           break;
         }
         case 'turn/start':
@@ -333,6 +369,11 @@ export function createFakeAppServer(script: () => FakeTurnScript = () => ({})): 
     const handleLine = (line: string): void => {
       const message = JSON.parse(line) as { id?: number; method?: string; params?: unknown };
       if (typeof message.method !== 'string') {
+        if (String(message.id).startsWith('approval-')) {
+          record.approvalResponses.push(JSON.parse(line));
+          nextApproval();
+          return;
+        }
         const response = JSON.parse(line) as { id: string; result: DynamicToolCallResponse };
         record.toolResponses.push(response);
         nextToolCall();
@@ -385,77 +426,6 @@ function initializeResponse(): InitializeResponse {
     platformFamily: 'unix',
     platformOs: 'linux',
   };
-}
-
-function threadOf(id: string): Thread {
-  return {
-    id,
-    sessionId: id,
-    environments: null,
-    extra: null,
-    canAcceptDirectInput: null,
-    daybreakEnabled: null,
-    forkedFromId: null,
-    parentThreadId: null,
-    preview: '',
-    ephemeral: false,
-    section: null,
-    sectionEnteredAt: null,
-    projectId: null,
-    historyMode: 'paginated',
-    modelProvider: 'openai',
-    model: null,
-    reasoningEffort: null,
-    createdAt: 0,
-    updatedAt: 0,
-    recencyAt: null,
-    status: { type: 'idle' },
-    path: null,
-    cwd: '/workspace',
-    cliVersion: '0.0.0',
-    originator: null,
-    source: 'appServer',
-    threadSource: null,
-    agentNickname: null,
-    agentRole: null,
-    gitInfo: null,
-    name: null,
-    turns: [],
-  };
-}
-
-function threadStartResponse(id: string): ThreadStartResponse {
-  return {
-    thread: threadOf(id),
-    model: 'gpt-fake',
-    runtimeWorkspaceRoots: [],
-    activePermissionProfile: null,
-    multiAgentMode: 'explicitRequestOnly',
-    modelProvider: 'openai',
-    serviceTier: null,
-    disabledPluginIds: [],
-    cwd: '/workspace',
-    instructionSources: [],
-    approvalPolicy: 'never',
-    approvalsReviewer: 'user',
-    sandbox: { type: 'dangerFullAccess' },
-    reasoningEffort: null,
-  };
-}
-
-function threadResumeResponse(id: string): ThreadResumeResponse {
-  return {
-    ...threadStartResponse(id),
-    collaborationMode: null,
-    initialTurnsPage: null,
-    turnsBackwardsCursor: null,
-    itemsBackwardsCursor: null,
-  };
-}
-
-function threadForkResponse(id: string, source: string): ThreadForkResponse {
-  const response = threadStartResponse(id);
-  return { ...response, thread: { ...response.thread, forkedFromId: source } };
 }
 
 function configReadResponse(servers: string[]): ConfigReadResponse {

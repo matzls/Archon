@@ -464,6 +464,7 @@ export class CodexProvider implements IAgentProvider {
         nodePlugins,
         threadConfig: buildThreadConfig(launch.config, mcpServers, nodePlugins !== undefined),
         modelReasoningEffort: launch.config.modelReasoningEffort,
+        execPolicyApprovals: launch.config.execPolicyApprovals === true,
         splitsStructuredOutput: !titleRequest && splitsStructuredOutput(launch.config, model),
         run,
       });
@@ -611,6 +612,7 @@ export class CodexProvider implements IAgentProvider {
 
 /** What `turnRequestOf` reads beyond the request options. */
 interface TurnInputs {
+  execPolicyApprovals: boolean;
   tools: NativeTools;
   login: CodexLogin | undefined;
   resumeThreadId: string | undefined;
@@ -685,12 +687,23 @@ function finalTurnRequestOf(
     nodePlugins: [],
     threadParams: {
       ...request.threadParams,
+      approvalPolicy: 'never',
       config: { ...buildThreadConfig(launchConfig, undefined, true), ...TOOL_FREE_THREAD_CONFIG },
     },
     turnParams,
     hasOutputFormat: true,
   };
 }
+
+const EXEC_POLICY_APPROVALS = {
+  granular: {
+    sandbox_approval: false,
+    rules: true,
+    skill_approval: false,
+    request_permissions: false,
+    mcp_elicitations: false,
+  },
+} as const;
 
 /**
  * The turn `streamTurn` runs, less the connection, which starts after it is built. When the
@@ -741,7 +754,13 @@ function turnRequestOf(
     ),
     threadParams: {
       sandbox: inputs.titleRequest ? 'read-only' : 'danger-full-access',
-      approvalPolicy: 'never',
+      approvalPolicy:
+        inputs.execPolicyApprovals &&
+        !inputs.titleRequest &&
+        isWorkflowNode(requestOptions) &&
+        requestOptions?.execContext?.kind !== 'container'
+          ? EXEC_POLICY_APPROVALS
+          : 'never',
       ...(model ? { model } : {}),
       config: threadConfig,
     },

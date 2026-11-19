@@ -3,6 +3,7 @@
  * thread, start the turn, and map its notifications into MessageChunks until the
  * parent turn completes and the background work it started has drained.
  */
+import { isDeepStrictEqual } from 'node:util';
 import { requireMcpConnections, type McpStatus } from '../mcp/readiness';
 import { BUNDLED_VERSION, createLogger } from '@archon/paths';
 import { sessionPreview, toolCallSchema, truncateToolOutput } from '@archon/provider-contract';
@@ -15,6 +16,7 @@ import type { ServerNotification } from './protocol/ServerNotification';
 import type { McpServerStatusUpdatedNotification } from './protocol/v2/McpServerStatusUpdatedNotification';
 import type { RateLimitSnapshot } from './protocol/v2/RateLimitSnapshot';
 import type { ThreadItem } from './protocol/v2/ThreadItem';
+import type { ThreadStartResponse } from './protocol/v2/ThreadStartResponse';
 import type { ThreadTokenUsage } from './protocol/v2/ThreadTokenUsage';
 import type { TokenUsageBreakdown } from './protocol/v2/TokenUsageBreakdown';
 import type { Turn } from './protocol/v2/Turn';
@@ -364,11 +366,13 @@ export async function* streamTurn(request: TurnRequest): AsyncGenerator<MessageC
  */
 async function openThread(request: TurnRequest): Promise<string> {
   const { connection, nodePlugins, login, tools } = request;
+  const requested = request.threadParams.approvalPolicy;
+  const ruleApprovals = requested !== null && typeof requested === 'object';
   const initialized = await connection.request('initialize', {
     clientInfo: { name: 'archon', title: 'Archon', version: BUNDLED_VERSION },
     // Host tools and external ChatGPT tokens both require Codex's experimental API.
     capabilities:
-      tools.specs.length || login?.type === 'chatgptAuthTokens'
+      ruleApprovals || tools.specs.length || login?.type === 'chatgptAuthTokens'
         ? { experimentalApi: true, requestAttestation: false }
         : null,
   });
@@ -411,6 +415,7 @@ async function openThread(request: TurnRequest): Promise<string> {
   const threadId = idAt(threadResponse, 'thread');
   if (!threadId) throw new Error('Codex app-server returned a thread without an id');
   request.onThread(threadId);
+  verifyExecPolicyApprovals(threadResponse, requested);
   if (declared) await checkThreadMcpScope(connection, threadId, declared);
   getLog().debug(
     {
@@ -421,6 +426,25 @@ async function openThread(request: TurnRequest): Promise<string> {
     'codex.thread_ready'
   );
   return threadId;
+}
+
+function verifyExecPolicyApprovals(
+  threadResponse: unknown,
+  requested: ThreadParams['approvalPolicy']
+): void {
+  if (requested === null || typeof requested !== 'object') return;
+  const active = threadResponse as Partial<
+    Pick<ThreadStartResponse, 'approvalPolicy' | 'approvalsReviewer'>
+  >;
+  if (
+    !isDeepStrictEqual(active.approvalPolicy, requested) ||
+    !['auto_review', 'guardian_subagent'].includes(String(active.approvalsReviewer))
+  ) {
+    throw new ClassifiedProviderError(
+      'misconfigured',
+      'Codex did not apply execpolicy approvals with the configured automatic reviewer.'
+    );
+  }
 }
 
 /** Serve host tool calls for the turn, then start it. */
@@ -460,6 +484,11 @@ async function* observeNotification(
   notification: ServerNotification
 ): AsyncGenerator<MessageChunk> {
   switch (notification.method) {
+    case 'item/autoApprovalReview/completed': {
+      yield* observeApprovalReview(request.threadParams.approvalPolicy, ids, notification.params);
+      return;
+    }
+
     case 'account/rateLimits/updated':
       observation.rateLimits = notification.params.rateLimits;
       return;
@@ -514,6 +543,43 @@ type NotificationParams<M extends ServerNotification['method']> = Extract<
   { method: M }
 >['params'];
 
+function* observeApprovalReview(
+  policy: ThreadParams['approvalPolicy'],
+  ids: TurnIds,
+  {
+    threadId,
+    turnId,
+    reviewId,
+    targetItemId,
+    decisionSource,
+    review,
+  }: NotificationParams<'item/autoApprovalReview/completed'>
+): Generator<MessageChunk> {
+  if (
+    !policy ||
+    typeof policy !== 'object' ||
+    threadId !== ids.threadId ||
+    turnId !== ids.turnId ||
+    decisionSource !== 'agent'
+  )
+    return;
+  const terminal = {
+    approved: 'completed',
+    denied: 'completed',
+    timedOut: 'failed',
+    aborted: 'stopped',
+  } as const;
+  if (!Object.prototype.hasOwnProperty.call(terminal, review.status)) return;
+  yield {
+    type: 'subtask',
+    taskId: `codex-approval:${threadId}:${turnId}:${reviewId}`,
+    taskType: 'approval_review',
+    summary: review.status,
+    status: terminal[review.status as keyof typeof terminal],
+    ...(targetItemId === null ? {} : { parentToolCallId: targetItemId }),
+  };
+}
+
 /**
  * `willRetry` errors are Codex reconnecting on its own; the turn's outcome is decided by
  * `turn/completed`. They are kept as evidence for a turn that never completes.
@@ -555,7 +621,9 @@ function* observeItem(
   // arrive after the result, which closes foreground tool calls in the contract.
   if (
     item.type === 'subAgentActivity' ||
-    (item.type === 'commandExecution' && item.source === 'unifiedExecStartup')
+    (item.type === 'commandExecution' &&
+      item.source === 'unifiedExecStartup' &&
+      !(parentItem && !observation.parentCompleted && observation.startedToolIds.has(item.id)))
   ) {
     yield* observeBackgroundItem(observation, item, completed, itemThreadId);
     return;
